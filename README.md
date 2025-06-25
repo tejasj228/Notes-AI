@@ -92,5 +92,5 @@ If you like this project, please ⭐️ it on [GitHub](https://github.com/yourus
 ---
 
 <p align="center">
-  <b>Made with ❤️ by [Your Name]</b>
+  <b>Made with ❤️ by Tejas Jaiswal, Dikshant Kukreja</b>
 </p>
