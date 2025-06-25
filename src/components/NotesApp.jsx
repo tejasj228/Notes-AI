@@ -1,17 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Plus, Menu, X, Trash2, User, Sparkles, MoreVertical, RotateCcw, StickyNote, LogOut, Bold, Italic, Underline, Strikethrough, List, ListOrdered } from 'lucide-react';
 
+let lastSizes = [];
+
 const NotesApp = ({ user, onLogout }) => {
   const [notes, setNotes] = useState([
-    { id: 1, title: 'Web Development', content: 'Working on a new React project with modern hooks and state management. Need to implement user authentication and dashboard functionality. Planning to use Context API for global state.', keywords: 'React, JavaScript, CSS', color: 'teal', size: 'medium', order: 0 },
-    { id: 2, title: 'Project Ideas', content: 'AI-powered note taking app with smart categorization and automatic tagging. Could integrate with calendar and email for better productivity. Machine learning for content suggestions.', keywords: 'AI, Machine Learning, Automation', color: 'brown', size: 'large', order: 1 },
-    { id: 3, title: 'Shopping List', content: 'Need to buy groceries for the week. Milk, bread, eggs, coffee, fruits, vegetables. Also need household items like cleaning supplies and toiletries.', keywords: 'Groceries, Household, Personal', color: 'yellow', size: 'small', order: 2 },
-    { id: 4, title: 'Meeting Notes', content: 'Discussed project timeline and deliverables for Q2. Team agreed on sprint planning approach. Need to set up weekly standup meetings and review processes.', keywords: 'Timeline, Deliverables, Team', color: 'blue', size: 'medium', order: 3 },
-    { id: 5, title: 'Book Recommendations', content: 'The Psychology of Computer Programming - great insights into developer mindset. Clean Code by Robert Martin. Design Patterns book for architectural concepts.', keywords: 'Programming, Psychology, Design', color: 'purple', size: 'small', order: 4 },
-    { id: 6, title: 'Workout Plan', content: 'Monday: Chest and Triceps workout with bench press and dips. Tuesday: Back and Biceps with pull-ups and rows. Wednesday: Legs and core exercises.', keywords: 'Fitness, Health, Exercise', color: 'green', size: 'medium', order: 5 },
-    { id: 7, title: 'Travel Itinerary', content: 'Day 1: Arrive at destination, check into hotel, explore downtown area. Day 2: City tour and historical sites. Day 3: Museums and cultural attractions. Day 4: Local cuisine and shopping.', keywords: 'Vacation, Cities, Museums', color: 'orange', size: 'large', order: 6 },
-    { id: 8, title: 'Recipe Collection', content: 'Pasta Carbonara: Eggs, bacon, parmesan cheese, black pepper. Cook pasta al dente, mix with egg mixture while hot. Chicken Tikka Masala recipe to try next.', keywords: 'Cooking, Italian, Pasta', color: 'red', size: 'medium', order: 7 },
-    { id: 9, title: 'Learning Goals', content: 'Master React hooks and advanced patterns. Learn TypeScript for better code quality. Practice algorithms and data structures. Improve system design knowledge.', keywords: 'Skills, Technology, Growth', color: 'indigo', size: 'small', order: 8 }
+    { id: 1, title: 'Web Development', content: '...', keywords: ['React', 'JavaScript', 'CSS'], color: 'purple', size: 'medium', order: 0, images: [] },
+    { id: 2, title: 'Project Ideas', content: '...', keywords: ['AI', 'Machine Learning', 'Automation'], color: 'purple', size: 'large', order: 1, images: [] },
+    { id: 3, title: 'Shopping List', content: '...', keywords: ['Groceries', 'Household', 'Personal'], color: 'purple', size: 'small', order: 2, images: [] },
+    { id: 4, title: 'Meeting Notes', content: '...', keywords: ['Timeline', 'Deliverables', 'Team'], color: 'purple', size: 'medium', order: 3, images: [] },
+    { id: 5, title: 'Book Recommendations', content: '...', keywords: ['Programming', 'Psychology', 'Design'], color: 'purple', size: 'small', order: 4, images: [] },
+    { id: 6, title: 'Workout Plan', content: '...', keywords: ['Fitness', 'Health', 'Exercise'], color: 'purple', size: 'medium', order: 5, images: [] },
+    { id: 7, title: 'Travel Itinerary', content: '...', keywords: ['Vacation', 'Cities', 'Museums'], color: 'purple', size: 'large', order: 6, images: [] },
+    { id: 8, title: 'Recipe Collection', content: '...', keywords: ['Cooking', 'Italian', 'Pasta'], color: 'purple', size: 'medium', order: 7, images: [] },
+    { id: 9, title: 'Learning Goals', content: '...', keywords: ['Skills', 'Technology', 'Growth'], color: 'purple', size: 'small', order: 8, images: [] }
   ]);
   const [trashedNotes, setTrashedNotes] = useState([]);
   const [currentPage, setCurrentPage] = useState('notes'); // 'notes' or 'trash'
@@ -19,19 +21,45 @@ const NotesApp = ({ user, onLogout }) => {
   const [selectedNote, setSelectedNote] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTrashMenu, setShowTrashMenu] = useState(null);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [draggedNote, setDraggedNote] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null); // Add this state
+  const [showNewNotePopup, setShowNewNotePopup] = useState(false);
+  const [newNoteDraft, setNewNoteDraft] = useState({
+    title: '',
+    content: '',
+    keywords: '',
+    color: 'purple',
+    size: 'medium'
+  });
   const textareaRef = useRef(null);
+  const newNoteTextareaRef = useRef(null);
 
   // Filter notes based on search term and current page, then sort by order
   const currentNotes = currentPage === 'notes' ? notes : trashedNotes;
   const filteredNotes = currentNotes
     .filter(note => 
-      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.keywords.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.content && note.content.toLowerCase().includes(searchTerm.toLowerCase()))
+      (note.title && note.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (
+        (
+          Array.isArray(note.keywords)
+            ? note.keywords.join(', ')
+            : (typeof note.keywords === 'string' ? note.keywords : '')
+        )
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+      ) ||
+      (note.content && 
+        (
+          (() => {
+            const div = document.createElement('div');
+            div.innerHTML = note.content;
+            return (div.textContent || div.innerText || '');
+          })()
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
+        )
+      )
     )
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -42,34 +70,62 @@ const NotesApp = ({ user, onLogout }) => {
 
   const getRandomSize = () => {
     const sizes = ['small', 'medium', 'large'];
-    const weights = [0.4, 0.4, 0.2]; // 40% small, 40% medium, 20% large
-    const random = Math.random();
-    let sum = 0;
-    for (let i = 0; i < weights.length; i++) {
-      sum += weights[i];
-      if (random <= sum) return sizes[i];
+    const weights = [0.45, 0.45, 0.1]; // More small/medium, less large
+    let filteredSizes = sizes.filter(size => !lastSizes.includes(size));
+    if (filteredSizes.length === 0) filteredSizes = sizes;
+    // Weighted random
+    let sum = 0, random = Math.random();
+    for (let i = 0; i < filteredSizes.length; i++) {
+      sum += weights[sizes.indexOf(filteredSizes[i])];
+      if (random <= sum) {
+        lastSizes.push(filteredSizes[i]);
+        if (lastSizes.length > 2) lastSizes.shift();
+        return filteredSizes[i];
+      }
     }
-    return 'medium';
+    // Fallback
+    const choice = filteredSizes[Math.floor(Math.random() * filteredSizes.length)];
+    lastSizes.push(choice);
+    if (lastSizes.length > 2) lastSizes.shift();
+    return choice;
   };
 
-  const addNewNote = () => {
+  const openNewNotePopup = () => {
+    setNewNoteDraft({
+      title: '',
+      content: '',
+      keywords: '',
+      color: 'purple',
+      size: getRandomSize() // Use random size here
+    });
+    setShowNewNotePopup(true);
+    setTimeout(() => {
+      if (newNoteTextareaRef.current) newNoteTextareaRef.current.focus();
+    }, 0);
+  };
+
+  const saveNewNote = () => {
+    const keywordsArray = newNoteDraft.keywords
+      .split(',')
+      .map(k => k.trim())
+      .filter(Boolean);
     const newNote = {
       id: Date.now(),
-      title: `New Note ${notes.length + 1}`,
-      content: 'Start writing your note here...',
-      keywords: 'new, note, placeholder',
-      color: 'purple', // Default to app's theme color
+      title: newNoteDraft.title || 'Untitled Note',
+      content: newNoteDraft.content || '',
+      // Only add keywords if any are present, otherwise omit the property
+      ...(keywordsArray.length > 0 ? { keywords: keywordsArray } : {}),
+      color: newNoteDraft.color,
       size: getRandomSize(),
-      order: -1 // Put at the top initially
+      order: 0,
+      images: []
     };
-    
-    // Add new note at the beginning and reorder all notes
     const updatedNotes = [newNote, ...notes].map((note, index) => ({
       ...note,
       order: index
     }));
-    
     setNotes(updatedNotes);
+    setShowNewNotePopup(false);
   };
 
   const deleteNote = (noteId) => {
@@ -109,7 +165,8 @@ const NotesApp = ({ user, onLogout }) => {
         note.id === noteId ? { ...note, [field]: value } : note
       ));
     }
-    if (selectedNote && selectedNote.id === noteId) {
+    // Only update selectedNote for fields other than 'content'
+    if (selectedNote && selectedNote.id === noteId && field !== 'content') {
       setSelectedNote({ ...selectedNote, [field]: value });
     }
   };
@@ -204,12 +261,15 @@ const NotesApp = ({ user, onLogout }) => {
 
   const openNote = (note) => {
     setSelectedNote(note);
-    setIsEditMode(false);
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.innerHTML = note.content || '';
+      }
+    }, 0);
   };
 
   const closeNotePopup = () => {
     setSelectedNote(null);
-    setIsEditMode(false);
   };
 
   const switchToNotes = () => {
@@ -291,12 +351,156 @@ const NotesApp = ({ user, onLogout }) => {
       .replace(/\n/g, '<br>');
   };
 
+  const getNotePreview = (content) => {
+  if (!content) return '';
+  // Remove all HTML tags for preview
+  const tmp = document.createElement('div');
+  tmp.innerHTML = content;
+  return tmp.textContent || tmp.innerText || '';
+};
+
   useEffect(() => {
     if (selectedNote && textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [selectedNote]);
+
+  // Add this effect to set content when opening the new note popup
+  useEffect(() => {
+    if (showNewNotePopup && newNoteTextareaRef.current) {
+      newNoteTextareaRef.current.innerHTML = newNoteDraft.content || '';
+    }
+  }, [showNewNotePopup]);
+
+  // --- Add this useEffect to handle image paste and resizing in both new and edit popups ---
+  useEffect(() => {
+    const handlePaste = (e, editorRef, setContent) => {
+      if (!editorRef.current) return;
+      const clipboardItems = e.clipboardData && e.clipboardData.items;
+      if (!clipboardItems) return;
+
+      let handledImage = false;
+      for (let i = 0; i < clipboardItems.length; i++) {
+        const item = clipboardItems[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            // Insert image at caret position
+            const img = document.createElement('img');
+            img.src = event.target.result;
+            img.style.maxWidth = '96%';
+            img.style.maxHeight = '300px';
+            img.style.display = 'block';
+            img.style.margin = '16px auto';
+            img.style.borderRadius = '10px';
+            img.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              const range = sel.getRangeAt(0);
+              range.deleteContents();
+              range.insertNode(img);
+              // Move caret after image
+              range.setStartAfter(img);
+              range.setEndAfter(img);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            } else {
+              editorRef.current.appendChild(img);
+            }
+            // Update content state
+            setContent(editorRef.current.innerHTML);
+          };
+          reader.readAsDataURL(file);
+          handledImage = true;
+          break;
+        }
+      }
+
+      // If not image, handle plain text paste
+      if (!handledImage) {
+        const text = e.clipboardData.getData('text/plain');
+        if (text) {
+          e.preventDefault();
+          // Insert plain text at caret position
+          document.execCommand('insertText', false, text);
+          setContent(editorRef.current.innerHTML);
+        }
+      }
+    };
+
+    // For new note popup
+    if (showNewNotePopup && newNoteTextareaRef.current) {
+      const handler = (e) => handlePaste(e, newNoteTextareaRef, (html) => setNewNoteDraft(d => ({ ...d, content: html })));
+      const ref = newNoteTextareaRef.current;
+      ref.addEventListener('paste', handler);
+      return () => ref.removeEventListener('paste', handler);
+    }
+
+    // For edit note popup
+    if (selectedNote && textareaRef.current) {
+      const handler = (e) => handlePaste(e, textareaRef, (html) => updateNote(selectedNote.id, 'content', html));
+      const ref = textareaRef.current;
+      ref.addEventListener('paste', handler);
+      return () => ref.removeEventListener('paste', handler);
+    }
+  }, [showNewNotePopup, selectedNote]);
+  // --- In the note card preview, hide images in preview ---
+
+  const scrollSpeed = 6; // px per frame (even slower for smoothness)
+const scrollZone = 80;  // px from top/bottom
+
+useEffect(() => {
+  if (!draggedNote) return;
+
+  let animationFrame = null;
+  let isScrolling = false;
+
+  const handleAutoScroll = (e) => {
+    if (!e) return;
+    const y = e.clientY;
+    const windowHeight = window.innerHeight;
+    let scrolled = false;
+    if (y < scrollZone) {
+      window.scrollBy({ top: -scrollSpeed, behavior: 'auto' });
+      scrolled = true;
+    } else if (y > windowHeight - scrollZone) {
+      window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
+      scrolled = true;
+    }
+    if (scrolled) {
+      isScrolling = true;
+      animationFrame = requestAnimationFrame(() => handleAutoScroll(e));
+    } else {
+      isScrolling = false;
+      cancelAnimationFrame(animationFrame);
+    }
+  };
+
+  const onDragOver = (e) => {
+    if (!isScrolling) handleAutoScroll(e);
+  };
+
+  const stopAutoScroll = () => {
+    isScrolling = false;
+    cancelAnimationFrame(animationFrame);
+  };
+
+  window.addEventListener('dragover', onDragOver);
+  window.addEventListener('drop', stopAutoScroll);
+  window.addEventListener('dragend', stopAutoScroll);
+  window.addEventListener('mouseup', stopAutoScroll); // <--- important for stuck scroll
+
+  return () => {
+    window.removeEventListener('dragover', onDragOver);
+    window.removeEventListener('drop', stopAutoScroll);
+    window.removeEventListener('dragend', stopAutoScroll);
+    window.removeEventListener('mouseup', stopAutoScroll);
+    stopAutoScroll();
+  };
+}, [draggedNote]);
 
   return (
     <div className="notes-app">
@@ -383,7 +587,7 @@ const NotesApp = ({ user, onLogout }) => {
         }
 
         .add-note-btn {
-          background: #8b5cf6;
+          background: #7c3aed; /* Changed from #8b5cf6 to match card purple */
           border: none;
           border-radius: 50px;
           padding: 10px 20px;
@@ -398,7 +602,7 @@ const NotesApp = ({ user, onLogout }) => {
         }
 
         .add-note-btn:hover {
-          background: #7c3aed;
+          background: #6d28d9; /* Slightly darker on hover */
           transform: translateY(-1px);
         }
 
@@ -561,7 +765,8 @@ const NotesApp = ({ user, onLogout }) => {
           overflow: hidden;
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
+          justify-content: flex-start;
+          height: 100%; /* Ensure card takes full height */
         }
 
         .note-card:hover {
@@ -597,17 +802,17 @@ const NotesApp = ({ user, onLogout }) => {
 
         .note-card.small {
           grid-row: span 1;
-          min-height: 180px;
+          min-height: 120px; /* was 180px */
         }
 
         .note-card.medium {
           grid-row: span 2;
-          min-height: 240px;
+          min-height: 170px; /* was 240px */
         }
 
         .note-card.large {
           grid-row: span 3;
-          min-height: 320px;
+          min-height: 230px; /* was 320px */
         }
 
         /* Color variations - Modern gradients with slightly lighter base for contrast */
@@ -701,53 +906,44 @@ const NotesApp = ({ user, onLogout }) => {
         }
 
         .note-content-preview {
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.85);
-          line-height: 1.5;
-          margin-bottom: 16px;
-          flex: 1;
-          overflow: hidden;
+          flex: 1 1 auto;
+          margin-bottom: 18px;
           display: -webkit-box;
-          -webkit-line-clamp: 6;
           -webkit-box-orient: vertical;
+          overflow: hidden;
+          /* Clamp lines based on card size */
         }
 
-        .note-content-preview strong {
-          font-weight: bold;
-          color: rgba(255, 255, 255, 0.95);
+        .note-card.small .note-content-preview {
+          -webkit-line-clamp: 5;
         }
 
-        .note-content-preview em {
-          font-style: italic;
-          color: rgba(255, 255, 255, 0.8);
+        .note-card.medium .note-content-preview {
+          -webkit-line-clamp: 10;
         }
 
-        .note-content-preview del {
-          text-decoration: line-through;
-          color: rgba(255, 255, 255, 0.6);
-        }
-
-        .note-content-preview u {
-          text-decoration: underline;
+        .note-card.large .note-content-preview {
+          -webkit-line-clamp: 16;
         }
 
         .note-keywords {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
           margin-top: auto;
+          padding-bottom: 8px; /* Optional: more gap from bottom */
         }
 
         .keyword-tag {
-          background: rgba(0, 0, 0, 0.25);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 6px;
-          padding: 4px 8px;
-          font-size: 11px;
-          font-weight: 500;
-          color: #cccccc;
+          display: inline-block;
+          background: rgba(255,255,255,0.08);
+          color: #fff;
+          border: 1px solid #444;
+          border-radius: 8px;
+          padding: 3px 12px;
+          font-size: 13px;
+          margin-right: 8px;
+          margin-bottom: 4px;
+          margin-top: 4px;
+          transition: background 0.2s;
           white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
         /* Trash menu styles */
@@ -822,8 +1018,8 @@ const NotesApp = ({ user, onLogout }) => {
         .popup-footer {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          margin-top: 16px;
+          justify-content: flex-end;
+          margin-top: 8px;
         }
 
         .formatting-buttons {
@@ -933,13 +1129,16 @@ const NotesApp = ({ user, onLogout }) => {
           background: #2a2a2a;
           border-radius: 16px;
           padding: 32px;
-          max-width: 750px;
-          width: 100%;
+          width: 750px;         /* Fixed width */
+          height: 600px;        /* Fixed height */
+          max-width: 90vw;
           max-height: 90vh;
           border: 1px solid rgba(255, 255, 255, 0.1);
           position: relative;
           display: flex;
           flex-direction: column;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .note-popup-header {
@@ -1114,6 +1313,108 @@ const NotesApp = ({ user, onLogout }) => {
             cursor: default;
           }
         }
+
+        .note-keywords-input {
+          background: transparent;
+          border: none;
+          font-size: 14px;
+          color: #cccccc;
+          outline: none;
+          margin-bottom: 12px;
+          width: 100%;
+          font-weight: 400;
+          padding: 0;
+        }
+
+        .note-keywords-input::placeholder {
+          color: #888;
+          font-weight: 400;
+        }
+
+        .formatting-toolbar {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .formatting-toolbar button {
+          background: rgba(255,255,255,0.08);
+          border: none;
+          border-radius: 6px;
+          padding: 6px 8px;
+          color: #cccccc;
+          cursor: pointer;
+          transition: background 0.2s;
+          display: flex;
+          align-items: center;
+        }
+        .formatting-toolbar button:hover {
+          background: rgba(139,92,246,0.15);
+          color: #8b5cf6;
+        }
+        .note-content-editable {
+          width: 100%;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 12px;
+          padding: 16px;
+          color: #fff;
+          font-size: 14px;
+          line-height: 1.6;
+          min-height: 200px;
+          max-height: 600px;
+          font-family: inherit;
+          margin-bottom: 16px;
+          overflow-y: auto;
+          transition: border-color 0.2s;
+          outline: none;
+          position: relative;
+        }
+        .note-content-editable:empty:before {
+          content: attr(data-placeholder);
+          color: #888;
+          pointer-events: none;
+          position: absolute;
+          left: 16px;
+          top: 16px;
+          font-size: 14px;
+          font-style: italic;
+        }
+        .note-content-editable:focus {
+          border-color: #8b5cf6;
+          background: rgba(255,255,255,0.08);
+        }
+
+        /* Note Images Collage */
+.note-images-collage {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 0 0;
+  width: 100%;
+  justify-content: flex-start;
+  align-items: center;
+}
+.note-images-collage img {
+  border-radius: 8px;
+  object-fit: cover;
+  background: #181818;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+}
+.note-images-collage.images-1 img {
+  width: 100%;
+  height: 90px;
+}
+.note-images-collage.images-2 img {
+  width: 49%;
+  height: 70px;
+}
+.note-images-collage.images-3 img {
+  width: 32%;
+  height: 60px;
+}
+.note-images-collage.images-4 img {
+  width: 24%;
+  height: 55px;
+}
       `}</style>
 
       {/* Top Navigation */}
@@ -1129,7 +1430,7 @@ const NotesApp = ({ user, onLogout }) => {
           />
         </div>
         {currentPage === 'notes' && (
-          <button className="add-note-btn" onClick={addNewNote}>
+          <button className="add-note-btn" onClick={openNewNotePopup}>
             <Plus size={20} />
             Add a note...
           </button>
@@ -1246,27 +1547,113 @@ const NotesApp = ({ user, onLogout }) => {
                   <div 
                     className="note-content-preview"
                     dangerouslySetInnerHTML={{ 
-                      __html: renderFormattedContent(note.content).substring(0, 200) + '...' 
+                      __html: (note.content || '').replace(/<img[^>]*>/gi, '') // Remove images for card preview
                     }}
                   />
                 )}
               </div>
-              <div className="note-keywords">
-                {note.keywords.split(', ').map((keyword, index) => (
-                  <span key={index} className="keyword-tag">
-                    {keyword}
-                  </span>
-                ))}
-              </div>
+              {Array.isArray(note.keywords) && note.keywords.length > 0 && (
+                <div className="note-keywords">
+                  {note.keywords.map((keyword, index) => (
+                    <span key={index} className="keyword-tag">
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {(() => {
+  const images = extractImageSrcs(note.content, 4);
+  if (images.length === 0) return null;
+  return (
+    <div className={`note-images-collage images-${images.length}`}>
+      {images.map((src, idx) => (
+        <img key={idx} src={src} alt="note" />
+      ))}
+    </div>
+  );
+})()}
             </div>
           ))}
         </div>
       </div>
 
+      {/* New Note Popup */}
+      {showNewNotePopup && (
+        <div className="note-popup-overlay" onClick={() => setShowNewNotePopup(false)}>
+          <div className="note-popup" onClick={e => e.stopPropagation()}>
+            <div className="note-popup-header">
+              <input
+                type="text"
+                className="note-title-input"
+                value={newNoteDraft.title}
+                onChange={e => setNewNoteDraft({ ...newNoteDraft, title: e.target.value })}
+                placeholder="Note title..."
+              />
+              <div className="popup-actions">
+                <button
+                  className="popup-btn"
+                  onClick={() => setShowNewNotePopup(false)}
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            {/* Color Picker */}
+            <div className="color-picker">
+              <span className="color-picker-label">Color:</span>
+              {['purple', 'teal', 'blue', 'green', 'orange', 'red', 'yellow', 'brown', 'indigo'].map((color) => (
+                <div
+                  key={color}
+                  className={`color-option ${color} ${newNoteDraft.color === color ? 'selected' : ''}`}
+                  onClick={() => setNewNoteDraft({ ...newNoteDraft, color })}
+                  title={color.charAt(0).toUpperCase() + color.slice(1)}
+                />
+              ))}
+            </div>
+            {/* Keywords */}
+            <input
+              type="text"
+              className="note-title-input"
+              value={newNoteDraft.keywords}
+              onChange={e => setNewNoteDraft({ ...newNoteDraft, keywords: e.target.value })}
+              placeholder="Keywords (comma separated)..."
+              style={{ marginBottom: 12 }}
+            />
+            {/* Formatting Toolbar BELOW the content box */}
+            <div>
+              <div
+                ref={newNoteTextareaRef}
+                className="note-content-editable"
+                contentEditable={true}
+                suppressContentEditableWarning={true}
+                onInput={e => setNewNoteDraft({ ...newNoteDraft, content: e.currentTarget.innerHTML })}
+                data-placeholder="Start writing your note here..."
+                style={{ minHeight: 350, maxHeight: 350, outline: 'none', height: 350, overflowY: 'auto' }}
+              />
+              <div className="popup-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+                <FormattingToolbar editorRef={newNoteTextareaRef} />
+                <button
+                  className="open-ai-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    marginLeft: 24,
+                    marginRight: 8 // Push button to the right edge, adjust as needed
+                  }}
+                  onClick={saveNewNote}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Note Popup */}
       {selectedNote && (
         <div className="note-popup-overlay" onClick={closeNotePopup}>
-          <div className="note-popup" onClick={(e) => e.stopPropagation()}>
+          <div className="note-popup" onClick={e => e.stopPropagation()}>
             <div className="note-popup-header">
               <input
                 type="text"
@@ -1276,12 +1663,6 @@ const NotesApp = ({ user, onLogout }) => {
                 placeholder="Note title..."
               />
               <div className="popup-actions">
-                <button 
-                  className="edit-mode-btn"
-                  onClick={() => setIsEditMode(!isEditMode)}
-                >
-                  {isEditMode ? 'Preview' : 'Edit'}
-                </button>
                 <button 
                   className="popup-btn delete"
                   onClick={() => deleteNote(selectedNote.id)}
@@ -1312,86 +1693,85 @@ const NotesApp = ({ user, onLogout }) => {
               ))}
             </div>
             
-            {isEditMode ? (
-              <textarea
+            {/* Keywords Editor */}
+            <input
+              type="text"
+              className="note-keywords-input"
+              value={Array.isArray(selectedNote.keywords) ? selectedNote.keywords.join(', ') : selectedNote.keywords}
+              onChange={e => {
+                updateNote(
+                  selectedNote.id,
+                  'keywords',
+                  e.target.value.split(',').map(k => k.trim()).filter(Boolean)
+                );
+              }}
+              placeholder="Keywords (comma separated)..."
+              style={{ marginBottom: 12 }}
+            />
+            {/* Formatting Toolbar BELOW the content box */}
+            <div>
+              <div
                 ref={textareaRef}
-                className="note-content-textarea"
-                value={selectedNote.content || ''}
-                onChange={(e) => {
-                  updateNote(selectedNote.id, 'content', e.target.value);
-                }}
-                placeholder="Start writing your note here..."
+                className="note-content-editable"
+                contentEditable={true}
+                suppressContentEditableWarning={true}
+                onInput={e => updateNote(selectedNote.id, 'content', e.currentTarget.innerHTML)}
+                data-placeholder="Start writing your note here..."
+                style={{ minHeight: 350, maxHeight: 350, outline: 'none', height: 350, overflowY: 'auto' }}
               />
-            ) : (
-              <div 
-                className="note-content-display"
-                onClick={() => setIsEditMode(true)}
-                dangerouslySetInnerHTML={{ 
-                  __html: renderFormattedContent(selectedNote.content) || '<span style="color: #888;">Click to start writing...</span>'
-                }}
-              />
-            )}
-            
-            <div className="popup-footer">
-              {isEditMode && (
-                <div className="formatting-buttons">
-                  <button 
-                    className="format-btn"
-                    onClick={() => formatText('bold')}
-                    title="Bold"
-                  >
-                    <Bold size={16} />
-                  </button>
-                  <button 
-                    className="format-btn"
-                    onClick={() => formatText('italic')}
-                    title="Italic"
-                  >
-                    <Italic size={16} />
-                  </button>
-                  <button 
-                    className="format-btn"
-                    onClick={() => formatText('underline')}
-                    title="Underline"
-                  >
-                    <Underline size={16} />
-                  </button>
-                  <button 
-                    className="format-btn"
-                    onClick={() => formatText('strikethrough')}
-                    title="Strikethrough"
-                  >
-                    <Strikethrough size={16} />
-                  </button>
-                  <button 
-                    className="format-btn"
-                    onClick={() => formatText('bullet')}
-                    title="Bullet List"
-                  >
-                    <List size={16} />
-                  </button>
-                  <button 
-                    className="format-btn"
-                    onClick={() => formatText('numbered')}
-                    title="Numbered List"
-                  >
-                    <ListOrdered size={16} />
-                  </button>
-                </div>
-              )}
-              
-              {!isEditMode && (
-                <button className="open-ai-btn">
-                  <Sparkles size={16} />
+              <div className="popup-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+                <FormattingToolbar editorRef={textareaRef} />
+                <button
+                  className="open-ai-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    marginLeft: 24,
+                    marginRight: 8 // Push button to the right edge, adjust as needed
+                  }}
+                >
+                  <Sparkles size={18} style={{ marginRight: 8 }} />
                   Open with AI
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      <FormattingToolbar editorRef={textareaRef} />
     </div>
   );
 };
+
+const FormattingToolbar = ({ editorRef }) => (
+  <div className="formatting-toolbar">
+    <button type="button" title="Bold" onMouseDown={e => { e.preventDefault(); document.execCommand('bold'); editorRef.current.focus(); }}>
+      <Bold size={16} />
+    </button>
+    <button type="button" title="Italic" onMouseDown={e => { e.preventDefault(); document.execCommand('italic'); editorRef.current.focus(); }}>
+      <Italic size={16} />
+    </button>
+    <button type="button" title="Underline" onMouseDown={e => { e.preventDefault(); document.execCommand('underline'); editorRef.current.focus(); }}>
+      <Underline size={16} />
+    </button>
+    <button type="button" title="Strikethrough" onMouseDown={e => { e.preventDefault(); document.execCommand('strikeThrough'); editorRef.current.focus(); }}>
+      <Strikethrough size={16} />
+    </button>
+    <button type="button" title="Bullet List" onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); editorRef.current.focus(); }}>
+      <List size={16} />
+    </button>
+    <button type="button" title="Numbered List" onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); editorRef.current.focus(); }}>
+      <ListOrdered size={16} />
+    </button>
+  </div>
+);
+
+function extractImageSrcs(html, max = 4) {
+  if (!html) return [];
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const imgs = Array.from(div.querySelectorAll('img')).slice(0, max);
+  return imgs.map(img => img.src);
+}
 
 export default NotesApp;
