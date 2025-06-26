@@ -16,14 +16,14 @@ const NotesApp = ({ user, onLogout }) => {
     { id: 9, title: 'Learning Goals', content: '...', keywords: ['Skills', 'Technology', 'Growth'], color: 'purple', size: 'small', order: 8, images: [] }
   ]);
   const [trashedNotes, setTrashedNotes] = useState([]);
-  const [currentPage, setCurrentPage] = useState('notes'); // 'notes' or 'trash'
+  const [currentPage, setCurrentPage] = useState('notes');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedNote, setSelectedNote] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTrashMenu, setShowTrashMenu] = useState(null);
   const [draggedNote, setDraggedNote] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
-  const [draggedIndex, setDraggedIndex] = useState(null); // Add this state
+  const [draggedIndex, setDraggedIndex] = useState(null);
   const [showNewNotePopup, setShowNewNotePopup] = useState(false);
   const [newNoteDraft, setNewNoteDraft] = useState({
     title: '',
@@ -32,6 +32,7 @@ const NotesApp = ({ user, onLogout }) => {
     color: 'purple',
     size: 'medium'
   });
+  const [imagePopup, setImagePopup] = useState({ open: false, src: '' });
   const textareaRef = useRef(null);
   const newNoteTextareaRef = useRef(null);
 
@@ -70,10 +71,9 @@ const NotesApp = ({ user, onLogout }) => {
 
   const getRandomSize = () => {
     const sizes = ['small', 'medium', 'large'];
-    const weights = [0.45, 0.45, 0.1]; // More small/medium, less large
+    const weights = [0.45, 0.45, 0.1];
     let filteredSizes = sizes.filter(size => !lastSizes.includes(size));
     if (filteredSizes.length === 0) filteredSizes = sizes;
-    // Weighted random
     let sum = 0, random = Math.random();
     for (let i = 0; i < filteredSizes.length; i++) {
       sum += weights[sizes.indexOf(filteredSizes[i])];
@@ -83,7 +83,6 @@ const NotesApp = ({ user, onLogout }) => {
         return filteredSizes[i];
       }
     }
-    // Fallback
     const choice = filteredSizes[Math.floor(Math.random() * filteredSizes.length)];
     lastSizes.push(choice);
     if (lastSizes.length > 2) lastSizes.shift();
@@ -96,7 +95,7 @@ const NotesApp = ({ user, onLogout }) => {
       content: '',
       keywords: '',
       color: 'purple',
-      size: getRandomSize() // Use random size here
+      size: getRandomSize()
     });
     setShowNewNotePopup(true);
     setTimeout(() => {
@@ -113,7 +112,6 @@ const NotesApp = ({ user, onLogout }) => {
       id: Date.now(),
       title: newNoteDraft.title || 'Untitled Note',
       content: newNoteDraft.content || '',
-      // Only add keywords if any are present, otherwise omit the property
       ...(keywordsArray.length > 0 ? { keywords: keywordsArray } : {}),
       color: newNoteDraft.color,
       size: getRandomSize(),
@@ -148,7 +146,6 @@ const NotesApp = ({ user, onLogout }) => {
       const { trashedAt, ...restoredNote } = noteToRestore;
       setTrashedNotes(trashedNotes.filter(note => note.id !== noteId));
       
-      // Add restored note at the top and reorder all notes
       const updatedNotes = [{ ...restoredNote, order: -1 }, ...notes].map((note, index) => ({
         ...note,
         order: index
@@ -165,7 +162,6 @@ const NotesApp = ({ user, onLogout }) => {
         note.id === noteId ? { ...note, [field]: value } : note
       ));
     }
-    // Only update selectedNote for fields other than 'content'
     if (selectedNote && selectedNote.id === noteId && field !== 'content') {
       setSelectedNote({ ...selectedNote, [field]: value });
     }
@@ -177,14 +173,9 @@ const NotesApp = ({ user, onLogout }) => {
     
     if (draggedIndex === -1 || draggedIndex === targetIndex) return;
     
-    // Remove the dragged note from its current position
     const [draggedNote] = updatedNotes.splice(draggedIndex, 1);
-    
-    // Insert the dragged note at the target position
-    // This automatically pushes other notes out of the way
     updatedNotes.splice(targetIndex, 0, draggedNote);
     
-    // Update order values to match new positions
     const reorderedNotes = updatedNotes.map((note, index) => ({
       ...note,
       order: index
@@ -197,7 +188,7 @@ const NotesApp = ({ user, onLogout }) => {
   const handleDragStart = (e, note, index) => {
     if (currentPage !== 'notes') return;
     setDraggedNote(note);
-    setDraggedIndex(index); // Track the index
+    setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', note.id.toString());
     e.target.style.opacity = '0.5';
@@ -221,13 +212,12 @@ const NotesApp = ({ user, onLogout }) => {
       const updatedNotes = [...notes];
       const [removed] = updatedNotes.splice(draggedIndex, 1);
       updatedNotes.splice(hoverIndex, 0, removed);
-      // Update order
       const reorderedNotes = updatedNotes.map((note, idx) => ({
         ...note,
         order: idx
       }));
       setNotes(reorderedNotes);
-      setDraggedIndex(hoverIndex); // Update draggedIndex to new position
+      setDraggedIndex(hoverIndex);
       setDragOverIndex(hoverIndex);
     }
   };
@@ -240,7 +230,6 @@ const NotesApp = ({ user, onLogout }) => {
     setDraggedIndex(null);
   };
 
-  // Grid container drag handlers
   const handleGridDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -250,7 +239,6 @@ const NotesApp = ({ user, onLogout }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // If dropped on grid but not on a specific note, append to end
     if (draggedNote && draggedNote.id && dragOverIndex === null) {
       const maxOrder = Math.max(...notes.map(note => note.order || 0));
       reorderNotes(draggedNote.id, notes.length - 1);
@@ -282,83 +270,6 @@ const NotesApp = ({ user, onLogout }) => {
     setSearchTerm('');
   };
 
-  const formatText = (formatType) => {
-    const textarea = textareaRef.current;
-    if (!textarea || !selectedNote) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = textarea.value.substring(start, end);
-    
-    if (selectedText.length === 0) return;
-
-    let formattedText = '';
-    
-    switch (formatType) {
-      case 'bold':
-        formattedText = `**${selectedText}**`;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText}*`;
-        break;
-      case 'underline':
-        formattedText = `<u>${selectedText}</u>`;
-        break;
-      case 'strikethrough':
-        formattedText = `~~${selectedText}~~`;
-        break;
-      case 'bullet':
-        const bulletLines = selectedText.split('\n').map(line => `• ${line.trim()}`).join('\n');
-        formattedText = bulletLines;
-        break;
-      case 'numbered':
-        const numberedLines = selectedText.split('\n').map((line, index) => `${index + 1}. ${line.trim()}`).join('\n');
-        formattedText = numberedLines;
-        break;
-      default:
-        return;
-    }
-
-    const newContent = 
-      textarea.value.substring(0, start) + 
-      formattedText + 
-      textarea.value.substring(end);
-    
-    updateNote(selectedNote.id, 'content', newContent);
-    
-    // Reset cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start, start + formattedText.length);
-    }, 0);
-  };
-
-  const renderFormattedContent = (content) => {
-    if (!content) return '';
-    
-    return content
-      // Bold
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Italic
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      // Strikethrough
-      .replace(/~~(.*?)~~/g, '<del>$1</del>')
-      // Bullet points
-      .replace(/^• (.+)$/gm, '<div style="margin: 4px 0;">• $1</div>')
-      // Numbered lists
-      .replace(/^(\d+)\. (.+)$/gm, '<div style="margin: 4px 0;">$1. $2</div>')
-      // Line breaks
-      .replace(/\n/g, '<br>');
-  };
-
-  const getNotePreview = (content) => {
-  if (!content) return '';
-  // Remove all HTML tags for preview
-  const tmp = document.createElement('div');
-  tmp.innerHTML = content;
-  return tmp.textContent || tmp.innerText || '';
-};
-
   useEffect(() => {
     if (selectedNote && textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -366,14 +277,12 @@ const NotesApp = ({ user, onLogout }) => {
     }
   }, [selectedNote]);
 
-  // Add this effect to set content when opening the new note popup
   useEffect(() => {
     if (showNewNotePopup && newNoteTextareaRef.current) {
       newNoteTextareaRef.current.innerHTML = newNoteDraft.content || '';
     }
   }, [showNewNotePopup]);
 
-  // --- Add this useEffect to handle image paste and resizing in both new and edit popups ---
   useEffect(() => {
     const handlePaste = (e, editorRef, setContent) => {
       if (!editorRef.current) return;
@@ -388,7 +297,6 @@ const NotesApp = ({ user, onLogout }) => {
           const file = item.getAsFile();
           const reader = new FileReader();
           reader.onload = (event) => {
-            // Insert image at caret position
             const img = document.createElement('img');
             img.src = event.target.result;
             img.style.maxWidth = '96%';
@@ -402,7 +310,6 @@ const NotesApp = ({ user, onLogout }) => {
               const range = sel.getRangeAt(0);
               range.deleteContents();
               range.insertNode(img);
-              // Move caret after image
               range.setStartAfter(img);
               range.setEndAfter(img);
               sel.removeAllRanges();
@@ -410,7 +317,6 @@ const NotesApp = ({ user, onLogout }) => {
             } else {
               editorRef.current.appendChild(img);
             }
-            // Update content state
             setContent(editorRef.current.innerHTML);
           };
           reader.readAsDataURL(file);
@@ -419,19 +325,16 @@ const NotesApp = ({ user, onLogout }) => {
         }
       }
 
-      // If not image, handle plain text paste
       if (!handledImage) {
         const text = e.clipboardData.getData('text/plain');
         if (text) {
           e.preventDefault();
-          // Insert plain text at caret position
           document.execCommand('insertText', false, text);
           setContent(editorRef.current.innerHTML);
         }
       }
     };
 
-    // For new note popup
     if (showNewNotePopup && newNoteTextareaRef.current) {
       const handler = (e) => handlePaste(e, newNoteTextareaRef, (html) => setNewNoteDraft(d => ({ ...d, content: html })));
       const ref = newNoteTextareaRef.current;
@@ -439,7 +342,6 @@ const NotesApp = ({ user, onLogout }) => {
       return () => ref.removeEventListener('paste', handler);
     }
 
-    // For edit note popup
     if (selectedNote && textareaRef.current) {
       const handler = (e) => handlePaste(e, textareaRef, (html) => updateNote(selectedNote.id, 'content', html));
       const ref = textareaRef.current;
@@ -447,938 +349,106 @@ const NotesApp = ({ user, onLogout }) => {
       return () => ref.removeEventListener('paste', handler);
     }
   }, [showNewNotePopup, selectedNote]);
-  // --- In the note card preview, hide images in preview ---
 
-  const scrollSpeed = 6; // px per frame (even slower for smoothness)
-const scrollZone = 80;  // px from top/bottom
-
-useEffect(() => {
-  if (!draggedNote) return;
-
-  let animationFrame = null;
-  let isScrolling = false;
-
-  const handleAutoScroll = (e) => {
-    if (!e) return;
-    const y = e.clientY;
-    const windowHeight = window.innerHeight;
-    let scrolled = false;
-    if (y < scrollZone) {
-      window.scrollBy({ top: -scrollSpeed, behavior: 'auto' });
-      scrolled = true;
-    } else if (y > windowHeight - scrollZone) {
-      window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
-      scrolled = true;
+  useEffect(() => {
+    // Attach click handler to images in contentEditable areas
+    function handleImageClick(e) {
+      if (e.target.tagName === 'IMG') {
+        setImagePopup({ open: true, src: e.target.src });
+      }
     }
-    if (scrolled) {
-      isScrolling = true;
-      animationFrame = requestAnimationFrame(() => handleAutoScroll(e));
-    } else {
+    const editors = [textareaRef.current, newNoteTextareaRef.current].filter(Boolean);
+    editors.forEach(editor => {
+      editor && editor.addEventListener('click', handleImageClick);
+    });
+    return () => {
+      editors.forEach(editor => {
+        editor && editor.removeEventListener('click', handleImageClick);
+      });
+    };
+  }, [showNewNotePopup, selectedNote]);
+
+  const scrollSpeed = 6;
+  const scrollZone = 80;
+
+  useEffect(() => {
+    if (!draggedNote) return;
+
+    let animationFrame = null;
+    let isScrolling = false;
+
+    const handleAutoScroll = (e) => {
+      if (!e) return;
+      const y = e.clientY;
+      const windowHeight = window.innerHeight;
+      let scrolled = false;
+      if (y < scrollZone) {
+        window.scrollBy({ top: -scrollSpeed, behavior: 'auto' });
+        scrolled = true;
+      } else if (y > windowHeight - scrollZone) {
+        window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
+        scrolled = true;
+      }
+      if (scrolled) {
+        isScrolling = true;
+        animationFrame = requestAnimationFrame(() => handleAutoScroll(e));
+      } else {
+        isScrolling = false;
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+
+    const onDragOver = (e) => {
+      if (!isScrolling) handleAutoScroll(e);
+    };
+
+    const stopAutoScroll = () => {
       isScrolling = false;
       cancelAnimationFrame(animationFrame);
-    }
-  };
+    };
 
-  const onDragOver = (e) => {
-    if (!isScrolling) handleAutoScroll(e);
-  };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('drop', stopAutoScroll);
+    window.addEventListener('dragend', stopAutoScroll);
+    window.addEventListener('mouseup', stopAutoScroll);
 
-  const stopAutoScroll = () => {
-    isScrolling = false;
-    cancelAnimationFrame(animationFrame);
-  };
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('drop', stopAutoScroll);
+      window.removeEventListener('dragend', stopAutoScroll);
+      window.removeEventListener('mouseup', stopAutoScroll);
+      stopAutoScroll();
+    };
+  }, [draggedNote]);
 
-  window.addEventListener('dragover', onDragOver);
-  window.addEventListener('drop', stopAutoScroll);
-  window.addEventListener('dragend', stopAutoScroll);
-  window.addEventListener('mouseup', stopAutoScroll); // <--- important for stuck scroll
-
-  return () => {
-    window.removeEventListener('dragover', onDragOver);
-    window.removeEventListener('drop', stopAutoScroll);
-    window.removeEventListener('dragend', stopAutoScroll);
-    window.removeEventListener('mouseup', stopAutoScroll);
-    stopAutoScroll();
+  const handleInsertImage = async (editorRef, setContent) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const resizedDataUrl = await resizeImage(file);
+      insertImageAtCaret(editorRef, resizedDataUrl);
+      setContent(editorRef.current.innerHTML);
+    };
+    input.click();
   };
-}, [draggedNote]);
 
   return (
-    <div className="notes-app">
-      <style jsx>{`
-        .notes-app {
-          min-height: 100vh;
-          background: #1a1a1a;
-        }
-
-        /* Global scrollbar styles */
+    <div className="min-h-screen" style={{ background: '#1a1a1a' }}>
+      {/* Global Styles */}
+      <style>{`
         * {
           scrollbar-width: thin;
           scrollbar-color: #606060 #2a2a2a;
         }
-
-        *::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-
-        *::-webkit-scrollbar-track {
-          background: #2a2a2a;
-          border-radius: 4px;
-        }
-
-        *::-webkit-scrollbar-thumb {
-          background: #606060;
-          border-radius: 4px;
-        }
-
-        *::-webkit-scrollbar-thumb:hover {
-          background: #707070;
-        }
-
-        /* Top Navigation Bar */
-        .top-nav {
-          position: fixed;
-          top: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          background: rgba(40, 40, 40, 0.9);
-          backdrop-filter: blur(20px);
-          padding: 12px 20px;
-          border-radius: 50px;
-          z-index: 1000;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .search-container {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .search-input {
-          background: rgba(60, 60, 60, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 25px;
-          padding: 10px 16px 10px 45px;
-          color: #ffffff;
-          font-size: 14px;
-          width: 300px;
-          outline: none;
-          transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-          background: rgba(70, 70, 70, 0.9);
-          border-color: #8b5cf6;
-        }
-
-        .search-input::placeholder {
-          color: #888;
-        }
-
-        .search-icon {
-          position: absolute;
-          left: 15px;
-          color: #888;
-          z-index: 1;
-        }
-
-        .add-note-btn {
-          background: #7c3aed; /* Changed from #8b5cf6 to match card purple */
-          border: none;
-          border-radius: 50px;
-          padding: 10px 20px;
-          color: white;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.3s ease;
-        }
-
-        .add-note-btn:hover {
-          background: #6d28d9; /* Slightly darker on hover */
-          transform: translateY(-1px);
-        }
-
-        .account-circle {
-          width: 40px;
-          height: 40px;
-          background: #8b5cf6;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .account-circle:hover {
-          background: #7c3aed;
-          transform: scale(1.05);
-        }
-
-        /* Sidebar */
-        .sidebar {
-          position: fixed;
-          left: 0;
-          top: 0;
-          height: 100vh;
-          background: rgba(30, 30, 30, 0.95);
-          backdrop-filter: blur(20px);
-          border-right: 1px solid rgba(255, 255, 255, 0.1);
-          transition: all 0.3s ease;
-          z-index: 999;
-          width: ${sidebarOpen ? '250px' : '70px'};
-        }
-
-        .sidebar-header {
-          padding: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 18px;
-          font-weight: 600;
-          color: #8b5cf6;
-        }
-
-        .menu-toggle {
-          background: none;
-          border: none;
-          color: #888;
-          cursor: pointer;
-          padding: 8px;
-          border-radius: 8px;
-          transition: all 0.3s ease;
-        }
-
-        .menu-toggle:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ffffff;
-        }
-
-        .sidebar-menu {
-          padding: 20px 0;
-        }
-
-        .menu-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 20px;
-          color: #cccccc;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          border: none;
-          background: none;
-          width: 100%;
-          text-align: left;
-        }
-
-        .menu-item:hover {
-          background: rgba(139, 92, 246, 0.1);
-          color: #8b5cf6;
-        }
-
-        .menu-item.active {
-          background: rgba(139, 92, 246, 0.2);
-          color: #8b5cf6;
-          border-right: 3px solid #8b5cf6;
-        }
-
-        .user-info {
-          position: absolute;
-          bottom: 20px;
-          left: 20px;
-          right: 20px;
-          padding: 20px;
-          background: rgba(40, 40, 40, 0.5);
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .user-email {
-          font-size: 14px;
-          color: #888;
-          margin-bottom: 12px;
-          line-height: 1.4;
-        }
-
-        .sign-out-btn {
-          background: rgba(220, 38, 38, 0.2);
-          border: 1px solid rgba(220, 38, 38, 0.3);
-          border-radius: 8px;
-          padding: 12px 16px;
-          color: #ff6b6b;
-          font-size: 14px;
-          cursor: pointer;
-          width: 100%;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          font-weight: 500;
-        }
-
-        .sign-out-btn:hover {
-          background: rgba(220, 38, 38, 0.3);
-        }
-
-        /* Main Content */
-        .main-content {
-          margin-left: ${sidebarOpen ? '250px' : '70px'};
-          padding: 100px 40px 40px;
-          transition: all 0.3s ease;
-          min-height: 100vh;
-        }
-
-        /* Notes Grid */
-        .notes-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 20px;
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 20px 0;
-        }
-
-        /* Note Card */
-        .note-card {
-          border-radius: 16px;
-          padding: 20px;
-          cursor: ${currentPage === 'notes' ? 'grab' : 'default'};
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
-          height: 100%; /* Ensure card takes full height */
-        }
-
-        .note-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .note-card.dragging {
-          opacity: 0.3;
-          cursor: grabbing;
-          transform: rotate(2deg) scale(0.95);
-          z-index: 1000;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-        }
-
-        .note-card.drag-over {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4);
-          border: 2px solid rgba(139, 92, 246, 0.6);
-        }
-
-        .note-card.drag-over::before {
-          content: '';
-          position: absolute;
-          top: -4px;
-          left: -4px;
-          right: -4px;
-          bottom: -4px;
-          background: rgba(139, 92, 246, 0.1);
-          border-radius: 20px;
-          z-index: -1;
-        }
-
-        .note-card.small {
-          grid-row: span 1;
-          min-height: 120px; /* was 180px */
-        }
-
-        .note-card.medium {
-          grid-row: span 2;
-          min-height: 170px; /* was 240px */
-        }
-
-        .note-card.large {
-          grid-row: span 3;
-          min-height: 230px; /* was 320px */
-        }
-
-        /* Color variations - Modern gradients with slightly lighter base for contrast */
-        .note-card.teal {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #0f766e 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.teal:hover {
-          background: linear-gradient(45deg, #0f766e 0%, #0f766e 60%, #134e4a 80%, #242424 100%);
-        }
-
-        .note-card.brown {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #a16207 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.brown:hover {
-          background: linear-gradient(45deg, #a16207 0%, #a16207 60%, #b45309 80%, #242424 100%);
-        }
-
-        .note-card.yellow {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #d97706 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.yellow:hover {
-          background: linear-gradient(45deg, #d97706 0%, #d97706 60%, #ea580c 80%, #242424 100%);
-        }
-
-        .note-card.blue {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #1e40af 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.blue:hover {
-          background: linear-gradient(45deg, #1e40af 0%, #1e40af 60%, #1e3a8a 80%, #242424 100%);
-        }
-
-        .note-card.purple {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #7c3aed 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.purple:hover {
-          background: linear-gradient(45deg, #7c3aed 0%, #7c3aed 60%, #6b21a8 80%, #242424 100%);
-        }
-
-        .note-card.green {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #059669 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.green:hover {
-          background: linear-gradient(45deg, #059669 0%, #059669 60%, #047857 80%, #242424 100%);
-        }
-
-        .note-card.orange {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #ea580c 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.orange:hover {
-          background: linear-gradient(45deg, #ea580c 0%, #ea580c 60%, #c2410c 80%, #242424 100%);
-        }
-
-        .note-card.red {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #dc2626 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.red:hover {
-          background: linear-gradient(45deg, #dc2626 0%, #dc2626 60%, #b91c1c 80%, #242424 100%);
-        }
-
-        .note-card.indigo {
-          background: linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #4f46e5 100%);
-          transition: all 0.4s ease;
-        }
-
-        .note-card.indigo:hover {
-          background: linear-gradient(45deg, #4f46e5 0%, #4f46e5 60%, #4338ca 80%, #242424 100%);
-        }
-
-        .note-title {
-          font-size: 22px;
-          font-weight: 700;
-          margin-bottom: 16px;
-          color: #ffffff;
-          line-height: 1.3;
-        }
-
-        .note-content-preview {
-          flex: 1 1 auto;
-          margin-bottom: 18px;
-          display: -webkit-box;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          /* Clamp lines based on card size */
-        }
-
-        .note-card.small .note-content-preview {
-          -webkit-line-clamp: 5;
-        }
-
-        .note-card.medium .note-content-preview {
-          -webkit-line-clamp: 10;
-        }
-
-        .note-card.large .note-content-preview {
-          -webkit-line-clamp: 16;
-        }
-
-        .note-keywords {
-          margin-top: auto;
-          padding-bottom: 8px; /* Optional: more gap from bottom */
-        }
-
-        .keyword-tag {
-          display: inline-block;
-          background: rgba(255,255,255,0.08);
-          color: #fff;
-          border: 1px solid #444;
-          border-radius: 8px;
-          padding: 3px 12px;
-          font-size: 13px;
-          margin-right: 8px;
-          margin-bottom: 4px;
-          margin-top: 4px;
-          transition: background 0.2s;
-          white-space: nowrap;
-        }
-
-        /* Trash menu styles */
-        .note-card-header {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          z-index: 10;
-        }
-
-        .trash-menu-btn {
-          background: rgba(0, 0, 0, 0.3);
-          border: none;
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: rgba(255, 255, 255, 0.8);
-          transition: all 0.3s ease;
-        }
-
-        .trash-menu-btn:hover {
-          background: rgba(0, 0, 0, 0.5);
-          color: #ffffff;
-        }
-
-        .trash-menu {
-          position: absolute;
-          top: 40px;
-          right: 0;
-          background: #2a2a2a;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          padding: 8px 0;
-          min-width: 160px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          z-index: 20;
-        }
-
-        .trash-menu-item {
-          background: none;
-          border: none;
-          width: 100%;
-          padding: 12px 16px;
-          color: #ffffff;
-          font-size: 14px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 12px;
-          transition: background 0.2s ease;
-          text-align: left;
-        }
-
-        .trash-menu-item:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .trash-menu-item.delete {
-          color: #ff6b6b;
-        }
-
-        .trash-menu-item.delete:hover {
-          background: rgba(220, 38, 38, 0.1);
-        }
-
-        /* Formatting buttons */
-        .popup-footer {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          margin-top: 8px;
-        }
-
-        .formatting-buttons {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .format-btn {
-          background: rgba(255, 255, 255, 0.1);
-          border: none;
-          border-radius: 6px;
-          padding: 8px;
-          color: #cccccc;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .format-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-          color: #ffffff;
-        }
-
-        .format-btn:active {
-          background: rgba(139, 92, 246, 0.3);
-          color: #8b5cf6;
-        }
-
-        /* Rich text display */
-        .note-content-display {
-          width: 100%;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 16px;
-          color: #ffffff;
-          font-size: 14px;
-          line-height: 1.6;
-          min-height: 400px;
-          max-height: 600px;
-          font-family: inherit;
-          margin-bottom: 16px;
-          overflow-y: auto;
-          flex: 1;
-          cursor: pointer;
-        }
-
-        .note-content-display:hover {
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .note-content-display strong {
-          font-weight: bold;
-          color: #ffffff;
-        }
-
-        .note-content-display em {
-          font-style: italic;
-          color: #e0e0e0;
-        }
-
-        .note-content-display del {
-          text-decoration: line-through;
-          color: #888;
-        }
-
-        .note-content-display u {
-          text-decoration: underline;
-        }
-
-        .edit-mode-btn {
-          background: rgba(139, 92, 246, 0.2);
-          border: 1px solid rgba(139, 92, 246, 0.3);
-          border-radius: 8px;
-          padding: 8px 16px;
-          color: #8b5cf6;
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-left: 8px;
-        }
-
-        .edit-mode-btn:hover {
-          background: rgba(139, 92, 246, 0.3);
-        }
-
-        /* Note Popup */
-        .note-popup-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-          padding: 20px;
-        }
-
-        .note-popup {
-          background: #2a2a2a;
-          border-radius: 16px;
-          padding: 32px;
-          width: 750px;         
-          height: 800px;        /* Default for new note popup */
-          max-width: 90vw;
-          max-height: 90vh;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          box-sizing: border-box;
-          overflow: hidden;
-        }
-
-        /* Only for edit note popup: make popup and content editor larger */
-        .note-popup.edit-mode {
-          height: 900px !important;
-        }
-        .note-popup.edit-mode .note-content-editable {
-          min-height: 550px !important;
-          height: 550px !important;
-          max-height: 600px;
-        }
-
-        .note-popup-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 20px;
-        }
-
-        .note-title-input {
-          background: transparent;
-          border: none;
-          font-size: 20px;
-          font-weight: 600;
-          color: #ffffff;
-          outline: none;
-          flex: 1;
-          margin-right: 16px;
-        }
-
-        .popup-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .popup-btn {
-          background: rgba(255, 255, 255, 0.1);
-          border: none;
-          border-radius: 8px;
-          padding: 8px;
-          color: #ffffff;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .popup-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        .popup-btn.delete:hover {
-          background: rgba(220, 38, 38, 0.3);
-          color: #ff6b6b;
-        }
-
-        .note-content-textarea {
-          width: 100%;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 16px;
-          color: #ffffff;
-          font-size: 14px;
-          line-height: 1.6;
-          resize: none;
-          outline: none;
-          min-height: 400px;
-          max-height: 600px;
-          font-family: inherit;
-          margin-bottom: 16px;
-          overflow-y: auto;
-          flex: 1;
-        }
-
-        .note-content-textarea:focus {
-          border-color: #8b5cf6;
-          background: rgba(255, 255, 255, 0.08);
-        }
-
-        .open-ai-btn {
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-          border: none;
-          border-radius: 12px;
-          padding: 12px 24px;
-          color: white;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.3s ease;
-          margin: 0 auto;
-        }
-
-        .open-ai-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
-        }
-
-        /* Color picker styles */
-        .color-picker {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          margin-bottom: 16px;
-        }
-
-        .color-picker-label {
-          font-size: 14px;
-          color: #cccccc;
-          margin-right: 8px;
-          font-weight: 500;
-        }
-
-        .color-option {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          cursor: pointer;
-          border: 3px solid transparent;
-          transition: all 0.3s ease;
-          position: relative;
-        }
-
-        .color-option:hover {
-          transform: scale(1.1);
-        }
-
-        .color-option.selected {
-          border-color: #ffffff;
-          transform: scale(1.15);
-        }
-
-        .color-option.selected::after {
-          content: '✓';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          color: white;
-          font-size: 14px;
-          font-weight: bold;
-          text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-        }
-
-        .color-option.teal { background: linear-gradient(45deg, #0f766e, #14b8a6); }
-        .color-option.brown { background: linear-gradient(45deg, #a16207, #d97706); }
-        .color-option.yellow { background: linear-gradient(45deg, #d97706, #f59e0b); }
-        .color-option.blue { background: linear-gradient(45deg, #1e40af, #3b82f6); }
-        .color-option.purple { background: linear-gradient(45deg, #7c3aed, #8b5cf6); }
-        .color-option.green { background: linear-gradient(45deg, #059669, #10b981); }
-        .color-option.orange { background: linear-gradient(45deg, #ea580c, #f97316); }
-        .color-option.red { background: linear-gradient(45deg, #dc2626, #ef4444); }
-        .color-option.indigo { background: linear-gradient(45deg, #4f46e5, #6366f1); }
-
-        @media (max-width: 768px) {
-          .main-content {
-            margin-left: 0;
-            padding: 100px 20px 40px;
-          }
-
-          .sidebar {
-            transform: translateX(${sidebarOpen ? '0' : '-100%'});
-            width: 250px;
-          }
-
-          .top-nav {
-            left: 20px;
-            right: 20px;
-            transform: none;
-          }
-
-          .search-input {
-            width: 200px;
-          }
-
-          .notes-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .note-card {
-            cursor: default;
-          }
-        }
-
-        .note-keywords-input {
-          background: transparent;
-          border: none;
-          font-size: 14px;
-          color: #cccccc;
-          outline: none;
-          margin-bottom: 12px;
-          width: 100%;
-          font-weight: 400;
-          padding: 0;
-        }
-
-        .note-keywords-input::placeholder {
-          color: #888;
-          font-weight: 400;
-        }
-
-        .formatting-toolbar {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        .formatting-toolbar button {
-          background: rgba(255,255,255,0.08);
-          border: none;
-          border-radius: 6px;
-          padding: 6px 8px;
-          color: #cccccc;
-          cursor: pointer;
-          transition: background 0.2s;
-          display: flex;
-          align-items: center;
-        }
-        .formatting-toolbar button:hover {
-          background: rgba(139,92,246,0.15);
-          color: #8b5cf6;
-        }
-        .note-content-editable {
-          width: 100%;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          padding: 16px;
-          color: #fff;
-          font-size: 14px;
-          line-height: 1.6;
-          min-height: 500px;    /* Increased from 200px */
-          max-height: 600px;    /* Keep max-height for scroll */
-          font-family: inherit;
-          margin-bottom: 16px;
-          overflow-y: auto;
-          transition: border-color 0.2s;
-          outline: none;
-          position: relative;
-        }
+        *::-webkit-scrollbar { width: 8px; height: 8px; }
+        *::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 4px; }
+        *::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        *::-webkit-scrollbar-thumb:hover { background: #707070; }
+
+        /* Custom content editor styles */
         .note-content-editable:empty:before {
           content: attr(data-placeholder);
           color: #888;
@@ -1389,87 +459,156 @@ useEffect(() => {
           font-size: 14px;
           font-style: italic;
         }
-        .note-content-editable:focus {
-          border-color: #8b5cf6;
-          background: rgba(255,255,255,0.08);
+
+        /* List styles for content editor */
+        .note-content-editable ul,
+        .note-content-editable ol {
+          margin-left: 0;
+          padding-left: 2.2em; /* more space for marker */
+          list-style-position: outside;
+        }
+        .note-content-editable li {
+          margin-bottom: 0.5em;
+          color: #cccccc;
+          font-size: 1em;
+          line-height: 1.8;
+          padding-left: 0.2em; /* extra space between marker and text */
+          text-indent: 0;
         }
 
-        /* Note Images Collage */
-.note-images-collage {
-  display: flex;
-  gap: 6px;
-  margin: 10px 0 0 0;
-  width: 100%;
-  justify-content: flex-start;
-  align-items: center;
-}
-.note-images-collage img {
-  border-radius: 8px;
-  object-fit: cover;
-  background: #181818;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.13);
-}
-.note-images-collage.images-1 img {
-  width: 100%;
-  height: 90px;
-}
-.note-images-collage.images-2 img {
-  width: 49%;
-  height: 70px;
-}
-.note-images-collage.images-3 img {
-  width: 32%;
-  height: 60px;
-}
-.note-images-collage.images-4 img {
-  width: 24%;
-  height: 55px;
-}
+        .note-content-editable img:hover {
+          cursor: pointer;
+        }
       `}</style>
 
       {/* Top Navigation */}
-      <div className="top-nav">
-        <div className="search-container">
-          <Search className="search-icon" size={20} />
+      <div 
+        className="fixed top-5 left-1/2 transform -translate-x-1/2 flex items-center gap-4 px-5 py-3 rounded-full z-50 border"
+        style={{ 
+          background: 'rgba(40, 40, 40, 0.9)', 
+          backdropFilter: 'blur(20px)',
+          borderColor: 'rgba(255, 255, 255, 0.1)'
+        }}
+      >
+        <div className="relative flex items-center">
+          <Search className="absolute left-4 text-gray-400 z-10" size={20} />
           <input
             type="text"
             placeholder={`Search ${currentPage}...`}
-            className="search-input"
+            className="border rounded-full py-2.5 pl-11 pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400"
+            style={{
+              background: 'rgba(60, 60, 60, 0.8)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              width: '300px'
+            }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={e => {
+              e.target.style.background = 'rgba(70, 70, 70, 0.9)';
+              e.target.style.borderColor = '#8b5cf6';
+            }}
+            onBlur={e => {
+              e.target.style.background = 'rgba(60, 60, 60, 0.8)';
+              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            }}
           />
         </div>
         {currentPage === 'notes' && (
-          <button className="add-note-btn" onClick={openNewNotePopup}>
+          <button 
+            className="border-none rounded-full px-5 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+            style={{ background: '#7c3aed' }}
+            onClick={openNewNotePopup}
+            onMouseEnter={e => e.target.style.background = '#6d28d9'}
+            onMouseLeave={e => e.target.style.background = '#7c3aed'}
+          >
             <Plus size={20} />
             Add a note...
           </button>
         )}
-        <div className="account-circle">
+        <div 
+          className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105"
+          style={{ background: '#8b5cf6' }}
+          onMouseEnter={e => e.target.style.background = '#7c3aed'}
+          onMouseLeave={e => e.target.style.background = '#8b5cf6'}
+        >
           <User size={20} />
         </div>
       </div>
 
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">
-          {sidebarOpen && <div className="logo">NOTES AI</div>}
-          <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+      <div 
+        className={`fixed left-0 top-0 h-screen border-r transition-all duration-300 z-40 ${
+          sidebarOpen ? 'w-64' : 'w-18'
+        }`}
+        style={{ 
+          background: 'rgba(30, 30, 30, 0.95)', 
+          backdropFilter: 'blur(20px)',
+          borderColor: 'rgba(255, 255, 255, 0.1)'
+        }}
+      >
+        <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+          {sidebarOpen && (
+            <div className="flex items-center gap-3 text-lg font-semibold" style={{ color: '#8b5cf6' }}>
+              NOTES AI
+            </div>
+          )}
+          <button 
+            className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
+            onMouseLeave={e => e.target.style.background = 'transparent'}
+          >
             <Menu size={20} />
           </button>
         </div>
         
-        <div className="sidebar-menu">
+        <div className="py-5">
           <button 
-            className={`menu-item ${currentPage === 'notes' ? 'active' : ''}`}
+            className={`flex items-center gap-3 py-3 px-5 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left ${
+              currentPage === 'notes' 
+                ? 'text-violet-500 border-r-3' 
+                : 'text-gray-300 hover:text-violet-500'
+            }`}
+            style={{
+              background: currentPage === 'notes' ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+              borderRightColor: currentPage === 'notes' ? '#8b5cf6' : 'transparent'
+            }}
             onClick={switchToNotes}
+            onMouseEnter={e => {
+              if (currentPage !== 'notes') {
+                e.target.style.background = 'rgba(139, 92, 246, 0.1)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (currentPage !== 'notes') {
+                e.target.style.background = 'transparent';
+              }
+            }}
           >
             <StickyNote size={20} />
             {sidebarOpen && 'Notes'}
           </button>
           <button 
-            className={`menu-item ${currentPage === 'trash' ? 'active' : ''}`}
+            className={`flex items-center gap-3 py-3 px-5 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left ${
+              currentPage === 'trash' 
+                ? 'text-violet-500 border-r-3' 
+                : 'text-gray-300 hover:text-violet-500'
+            }`}
+            style={{
+              background: currentPage === 'trash' ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+              borderRightColor: currentPage === 'trash' ? '#8b5cf6' : 'transparent'
+            }}
             onClick={switchToTrash}
+            onMouseEnter={e => {
+              if (currentPage !== 'trash') {
+                e.target.style.background = 'rgba(139, 92, 246, 0.1)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (currentPage !== 'trash') {
+                e.target.style.background = 'transparent';
+              }
+            }}
           >
             <Trash2 size={20} />
             {sidebarOpen && 'Trash'}
@@ -1477,12 +616,27 @@ useEffect(() => {
         </div>
 
         {sidebarOpen && (
-          <div className="user-info">
-            <div className="user-email">
+          <div 
+            className="absolute bottom-5 left-5 right-5 p-5 rounded-xl border"
+            style={{ 
+              background: 'rgba(40, 40, 40, 0.5)',
+              borderColor: 'rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            <div className="text-sm text-gray-400 mb-3 leading-5">
               Signed in as:<br />
               {user ? user.email : 'user@example.com'}
             </div>
-            <button className="sign-out-btn" onClick={onLogout}>
+            <button 
+              className="border rounded-lg py-3 px-4 text-red-400 text-sm cursor-pointer w-full transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+              style={{
+                background: 'rgba(220, 38, 38, 0.2)',
+                borderColor: 'rgba(220, 38, 38, 0.3)'
+              }}
+              onClick={onLogout}
+              onMouseEnter={e => e.target.style.background = 'rgba(220, 38, 38, 0.3)'}
+              onMouseLeave={e => e.target.style.background = 'rgba(220, 38, 38, 0.2)'}
+            >
               <LogOut size={16} />
               Sign Out
             </button>
@@ -1491,20 +645,38 @@ useEffect(() => {
       </div>
 
       {/* Main Content */}
-      <div className="main-content">
+      <div 
+        className={`transition-all duration-300 pt-25 px-10 pb-10 min-h-screen ${
+          sidebarOpen ? 'ml-64' : 'ml-18'
+        }`}
+        style={{ paddingTop: '100px' }}
+      >
         <div 
-          className="notes-grid"
+          className="grid gap-5 max-w-6xl mx-auto py-5"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}
           onDragOver={handleGridDragOver}
           onDrop={handleGridDrop}
         >
           {filteredNotes.map((note, index) => (
             <div
               key={note.id}
-              className={`note-card ${note.color} ${note.size} ${
-                draggedNote && draggedNote.id === note.id ? 'dragging' : ''
-              } ${
-                dragOverIndex === index ? 'drag-over' : ''
-              }`}
+              className={`
+                rounded-2xl p-5 transition-all duration-300 relative overflow-hidden flex flex-col justify-start h-full
+                ${currentPage === 'notes' ? 'cursor-grab' : 'cursor-default'}
+                ${draggedNote && draggedNote.id === note.id ? 'opacity-30 cursor-grabbing z-50' : ''}
+                ${dragOverIndex === index ? 'border-2' : ''}
+                hover:shadow-2xl
+                ${getSizeClasses(note.size)}
+              `}
+              style={{
+                background: getNoteBackground(note.color),
+                transform: draggedNote && draggedNote.id === note.id ? 'rotate(2deg) scale(0.95)' : 
+                          dragOverIndex === index ? 'translateY(-8px) scale(1.02)' : 'translateY(0)',
+                borderColor: dragOverIndex === index ? 'rgba(139, 92, 246, 0.6)' : 'transparent',
+                boxShadow: draggedNote && draggedNote.id === note.id ? '0 20px 40px rgba(0, 0, 0, 0.5)' : 
+                          dragOverIndex === index ? '0 15px 40px rgba(139, 92, 246, 0.4)' : '0 0 0 rgba(0, 0, 0, 0)',
+                transition: 'all 0.3s ease'
+              }}
               draggable={currentPage === 'notes'}
               onDragStart={(e) => handleDragStart(e, note, index)}
               onDragEnd={handleDragEnd}
@@ -1512,23 +684,53 @@ useEffect(() => {
               onDragEnter={(e) => handleDragEnter(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onClick={() => currentPage === 'notes' ? openNote(note) : null}
-              style={{ cursor: currentPage === 'trash' ? 'default' : 'grab' }}
+              onMouseEnter={e => {
+                if (!(draggedNote && draggedNote.id === note.id) && dragOverIndex !== index) {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.background = getNoteHoverBackground(note.color);
+                }
+              }}
+              onMouseLeave={e => {
+                if (!(draggedNote && draggedNote.id === note.id) && dragOverIndex !== index) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.background = getNoteBackground(note.color);
+                }
+              }}
             >
               {currentPage === 'trash' && (
-                <div className="note-card-header">
+                <div className="absolute top-4 right-4 z-10">
                   <button 
-                    className="trash-menu-btn"
+                    className="border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer transition-all duration-300"
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      color: 'rgba(255, 255, 255, 0.8)'
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowTrashMenu(showTrashMenu === note.id ? null : note.id);
+                    }}
+                    onMouseEnter={e => {
+                      e.target.style.background = 'rgba(0, 0, 0, 0.5)';
+                      e.target.style.color = '#ffffff';
+                    }}
+                    onMouseLeave={e => {
+                      e.target.style.background = 'rgba(0, 0, 0, 0.3)';
+                      e.target.style.color = 'rgba(255, 255, 255, 0.8)';
                     }}
                   >
                     <MoreVertical size={16} />
                   </button>
                   {showTrashMenu === note.id && (
-                    <div className="trash-menu">
+                    <div 
+                      className="absolute top-10 right-0 border rounded-lg py-2 min-w-40 z-20"
+                      style={{
+                        background: '#2a2a2a',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      }}
+                    >
                       <button 
-                        className="trash-menu-item"
+                        className="bg-transparent border-none w-full py-3 px-4 text-gray-200 text-sm cursor-pointer flex items-center justify-start gap-3 transition-colors duration-200 hover:bg-white/10"
                         onClick={(e) => {
                           e.stopPropagation();
                           restoreNote(note.id);
@@ -1538,11 +740,13 @@ useEffect(() => {
                         Restore
                       </button>
                       <button 
-                        className="trash-menu-item delete"
+                        className="bg-transparent border-none w-full py-3 px-4 text-red-400 text-sm cursor-pointer flex items-center justify-start gap-3 transition-colors duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           permanentlyDeleteNote(note.id);
                         }}
+                        onMouseEnter={e => e.target.style.background = 'rgba(220, 38, 38, 0.1)'}
+                        onMouseLeave={e => e.target.style.background = 'transparent'}
                       >
                         <Trash2 size={16} />
                         Remove from trash
@@ -1552,36 +756,62 @@ useEffect(() => {
                 </div>
               )}
               <div>
-                <h3 className="note-title">{note.title}</h3>
+                <h3 className="text-xl font-bold mb-4 text-gray-200 leading-tight">{note.title}</h3>
                 {note.content && (
                   <div 
-                    className="note-content-preview"
+                    className="flex-1 mb-4 overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: note.size === 'small' ? 5 : note.size === 'medium' ? 10 : 16
+                    }}
                     dangerouslySetInnerHTML={{ 
-                      __html: (note.content || '').replace(/<img[^>]*>/gi, '') // Remove images for card preview
+                      __html: (note.content || '').replace(/<img[^>]*>/gi, '')
                     }}
                   />
                 )}
               </div>
               {Array.isArray(note.keywords) && note.keywords.length > 0 && (
-                <div className="note-keywords">
+                <div className="mt-auto pb-2">
                   {note.keywords.map((keyword, index) => (
-                    <span key={index} className="keyword-tag">
+                    <span 
+                      key={index} 
+                      className="inline-block text-gray-200 border rounded-lg px-3 py-1 text-xs mr-2 mb-1 mt-1 transition-colors duration-200 whitespace-nowrap"
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        borderColor: '#444'
+                      }}
+                    >
                       {keyword}
                     </span>
                   ))}
                 </div>
               )}
               {(() => {
-  const images = extractImageSrcs(note.content, 4);
-  if (images.length === 0) return null;
-  return (
-    <div className={`note-images-collage images-${images.length}`}>
-      {images.map((src, idx) => (
-        <img key={idx} src={src} alt="note" />
-      ))}
-    </div>
-  );
-})()}
+                const images = extractImageSrcs(note.content, 4);
+                if (images.length === 0) return null;
+                return (
+                  <div className={`flex gap-1.5 mt-2.5 w-full justify-start items-center`}>
+                    {images.map((src, idx) => (
+                      <img 
+                        key={idx} 
+                        src={src} 
+                        alt="note" 
+                        className={`rounded-lg object-cover shadow-sm ${
+                          images.length === 1 ? 'w-full h-20' :
+                          images.length === 2 ? 'w-1/2 h-16' :
+                          images.length === 3 ? 'w-1/3 h-14' :
+                          'w-1/4 h-12'
+                        }`}
+                        style={{
+                          background: '#181818',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -1589,85 +819,142 @@ useEffect(() => {
 
       {/* New Note Popup */}
       {showNewNotePopup && (
-        <div className="note-popup-overlay" onClick={() => setShowNewNotePopup(false)}>
-          <div className="note-popup" onClick={e => e.stopPropagation()}>
-            <div className="note-popup-header">
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-5"
+          style={{ 
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)' 
+          }}
+          onClick={() => setShowNewNotePopup(false)}
+        >
+          <div 
+            className="rounded-2xl p-6 w-full max-w-4xl border relative flex flex-col box-border overflow-hidden"
+            style={{ 
+              background: '#2a2a2a',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              height: 'min(85vh, 750px)',
+              maxHeight: '85vh'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
               <input
                 type="text"
-                className="note-title-input"
+                className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4"
                 value={newNoteDraft.title}
                 onChange={e => setNewNoteDraft({ ...newNoteDraft, title: e.target.value })}
                 placeholder="Note title..."
               />
-              <div className="popup-actions">
+              <div className="flex gap-2">
                 <button
-                  className="popup-btn"
+                  className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
+                  style={{ background: 'rgba(255, 255, 255, 0.1)' }}
                   onClick={() => setShowNewNotePopup(false)}
                   title="Close"
+                  onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                  onMouseLeave={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
                 >
                   <X size={16} />
                 </button>
               </div>
             </div>
+            
             {/* Color Picker */}
-            <div className="color-picker">
-              <span className="color-picker-label">Color:</span>
+            <div className="flex gap-2 items-center mb-4">
+              <span className="text-sm text-gray-300 mr-2 font-medium">Color:</span>
               {['purple', 'teal', 'blue', 'green', 'orange', 'red', 'yellow', 'brown', 'indigo'].map((color) => (
                 <div
                   key={color}
-                  className={`color-option ${color} ${newNoteDraft.color === color ? 'selected' : ''}`}
+                  className="w-8 h-8 rounded-full cursor-pointer border-3 transition-all duration-300 relative hover:scale-110"
+                  style={{
+                    background: getColorPickerBackground(color),
+                    borderColor: newNoteDraft.color === color ? '#ffffff' : 'transparent',
+                    transform: newNoteDraft.color === color ? 'scale(1.15)' : 'scale(1)'
+                  }}
                   onClick={() => setNewNoteDraft({ ...newNoteDraft, color })}
                   title={color.charAt(0).toUpperCase() + color.slice(1)}
-                />
+                >
+                  {newNoteDraft.color === color && (
+                    <span 
+                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-sm font-bold"
+                      style={{ textShadow: '0 0 3px rgba(0, 0, 0, 0.5)' }}
+                    >
+                      ✓
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
+            
             {/* Keywords */}
             <input
               type="text"
-              className="note-title-input"
+              className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500"
               value={newNoteDraft.keywords}
               onChange={e => setNewNoteDraft({ ...newNoteDraft, keywords: e.target.value })}
               placeholder="Keywords (comma separated)..."
-              style={{ marginBottom: 12 }}
             />
-            {/* Formatting Toolbar BELOW the content box */}
-            <div>
+            
+            {/* Content Editor */}
+            <div className="flex-1 flex flex-col">
               <div
                 ref={newNoteTextareaRef}
-                className="note-content-editable"
+                className="note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1"
                 contentEditable={true}
                 suppressContentEditableWarning={true}
                 onInput={e => setNewNoteDraft({ ...newNoteDraft, content: e.currentTarget.innerHTML })}
                 data-placeholder="Start writing your note here..."
-                style={{ minHeight: 500, maxHeight: 600, outline: 'none', height: 500, overflowY: 'auto' }}
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  minHeight: '350px',
+                  maxHeight: 'calc(85vh - 250px)',
+                  color: '#cccccc'
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = '#8b5cf6';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                }}
               />
-              <div className="popup-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+              <div className="flex items-center justify-end mt-2">
                 <button
                   type="button"
-                  className="format-btn"
+                  className="border-none rounded-md p-2 text-gray-300 cursor-pointer transition-all duration-300 mr-2 flex items-center text-xs"
                   title="Insert Image"
                   onClick={() => handleInsertImage(newNoteTextareaRef, html => setNewNoteDraft(d => ({ ...d, content: html })))}
                   style={{
-                    marginRight: 8,
-                    padding: '8px',        // Match .format-btn
-                    fontSize: '13px',      // Match icon size
-                    height: '32px',        // Ensures same height as formatting buttons
-                    display: 'flex',
-                    alignItems: 'center',
-                    boxSizing: 'border-box'
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    height: '32px'
+                  }}
+                  onMouseEnter={e => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.target.style.color = '#ffffff';
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.color = '#cccccc';
                   }}
                 >
                   🖼️ Insert Image
                 </button>
                 <FormattingToolbar editorRef={newNoteTextareaRef} />
                 <button
-                  className="open-ai-btn"
+                  className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 ml-6 mr-2 hover:-translate-y-0.5"
                   style={{
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                    marginLeft: 24,
-                    marginRight: 8
+                    boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
                   }}
                   onClick={saveNewNote}
+                  onMouseEnter={e => {
+                    e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
+                  }}
                 >
                   Save
                 </button>
@@ -1677,30 +964,58 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Note Popup */}
+      {/* Edit Note Popup */}
       {selectedNote && (
-        <div className="note-popup-overlay" onClick={closeNotePopup}>
-          <div className="note-popup edit-mode" onClick={e => e.stopPropagation()}>
-            <div className="note-popup-header">
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-5"
+          style={{ 
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)' 
+          }}
+          onClick={closeNotePopup}
+        >
+          <div 
+            className="rounded-2xl p-6 w-full max-w-4xl border relative flex flex-col box-border overflow-hidden"
+            style={{ 
+              background: '#2a2a2a',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              height: 'min(90vh, 800px)',
+              maxHeight: '90vh'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
               <input
                 type="text"
-                className="note-title-input"
+                className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4"
                 value={selectedNote.title}
                 onChange={(e) => updateNote(selectedNote.id, 'title', e.target.value)}
                 placeholder="Note title..."
               />
-              <div className="popup-actions">
+              <div className="flex gap-2">
                 <button 
-                  className="popup-btn delete"
+                  className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
+                  style={{ background: 'rgba(255, 255, 255, 0.1)' }}
                   onClick={() => deleteNote(selectedNote.id)}
                   title="Delete note"
+                  onMouseEnter={e => {
+                    e.target.style.background = 'rgba(220, 38, 38, 0.3)';
+                    e.target.style.color = '#ff6b6b';
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.target.style.color = '#ffffff';
+                  }}
                 >
                   <Trash2 size={16} />
                 </button>
                 <button 
-                  className="popup-btn"
+                  className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
+                  style={{ background: 'rgba(255, 255, 255, 0.1)' }}
                   onClick={closeNotePopup}
                   title="Close"
+                  onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                  onMouseLeave={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
                 >
                   <X size={16} />
                 </button>
@@ -1708,22 +1023,36 @@ useEffect(() => {
             </div>
 
             {/* Color Picker */}
-            <div className="color-picker">
-              <span className="color-picker-label">Color:</span>
+            <div className="flex gap-2 items-center mb-4">
+              <span className="text-sm text-gray-300 mr-2 font-medium">Color:</span>
               {['purple', 'teal', 'blue', 'green', 'orange', 'red', 'yellow', 'brown', 'indigo'].map((color) => (
                 <div
                   key={color}
-                  className={`color-option ${color} ${selectedNote.color === color ? 'selected' : ''}`}
+                  className="w-8 h-8 rounded-full cursor-pointer border-3 transition-all duration-300 relative hover:scale-110"
+                  style={{
+                    background: getColorPickerBackground(color),
+                    borderColor: selectedNote.color === color ? '#ffffff' : 'transparent',
+                    transform: selectedNote.color === color ? 'scale(1.15)' : 'scale(1)'
+                  }}
                   onClick={() => updateNote(selectedNote.id, 'color', color)}
                   title={color.charAt(0).toUpperCase() + color.slice(1)}
-                />
+                >
+                  {selectedNote.color === color && (
+                    <span 
+                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-sm font-bold"
+                      style={{ textShadow: '0 0 3px rgba(0, 0, 0, 0.5)' }}
+                    >
+                      ✓
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
             
             {/* Keywords Editor */}
             <input
               type="text"
-              className="note-keywords-input"
+              className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500"
               value={Array.isArray(selectedNote.keywords) ? selectedNote.keywords.join(', ') : selectedNote.keywords}
               onChange={e => {
                 updateNote(
@@ -1733,39 +1062,69 @@ useEffect(() => {
                 );
               }}
               placeholder="Keywords (comma separated)..."
-              style={{ marginBottom: 12 }}
             />
-            {/* Formatting Toolbar BELOW the content box */}
-            <div>
+            
+            {/* Content Editor */}
+            <div className="flex-1 flex flex-col">
               <div
                 ref={textareaRef}
-                className="note-content-editable"
+                className="note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1"
                 contentEditable={true}
                 suppressContentEditableWarning={true}
                 onInput={e => updateNote(selectedNote.id, 'content', e.currentTarget.innerHTML)}
                 data-placeholder="Start writing your note here..."
-                style={{ minHeight: 500, maxHeight: 600, outline: 'none', height: 500, overflowY: 'auto' }}
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  minHeight: '400px',
+                  maxHeight: 'calc(90vh - 270px)',
+                  color: '#cccccc'
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = '#8b5cf6';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                }}
               />
-              <div className="popup-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+              <div className="flex items-center justify-end mt-0">
                 <button
                   type="button"
-                  className="format-btn"
+                  className="border-none rounded-md p-2 text-gray-300 cursor-pointer transition-all duration-300 mr-2 flex items-center text-xs"
                   title="Insert Image"
                   onClick={() => handleInsertImage(textareaRef, html => updateNote(selectedNote.id, 'content', html))}
-                  style={{ marginRight: 8 }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    height: '32px'
+                  }}
+                  onMouseEnter={e => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.target.style.color = '#ffffff';
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.color = '#cccccc';
+                  }}
                 >
                   🖼️ Insert Image
                 </button>
                 <FormattingToolbar editorRef={textareaRef} />
                 <button
-                  className="open-ai-btn"
+                  className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 ml-6 mr-2 hover:-translate-y-0.5"
                   style={{
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                    marginLeft: 24,
-                    marginRight: 8
+                    boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
+                  }}
+                  onMouseEnter={e => {
+                    e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
                   }}
                 >
-                  <Sparkles size={18} style={{ marginRight: 8 }} />
+                  <Sparkles size={18} />
                   Open with AI
                 </button>
               </div>
@@ -1774,34 +1133,126 @@ useEffect(() => {
         </div>
       )}
 
-      <FormattingToolbar editorRef={textareaRef} />
+      {/* Image Preview Popup */}
+      {imagePopup.open && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/80"
+          style={{ backdropFilter: 'blur(6px)' }}
+          onClick={() => setImagePopup({ open: false, src: '' })}
+        >
+          <div
+            className="relative bg-transparent flex flex-col items-center justify-center"
+            style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={imagePopup.src}
+              alt="Full"
+              className="rounded-xl shadow-2xl max-h-[80vh] max-w-[80vw] object-contain"
+              style={{ background: '#181818' }}
+            />
+            <button
+              className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-gray-200 rounded-full p-2 transition-all"
+              style={{ zIndex: 10 }}
+              onClick={() => setImagePopup({ open: false, src: '' })}
+              title="Close"
+            >
+              <X size={22} />
+            </button>
+            <a
+              href={imagePopup.src}
+              download="note-image.jpg"
+              className="absolute top-3 right-14 bg-black/60 hover:bg-black/80 text-gray-200 rounded-full p-2 transition-all"
+              style={{ zIndex: 10 }}
+              title="Download"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 16.5a1 1 0 0 1-1-1V6.91l-3.29 3.3a1 1 0 1 1-1.42-1.42l5-5a1 1 0 0 1 1.42 0l5 5a1 1 0 1 1-1.42 1.42L13 6.91V15.5a1 1 0 0 1-1 1Zm-7 3a1 1 0 0 1 0-2h14a1 1 0 1 1 0 2H5Z"/></svg>
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const FormattingToolbar = ({ editorRef }) => (
-  <div className="formatting-toolbar">
-    <button type="button" title="Bold" onMouseDown={e => { e.preventDefault(); document.execCommand('bold'); editorRef.current.focus(); }}>
-      <Bold size={16} />
-    </button>
-    <button type="button" title="Italic" onMouseDown={e => { e.preventDefault(); document.execCommand('italic'); editorRef.current.focus(); }}>
-      <Italic size={16} />
-    </button>
-    <button type="button" title="Underline" onMouseDown={e => { e.preventDefault(); document.execCommand('underline'); editorRef.current.focus(); }}>
-      <Underline size={16} />
-    </button>
-    <button type="button" title="Strikethrough" onMouseDown={e => { e.preventDefault(); document.execCommand('strikeThrough'); editorRef.current.focus(); }}>
-      <Strikethrough size={16} />
-    </button>
-    <button type="button" title="Bullet List" onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); editorRef.current.focus(); }}>
-      <List size={16} />
-    </button>
-    <button type="button" title="Numbered List" onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); editorRef.current.focus(); }}>
-      <ListOrdered size={16} />
-    </button>
-  </div>
-);
+const FormattingToolbar = ({ editorRef }) => {
+  const handleFormatting = (cmd) => {
+    const editor = editorRef.current;
+    if (!editor) return;
 
+    // Handle list commands specially
+    if (cmd === 'insertUnorderedList' || cmd === 'insertOrderedList') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // If there's selected text, apply list to it
+        if (!range.collapsed) {
+          document.execCommand(cmd, false, null);
+        } else {
+          // If no selection, create a new list item
+          const listType = cmd === 'insertUnorderedList' ? 'ul' : 'ol';
+          const listItem = document.createElement('li');
+          listItem.innerHTML = '&nbsp;'; // Non-breaking space to make it clickable
+          
+          const list = document.createElement(listType);
+          list.appendChild(listItem);
+          
+          range.insertNode(list);
+          
+          // Position cursor inside the list item
+          const newRange = document.createRange();
+          newRange.setStart(listItem, 0);
+          newRange.setEnd(listItem, 0);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
+    } else {
+      // Handle other formatting commands normally
+      document.execCommand(cmd, false, null);
+    }
+    
+    editor.focus();
+  };
+
+  return (
+    <div className="flex gap-2">
+      {[
+        { icon: Bold, cmd: 'bold', title: 'Bold' },
+        { icon: Italic, cmd: 'italic', title: 'Italic' },
+        { icon: Underline, cmd: 'underline', title: 'Underline' },
+        { icon: Strikethrough, cmd: 'strikeThrough', title: 'Strikethrough' },
+        { icon: List, cmd: 'insertUnorderedList', title: 'Bullet List' },
+        { icon: ListOrdered, cmd: 'insertOrderedList', title: 'Numbered List' }
+      ].map(({ icon: Icon, cmd, title }) => (
+        <button 
+          key={cmd}
+          type="button" 
+          title={title}
+          className="border-none rounded-md p-2 text-gray-300 cursor-pointer transition-all duration-300 flex items-center"
+          style={{ background: 'rgba(255, 255, 255, 0.08)' }}
+          onMouseDown={e => { 
+            e.preventDefault(); 
+            handleFormatting(cmd);
+          }}
+          onMouseEnter={e => {
+            e.target.style.background = 'rgba(139, 92, 246, 0.15)';
+            e.target.style.color = '#8b5cf6';
+          }}
+          onMouseLeave={e => {
+            e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+            e.target.style.color = '#cccccc';
+          }}
+        >
+          <Icon size={16} />
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// Helper functions
 function extractImageSrcs(html, max = 4) {
   if (!html) return [];
   const div = document.createElement('div');
@@ -1810,7 +1261,6 @@ function extractImageSrcs(html, max = 4) {
   return imgs.map(img => img.src);
 }
 
-// Add this helper function at the top (outside the component)
 function insertImageAtCaret(editorRef, imageUrl) {
   const editor = editorRef.current;
   if (!editor) return;
@@ -1824,7 +1274,6 @@ function insertImageAtCaret(editorRef, imageUrl) {
   img.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
 
   const sel = window.getSelection();
-  // Check if selection is inside the editor
   if (
     sel &&
     sel.rangeCount > 0 &&
@@ -1833,38 +1282,14 @@ function insertImageAtCaret(editorRef, imageUrl) {
     let range = sel.getRangeAt(0);
     range.deleteContents();
     range.insertNode(img);
-    // Move caret after image
     range.setStartAfter(img);
     range.setEndAfter(img);
     sel.removeAllRanges();
     sel.addRange(range);
   } else {
-    // Insert at the start of the content
     editor.insertBefore(img, editor.firstChild);
   }
 }
-
-// ...inside NotesApp component...
-
-// Add this handler inside NotesApp (before return)
-const handleInsertImage = async (editorRef, setContent) => {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    // Only allow images < 1MB
-    // if (file.size > 1024 * 1024) {
-    //   alert('Please select an image smaller than 1MB.');
-    //   return;
-    // }
-    const resizedDataUrl = await resizeImage(file);
-    insertImageAtCaret(editorRef, resizedDataUrl);
-    setContent(editorRef.current.innerHTML);
-  };
-  input.click();
-};
 
 function resizeImage(file, maxWidth = 800, maxHeight = 600, quality = 0.7) {
   return new Promise((resolve) => {
@@ -1884,6 +1309,63 @@ function resizeImage(file, maxWidth = 800, maxHeight = 600, quality = 0.7) {
     };
     reader.readAsDataURL(file);
   });
+}
+
+// Note background functions
+function getNoteBackground(color) {
+  const backgrounds = {
+    teal: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #0f766e 100%)',
+    brown: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #a16207 100%)',
+    yellow: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #d97706 100%)',
+    blue: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #1e40af 100%)',
+    purple: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #7c3aed 100%)',
+    green: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #059669 100%)',
+    orange: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #ea580c 100%)',
+    red: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #dc2626 100%)',
+    indigo: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #4f46e5 100%)'
+  };
+  return backgrounds[color] || backgrounds.purple;
+}
+
+function getNoteHoverBackground(color) {
+  const backgrounds = {
+    teal: 'linear-gradient(45deg, #0f766e 0%, #0f766e 60%, #134e4a 80%, #242424 100%)',
+    brown: 'linear-gradient(45deg, #a16207 0%, #a16207 60%, #b45309 80%, #242424 100%)',
+    yellow: 'linear-gradient(45deg, #d97706 0%, #d97706 60%, #ea580c 80%, #242424 100%)',
+    blue: 'linear-gradient(45deg, #1e40af 0%, #1e40af 60%, #1e3a8a 80%, #242424 100%)',
+    purple: 'linear-gradient(45deg, #7c3aed 0%, #7c3aed 60%, #6b21a8 80%, #242424 100%)',
+    green: 'linear-gradient(45deg, #059669 0%, #059669 60%, #047857 80%, #242424 100%)',
+    orange: 'linear-gradient(45deg, #ea580c 0%, #ea580c 60%, #c2410c 80%, #242424 100%)',
+    red: 'linear-gradient(45deg, #dc2626 0%, #dc2626 60%, #b91c1c 80%, #242424 100%)',
+    indigo: 'linear-gradient(45deg, #4f46e5 0%, #4f46e5 60%, #4338ca 80%, #242424 100%)'
+  };
+  return backgrounds[color] || backgrounds.purple;
+}
+
+// Size classes
+function getSizeClasses(size) {
+  const sizeMap = {
+    small: 'row-span-1',
+    medium: 'row-span-2', 
+    large: 'row-span-3'
+  };
+  return sizeMap[size] || sizeMap.medium;
+}
+
+// Color picker backgrounds
+function getColorPickerBackground(color) {
+  const backgrounds = {
+    teal: 'linear-gradient(45deg, #0f766e, #14b8a6)',
+    brown: 'linear-gradient(45deg, #a16207, #d97706)',
+    yellow: 'linear-gradient(45deg, #d97706, #f59e0b)',
+    blue: 'linear-gradient(45deg, #1e40af, #3b82f6)',
+    purple: 'linear-gradient(45deg, #8b5cf6, #7c3aed)',
+    green: 'linear-gradient(45deg, #059669, #10b981)',
+    orange: 'linear-gradient(45deg, #ea580c, #f97316)',
+    red: 'linear-gradient(45deg, #dc2626, #ef4444)',
+    indigo: 'linear-gradient(45deg, #4f46e5, #6366f1)'
+  };
+  return backgrounds[color] || backgrounds.purple;
 }
 
 export default NotesApp;

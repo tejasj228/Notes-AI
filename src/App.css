@@ -1,5 +1,10 @@
 /* App.css - Main App Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* You can import your Auth.css here if needed */
+@import './components/Auth.css';
 * {
   margin: 0;
   padding: 0;

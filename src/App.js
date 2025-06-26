@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import NotesApp from './components/NotesApp';
-import './App.css';
-
+import './index.css';
 const App = () => {
   const [currentView, setCurrentView] = useState('login'); // 'login', 'signup', 'notes'
   const [user, setUser] = useState(null);
@@ -117,8 +116,8 @@ const App = () => {
     <div className="app">
       {/* Transition Overlay */}
       {isTransitioning && (
-        <div className="transition-overlay">
-          <div className="transition-spinner"></div>
+        <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse" style={{ zIndex: 9999 }}>
+          <div className="w-12 h-12 rounded-full animate-spin" style={{ border: '3px solid rgba(255, 255, 255, 0.3)', borderTop: '3px solid white' }}></div>
         </div>
       )}
       
