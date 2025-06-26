@@ -1129,8 +1129,8 @@ useEffect(() => {
           background: #2a2a2a;
           border-radius: 16px;
           padding: 32px;
-          width: 750px;         /* Fixed width */
-          height: 600px;        /* Fixed height */
+          width: 750px;         
+          height: 800px;        /* Default for new note popup */
           max-width: 90vw;
           max-height: 90vh;
           border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1139,6 +1139,16 @@ useEffect(() => {
           flex-direction: column;
           box-sizing: border-box;
           overflow: hidden;
+        }
+
+        /* Only for edit note popup: make popup and content editor larger */
+        .note-popup.edit-mode {
+          height: 900px !important;
+        }
+        .note-popup.edit-mode .note-content-editable {
+          min-height: 550px !important;
+          height: 550px !important;
+          max-height: 600px;
         }
 
         .note-popup-header {
@@ -1360,8 +1370,8 @@ useEffect(() => {
           color: #fff;
           font-size: 14px;
           line-height: 1.6;
-          min-height: 200px;
-          max-height: 600px;
+          min-height: 500px;    /* Increased from 200px */
+          max-height: 600px;    /* Keep max-height for scroll */
           font-family: inherit;
           margin-bottom: 16px;
           overflow-y: auto;
@@ -1629,16 +1639,33 @@ useEffect(() => {
                 suppressContentEditableWarning={true}
                 onInput={e => setNewNoteDraft({ ...newNoteDraft, content: e.currentTarget.innerHTML })}
                 data-placeholder="Start writing your note here..."
-                style={{ minHeight: 350, maxHeight: 350, outline: 'none', height: 350, overflowY: 'auto' }}
+                style={{ minHeight: 500, maxHeight: 600, outline: 'none', height: 500, overflowY: 'auto' }}
               />
               <div className="popup-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="format-btn"
+                  title="Insert Image"
+                  onClick={() => handleInsertImage(newNoteTextareaRef, html => setNewNoteDraft(d => ({ ...d, content: html })))}
+                  style={{
+                    marginRight: 8,
+                    padding: '8px',        // Match .format-btn
+                    fontSize: '13px',      // Match icon size
+                    height: '32px',        // Ensures same height as formatting buttons
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  🖼️ Insert Image
+                </button>
                 <FormattingToolbar editorRef={newNoteTextareaRef} />
                 <button
                   className="open-ai-btn"
                   style={{
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                     marginLeft: 24,
-                    marginRight: 8 // Push button to the right edge, adjust as needed
+                    marginRight: 8
                   }}
                   onClick={saveNewNote}
                 >
@@ -1653,7 +1680,7 @@ useEffect(() => {
       {/* Note Popup */}
       {selectedNote && (
         <div className="note-popup-overlay" onClick={closeNotePopup}>
-          <div className="note-popup" onClick={e => e.stopPropagation()}>
+          <div className="note-popup edit-mode" onClick={e => e.stopPropagation()}>
             <div className="note-popup-header">
               <input
                 type="text"
@@ -1717,16 +1744,25 @@ useEffect(() => {
                 suppressContentEditableWarning={true}
                 onInput={e => updateNote(selectedNote.id, 'content', e.currentTarget.innerHTML)}
                 data-placeholder="Start writing your note here..."
-                style={{ minHeight: 350, maxHeight: 350, outline: 'none', height: 350, overflowY: 'auto' }}
+                style={{ minHeight: 500, maxHeight: 600, outline: 'none', height: 500, overflowY: 'auto' }}
               />
               <div className="popup-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="format-btn"
+                  title="Insert Image"
+                  onClick={() => handleInsertImage(textareaRef, html => updateNote(selectedNote.id, 'content', html))}
+                  style={{ marginRight: 8 }}
+                >
+                  🖼️ Insert Image
+                </button>
                 <FormattingToolbar editorRef={textareaRef} />
                 <button
                   className="open-ai-btn"
                   style={{
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                     marginLeft: 24,
-                    marginRight: 8 // Push button to the right edge, adjust as needed
+                    marginRight: 8
                   }}
                 >
                   <Sparkles size={18} style={{ marginRight: 8 }} />
@@ -1772,6 +1808,82 @@ function extractImageSrcs(html, max = 4) {
   div.innerHTML = html;
   const imgs = Array.from(div.querySelectorAll('img')).slice(0, max);
   return imgs.map(img => img.src);
+}
+
+// Add this helper function at the top (outside the component)
+function insertImageAtCaret(editorRef, imageUrl) {
+  const editor = editorRef.current;
+  if (!editor) return;
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.style.maxWidth = '96%';
+  img.style.maxHeight = '300px';
+  img.style.display = 'block';
+  img.style.margin = '16px auto';
+  img.style.borderRadius = '10px';
+  img.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+
+  const sel = window.getSelection();
+  // Check if selection is inside the editor
+  if (
+    sel &&
+    sel.rangeCount > 0 &&
+    editor.contains(sel.anchorNode)
+  ) {
+    let range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    // Move caret after image
+    range.setStartAfter(img);
+    range.setEndAfter(img);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    // Insert at the start of the content
+    editor.insertBefore(img, editor.firstChild);
+  }
+}
+
+// ...inside NotesApp component...
+
+// Add this handler inside NotesApp (before return)
+const handleInsertImage = async (editorRef, setContent) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Only allow images < 1MB
+    // if (file.size > 1024 * 1024) {
+    //   alert('Please select an image smaller than 1MB.');
+    //   return;
+    // }
+    const resizedDataUrl = await resizeImage(file);
+    insertImageAtCaret(editorRef, resizedDataUrl);
+    setContent(editorRef.current.innerHTML);
+  };
+  input.click();
+};
+
+function resizeImage(file, maxWidth = 800, maxHeight = 600, quality = 0.7) {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        let canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d');
+        let ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export default NotesApp;
