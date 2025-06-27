@@ -1003,20 +1003,18 @@ return (
             </div>
           )}
           {(() => {
-            const images = extractImageSrcs(note.content, 4);
+            // Always limit to 2 images
+            const images = extractImageSrcs(note.content, 2);
             if (images.length === 0) return null;
             return (
-              <div className={`flex gap-1.5 mt-2.5 w-full justify-start items-center`}>
-                {images.map((src, idx) => (
+              <div className="flex gap-1.5 mt-2.5 w-full justify-start items-center">
+                {images.slice(0, 2).map((src, idx) => (
                   <img 
                     key={idx} 
                     src={src} 
                     alt="note" 
                     className={`rounded-lg object-cover shadow-sm ${
-                      images.length === 1 ? 'w-full h-20' :
-                      images.length === 2 ? 'w-1/2 h-16' :
-                      images.length === 3 ? 'w-1/3 h-14' :
-                      'w-1/4 h-12'
+                      images.length === 1 ? 'w-full h-20' : 'w-1/2 h-16'
                     }`}
                     style={{
                       background: '#181818',
@@ -1171,12 +1169,17 @@ return (
     onClick={() => setShowNewNotePopup(false)}
   >
     <div 
-      className="rounded-2xl p-6 w-full max-w-4xl border relative flex flex-col box-border overflow-hidden"
+      className="rounded-2xl p-6 border relative flex flex-col box-border overflow-hidden"
       style={{ 
         background: '#2a2a2a',
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        height: 'min(85vh, 750px)',
-        maxHeight: '85vh'
+        width: '900px',         // <--- wider
+        height: '800px',        // <--- taller
+        maxWidth: '98vw',
+        maxHeight: '98vh',
+        minWidth: '340px',
+        minHeight: '440px',
+        display: 'flex'
       }}
       onClick={e => e.stopPropagation()}
     >
@@ -1236,17 +1239,10 @@ return (
         value={newNoteDraft.keywords}
         onChange={e => {
           let value = e.target.value;
-          let keywords = value.split(',').map(k => k.trim());
+          let keywords = value.split(',').map(k => k.trim())
+          .filter(Boolean)
+          .slice(0, 3); // Enforce max 3
 
-          // Count only non-empty keywords
-          const nonEmpty = keywords.filter(Boolean);
-
-          // If more than 3 non-empty, block further input
-          if (nonEmpty.length > 3) {
-            // Remove the last entered keyword
-            keywords = keywords.slice(0, 3);
-            value = keywords.join(', ');
-          }
           setNewNoteDraft({ ...newNoteDraft, keywords: value });
         }}
         placeholder="Keywords (comma separated)..."
@@ -1256,20 +1252,35 @@ return (
       </div>
       
       {/* Content Editor */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <div
           ref={newNoteTextareaRef}
           className="note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1"
           contentEditable={true}
           suppressContentEditableWarning={true}
           onInput={e => setNewNoteDraft({ ...newNoteDraft, content: e.currentTarget.innerHTML })}
+          onPaste={e => {
+            // If image is present in clipboard, allow default paste (browser will handle image)
+            if (
+              e.clipboardData &&
+              Array.from(e.clipboardData.items).some(item => item.type.startsWith('image/'))
+            ) {
+              return;
+            }
+            // Otherwise, paste as plain text
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+          }}
           data-placeholder="Start writing your note here..."
-          style={{ 
+          style={{
             background: 'rgba(255, 255, 255, 0.05)',
             borderColor: 'rgba(255, 255, 255, 0.1)',
-            minHeight: '350px',
-            maxHeight: 'calc(85vh - 250px)',
-            color: '#cccccc'
+            minHeight: '440px',   // <--- bigger
+            maxHeight: '700px',   // <--- bigger
+            color: '#cccccc',
+            overflowY: 'auto',
+            flex: 1
           }}
           onFocus={e => {
             e.target.style.borderColor = '#8b5cf6';
@@ -1285,7 +1296,10 @@ return (
             type="button"
             className="border-none rounded-md p-2 text-gray-300 cursor-pointer transition-all duration-300 mr-2 flex items-center text-xs"
             title="Insert Image"
-            onClick={() => handleInsertImage(newNoteTextareaRef, html => setNewNoteDraft(d => ({ ...d, content: html })))}
+            onClick={() => handleInsertImage(
+  newNoteTextareaRef,
+  html => setNewNoteDraft(d => ({ ...d, content: html }))
+)}
             style={{
               background: 'rgba(255, 255, 255, 0.08)',
               height: '32px'
@@ -1334,12 +1348,17 @@ return (
     onClick={closeNotePopup}
   >
     <div 
-      className="rounded-2xl p-6 w-full max-w-4xl border relative flex flex-col box-border overflow-hidden"
+      className="rounded-2xl p-6 border relative flex flex-col box-border overflow-hidden"
       style={{ 
         background: '#2a2a2a',
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        height: 'min(90vh, 800px)',
-        maxHeight: '90vh'
+        width: '900px',         // <--- wider
+        height: '800px',        // <--- taller
+        maxWidth: '98vw',
+        maxHeight: '98vh',
+        minWidth: '340px',
+        minHeight: '440px',
+        display: 'flex'
       }}
       onClick={e => e.stopPropagation()}
     >
@@ -1406,44 +1425,30 @@ return (
       <input
         type="text"
         className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500"
-        value={
-    typeof selectedNote.keywords === 'string'
-      ? selectedNote.keywords
-      : Array.isArray(selectedNote.keywords)
-        ? selectedNote.keywords.join(', ')
-        : ''
+        value={typeof selectedNote.keywords === 'string'
+    ? selectedNote.keywords
+    : Array.isArray(selectedNote.keywords)
+      ? selectedNote.keywords.join(', ')
+      : ''
   }
         onChange={e => {
-          let value = e.target.value;
-          let keywords = value.split(',').map(k => k.trim());
-          const nonEmpty = keywords.filter(Boolean);
-
-          if (nonEmpty.length > 3) {
-            // Keep only first 3 non-empty keywords, but preserve the structure for commas
-            const validKeywords = [];
-            let count = 0;
-            for (let keyword of keywords) {
-              if (keyword && count < 3) {
-                validKeywords.push(keyword);
-                count++;
-              } else if (!keyword) {
-                validKeywords.push(keyword); // Keep empty strings (for commas)
-              }
-            }
-            value = validKeywords.join(', ');
-          }
-
-          // Update the selectedNote state directly for immediate UI feedback
+          // Store as a simple string during editing, no validation here
           setSelectedNote(prev => ({
             ...prev,
-            keywords: value
+            keywords: e.target.value
           }));
-
-          // Update the notes array with the processed keywords (max 3)
+        }}
+        onBlur={e => {
+          // On blur, convert to array and validate (max 3)
+          let keywords = e.target.value
+            .split(',')
+            .map(k => k.trim())
+            .filter(Boolean)
+            .slice(0, 3);
           updateNote(
             selectedNote.id,
             'keywords',
-            keywords.filter(Boolean).slice(0, 3)
+            keywords
           );
         }}
         placeholder="Keywords (comma separated)..."
@@ -1453,20 +1458,35 @@ return (
       </div>
       
       {/* Content Editor */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <div
           ref={textareaRef}
           className="note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1"
           contentEditable={true}
           suppressContentEditableWarning={true}
           onInput={e => updateNote(selectedNote.id, 'content', e.currentTarget.innerHTML)}
+          onPaste={e => {
+            // If image is present in clipboard, allow default paste (browser will handle image)
+            if (
+              e.clipboardData &&
+              Array.from(e.clipboardData.items).some(item => item.type.startsWith('image/'))
+            ) {
+              return;
+            }
+            // Otherwise, paste as plain text
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+          }}
           data-placeholder="Start writing your note here..."
-          style={{ 
+          style={{
             background: 'rgba(255, 255, 255, 0.05)',
             borderColor: 'rgba(255, 255, 255, 0.1)',
-            minHeight: '400px',
-            maxHeight: 'calc(90vh - 270px)',
-            color: '#cccccc'
+            minHeight: '440px',
+            maxHeight: '700px',
+            color: '#cccccc',
+            overflowY: 'auto',
+            flex: 1
           }}
           onFocus={e => {
             e.target.style.borderColor = '#8b5cf6';
@@ -1513,8 +1533,7 @@ return (
               e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
             }}
           >
-            <Sparkles size={18} className="inline mr-2" />
-            Open with AI
+            Save
           </button>
         </div>
       </div>
@@ -1522,6 +1541,7 @@ return (
   </div>
 )}
 
+{/* Image Popup */}
 {imagePopup.open && (
   <div 
     className="fixed inset-0 flex items-center justify-center z-50 p-5"
@@ -1636,13 +1656,12 @@ return (
 export default NotesApp;
 
 // Helper: Extract image srcs from HTML
-function extractImageSrcs(html, max =  4) {
- 
+function extractImageSrcs(html, max = 2) {
   if (!html) return [];
   const div = document.createElement('div');
   div.innerHTML = html;
-  const imgs = Array.from(div.querySelectorAll('img')).slice(0, max);
-  return imgs.map(img => img.src);
+  const imgs = Array.from(div.querySelectorAll('img'));
+  return imgs.slice(0, max).map(img => img.src);
 }
 
 // Helper: Insert image at caret in contentEditable
@@ -1669,6 +1688,9 @@ function insertImageAtCaret(editorRef, imageUrl) {
   } else {
     editor.insertBefore(img, editor.firstChild);
   }
+
+
+
 }
 
 // Helper: Resize image before inserting
@@ -1682,9 +1704,10 @@ function resizeImage(file, maxWidth = 800, maxHeight = 600, quality = 0.7) {
         let ctx = canvas.getContext('2d');
         let ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
         canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
+               canvas.height = img.height * ratio;
         ctx.drawImage(img, 0,  0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/jpeg', quality));
+     
       };
       img.src = e.target.result;
     };
@@ -1708,7 +1731,6 @@ function getNoteBackground(color) {
   return backgrounds[color] || backgrounds.purple;
 }
 
-// Helper: Note hover background
 function getNoteHoverBackground(color) {
   const backgrounds = {
     teal: 'linear-gradient(45deg, #0f766e 0%, #0f766e 60%, #134e4a 80%, #242424 100%)',
