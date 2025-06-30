@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Signup from './components/Signup';
-import NotesApp from './components/NotesApp';
+import NotesApp from './NotesApp';
 import './index.css';
 const App = () => {
   const [currentView, setCurrentView] = useState('login'); // 'login', 'signup', 'notes'
