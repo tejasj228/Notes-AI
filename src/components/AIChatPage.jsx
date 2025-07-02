@@ -88,12 +88,10 @@ const AIChatPage = ({
 
   // Set note content when selectedNote changes
   useEffect(() => {
-    if (selectedNote) {
-      setNoteContent(selectedNote.content || '');
-      if (noteEditorRef.current) {
-        noteEditorRef.current.innerHTML = selectedNote.content || '';
-      }
+    if (selectedNote && noteEditorRef.current) {
+      noteEditorRef.current.innerHTML = selectedNote.content || '';
     }
+    // eslint-disable-next-line
   }, [selectedNote]);
 
   // Handle image clicks - ENABLE POPUP
@@ -371,7 +369,6 @@ const AIChatPage = ({
                 color: '#cccccc',
                 height: 'calc(100vh - 240px)'
               }}
-              // Always allow editing, even for new notes
               onFocus={e => {
                 e.target.style.borderColor = '#8b5cf6';
                 e.target.style.background = 'rgba(255, 255, 255, 0.08)';
@@ -380,8 +377,6 @@ const AIChatPage = ({
                 e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                 e.target.style.background = 'rgba(255, 255, 255, 0.05)';
               }}
-              // Set initial content for new notes
-              dangerouslySetInnerHTML={{ __html: noteContent || '' }}
             />
             
             {/* Formatting Toolbar with Image Insert */}

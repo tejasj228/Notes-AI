@@ -1,318 +1,256 @@
-# Notes AI
+# 🤖✨ AI Notes - Your Intelligent Note-Taking Companion
+
+<div align="center">
+  
+  [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-8b5cf6?style=for-the-badge)](https://ainotesai.vercel.app/)
+  [![Made with React](https://img.shields.io/badge/Made_with-React-61dafb?style=for-the-badge&logo=react)](https://reactjs.org/)
+  [![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com/)
+  [![AI Powered](https://img.shields.io/badge/AI_Powered-Gemini-4285f4?style=for-the-badge)](https://ai.google.dev/)
+</div>
+
+---
+
+## 🌟 Experience the Future of Note-Taking
+
+**AI Notes** is a revolutionary note-taking application that combines beautiful design with artificial intelligence to transform how you capture, organize, and interact with your thoughts. Built with modern web technologies, it offers an intuitive interface powered by Google's Gemini AI.
+
+### 🚀 [**Try it Live →**](https://ainotesai.vercel.app/)
+
+---
+
+## ✨ Key Features
+
+### 📝 **Smart Note Creation**
+- **Rich Text Editor** with formatting tools (Bold, Italic, Lists, etc.)
+- **Image Support** - Drag, drop, or paste images directly
+- **Auto-Save** functionality to never lose your work
+- **Customizable Colors** for visual organization
+
+### 🗂️ **Intelligent Organization**
+- **Folder System** - Organize notes into custom folders (up to 10)
+- **Smart Search** - Find notes by title, content, or keywords
+- **Drag & Drop** reordering for perfect organization
+- **Keyword Tagging** system (up to 3 per note)
+
+### 🤖 **AI-Powered Assistant**
+- **Chat with Your Notes** - Ask questions about your content
+- **Content Analysis** - Get insights and suggestions
+- **Split-Screen Interface** - Edit notes while chatting with AI
+- **Powered by Google Gemini** for intelligent responses
+
+### 🎨 **Beautiful Design**
+- **Dark Theme** with purple accents for comfortable viewing
+- **Responsive Layout** - Works perfectly on all devices
+- **Smooth Animations** and transitions throughout
+- **Glassmorphism UI** elements for a modern look
+
+### 🗃️ **Note Management**
+- **Trash System** - Safely delete and restore notes
+- **Multiple Note Sizes** - Small, Medium, and Large layouts
+- **Grid View** with masonry-style arrangement
+- **Quick Actions** - Edit, delete, or open with AI
+
+---
+
+## 🛠️ Built With Modern Technologies
 
 <div align="center">
 
-![Notes AI Logo](https://img.shields.io/badge/Notes-AI-8b5cf6?style=for-the-badge&logo=brain&logoColor=white)
-
-**The Next-Generation Note-Taking Experience with AI Integration**
-
-[![React](https://img.shields.io/badge/React-18.x-61dafb?style=flat-square&logo=react)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18.x-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
-
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-
-[🚀 Live Demo](https://ainotesai.vercel.app/) • [📖 Documentation](https://your-docs-link.com) 
+| Technology | Purpose | Version |
+|------------|---------|---------|
+| ⚛️ **React** | Frontend Framework | 18.x |
+| 🎨 **Tailwind CSS** | Styling & Design | 3.x |
+| 🤖 **Google Gemini AI** | AI Assistant | Latest |
+| ⚡ **Vercel** | Deployment Platform | - |
+| 🌐 **JavaScript ES6+** | Core Language | Latest |
 
 </div>
 
 ---
 
-## 🌟 Overview
+## 🎯 How to Use AI Notes
 
-Notes AI revolutionizes the way you create, organize, and interact with your notes. Built with modern web technologies and powered by Google's Gemini AI, it offers an intuitive, feature-rich experience that adapts to your workflow.
+### 1. **Getting Started**
+1. Visit [ainotesai.vercel.app](https://ainotesai.vercel.app/)
+2. Sign up with your email or use Google authentication
+3. Start creating your first note!
 
+### 2. **Creating Notes**
+- Click the **"Add a note..."** button
+- Choose a color and add keywords
+- Write your content with rich formatting
+- Add images by dragging, dropping, or pasting
 
----
+### 3. **Organizing Content**
+- Create folders for different topics
+- Use the search bar to find specific notes
+- Drag and drop to reorder notes
+- Tag notes with relevant keywords
 
-## ✨ Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🎨 **Beautiful Interface**
-- Modern, responsive design
-- Dark theme optimized for long sessions
-- Smooth animations and transitions
-- Glassmorphism UI elements
-- Drag & drop interactions
-
-### 🧠 **AI-Powered Assistance**
-- Integrated Google Gemini AI
-- Context-aware note analysis
-- Intelligent suggestions
-- Natural language processing
-- Real-time chat interface
-
-</td>
-<td width="50%">
-
-### 📁 **Smart Organization**
-- Color-coded folders (up to 10)
-- Flexible note sizing (Small, Medium, Large)
-- Keyword tagging system (3 per note)
-- Intuitive drag & drop reordering
-- Advanced search with filters
-
-### 🔒 **Secure & Reliable**
-- JWT-based authentication
-- End-to-end data encryption
-- Secure cloud storage
-- Real-time synchronization
-- Offline capability (coming soon)
-
-</td>
-</tr>
-</table>
+### 4. **AI Interaction**
+- Click **"Open with AI"** on any note
+- Ask questions about your content
+- Get suggestions and insights
+- Edit your note while chatting
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start for Developers
 
-<details>
-<summary><strong>🖥️ Prerequisites</strong></summary>
+Want to run this project locally? Here's how:
 
-Before you begin, ensure you have the following installed:
+### Prerequisites
+- Node.js (16.x or higher)
+- npm or yarn
+- Google Gemini API key
 
-- [Node.js](https://nodejs.org/) (v18.0.0 or higher)
-- [PostgreSQL](https://postgresql.org/) (v13.0.0 or higher)
-- [Git](https://git-scm.com/)
-- A [Google AI API key](https://makersuite.google.com/app/apikey) for Gemini integration
-
-</details>
-
-### 📦 Installation
+### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/notes-ai.git
-cd notes-ai
+git clone https://github.com/yourusername/ai-notes-app.git
 
-# Install frontend dependencies
+# Navigate to project directory
+cd ai-notes-app
+
+# Install dependencies
 npm install
 
-# Install backend dependencies
-cd backend
-npm install
-```
+# Create environment file
+cp .env.example .env
 
-### ⚙️ Configuration
+# Add your Gemini API key to .env
+REACT_APP_GEMINI_API_KEY=your_api_key_here
 
-<details>
-<summary><strong>🔧 Environment Setup</strong></summary>
-
-#### Frontend (.env)
-```env
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-#### Backend (.env)
-```env
-NODE_ENV=development
-PORT=5000
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=notes_ai_app
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-JWT_SECRET=your_super_secret_jwt_key
-CORS_ORIGIN=http://localhost:3000
-```
-
-</details>
-
-### 🗄️ Database Setup
-
-```bash
-# Navigate to backend directory
-cd backend
-
-# Create database
-createdb notes_ai_app
-
-# Run database setup script
-npm run db:setup
-```
-
-### 🏃‍♂️ Running the Application
-
-```bash
-# Terminal 1: Start the backend server
-cd backend
-npm run dev
-
-# Terminal 2: Start the frontend application
-cd ..
+# Start development server
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application in your browser.
+### 🌐 Deployment
 
----
-
-## 🏗️ Project Structure
-
-<details>
-<summary><strong>📂 Explore the codebase</strong></summary>
-
-```
-notes-ai/
-├── 📁 public/                     # Static assets
-├── 📁 src/
-│   ├── 📁 components/             # React components
-│   │   ├── AIChatPage.jsx         # AI chat interface
-│   │   ├── NotesGrid.jsx          # Notes masonry grid
-│   │   ├── Sidebar.jsx            # Navigation sidebar
-│   │   ├── TopNavigation.jsx      # Search and actions bar
-│   │   ├── NoteModals.jsx         # Note creation/editing
-│   │   ├── FolderModals.jsx       # Folder management
-│   │   └── UI.jsx                 # Reusable UI components
-│   ├── 📁 hooks/
-│   │   ├── useNotesData.js        # Data management hook
-│   │   ├── useDragAndDrop.js      # Drag & drop logic
-│   │   └── useAPI.js              # API integration
-│   ├── 📁 utils/
-│   │   ├── constants.js           # App constants
-│   │   └── helpers.js             # Utility functions
-│   ├── NotesApp.jsx               # Main app component
-│   └── index.js                   # App entry point
-├── 📁 backend/
-│   ├── 📁 config/                 # Configuration files
-│   ├── 📁 middleware/             # Express middleware
-│   ├── 📁 models/                 # Database models
-│   ├── 📁 routes/                 # API routes
-│   ├── 📁 scripts/                # Database scripts
-│   └── server.js                  # Express server
-└── 📄 README.md
-```
-
-</details>
-
----
-
-
-### 🗂️ Organizing with Folders
-
-1. **Create folders** by clicking the `+` icon in the sidebar
-2. **Drag notes** into folders for organization
-3. **Customize colors** to match your workflow
-4. **Maximum 10 folders** for optimal organization
-
-### 🤖 AI Assistant Features
-
-- **Context Analysis**: AI understands your note content
-- **Smart Suggestions**: Get writing recommendations
-- **Question Answering**: Ask questions about your notes
-- **Content Enhancement**: Improve clarity and structure
-
----
-
-## 🛠️ API Documentation
-
-<details>
-<summary><strong>📋 API Endpoints Overview</strong></summary>
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
-
-### Notes Management
-- `GET /api/notes` - Get all notes
-- `POST /api/notes` - Create new note
-- `PUT /api/notes/:id` - Update note
-- `DELETE /api/notes/:id` - Move note to trash
-- `PUT /api/notes/reorder` - Reorder notes
-
-### Folders Management
-- `GET /api/folders` - Get all folders
-- `POST /api/folders` - Create new folder
-- `PUT /api/folders/:id` - Update folder
-- `DELETE /api/folders/:id` - Delete folder
-
-### Trash Management
-- `GET /api/trash` - Get trashed notes
-- `PUT /api/trash/:id/restore` - Restore note
-- `DELETE /api/trash/:id` - Permanently delete
-
-### Search
-- `GET /api/search` - Search notes and folders
-- `GET /api/search/suggestions` - Get search suggestions
-
-</details>
-
----
-
-## 🎨 UI Components
-
-<div align="center">
-
-### 🎯 Design System
-
-| Component | Purpose | Features |
-|-----------|---------|----------|
-| 🏠 **Dashboard** | Main interface | Masonry grid, responsive layout |
-| 📝 **Note Editor** | Content creation | Rich text, auto-save, keywords |
-| 🗂️ **Folder Sidebar** | Organization | Drag & drop, color coding |
-| 🔍 **Search Bar** | Content discovery | Real-time search, filters |
-| 🤖 **AI Chat** | Intelligent assistance | Context-aware responses |
-| 🗑️ **Trash System** | Data recovery | 30-day retention, bulk operations |
-
-</div>
-
----
-
-## 🚀 Deployment
-
-### 🌐 Frontend Deployment (Vercel)
+This project is configured for easy deployment on Vercel:
 
 ```bash
 # Install Vercel CLI
 npm i -g vercel
 
-# Deploy
+# Deploy to Vercel
 vercel --prod
 ```
 
-</details>
-
 ---
 
-## 🤝 Contributing
-
-We welcome contributions from the community!
-
----
-
-## 🏆 Acknowledgments
-
-Special thanks to:
-
-- **Google** for the amazing Gemini AI API
-- **Vercel** for seamless frontend hosting
-- **The React Team** for the incredible framework
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
+## 📱 Screenshots & Features
 
 <div align="center">
 
-**Made with ❤️ by [Tejas Jaiswal](https://github.com/tejasj228)**
+### 🏠 **Main Notes Dashboard**
+<img src="./assets/Home.png" alt="Main Notes Dashboard - Beautiful Bento Grid Layout" />
+*Your central hub with all notes in a beautiful bento-style grid layout*
 
-[⬆ Back to top](#-notes-ai)
+### 📁 **Folder Organization System**
+<img src="./assets/Folder.png" alt="Folder Organization - Dedicated Folder View" />
+*Dedicated folder view showing only folder-specific notes for better organization*
+
+### 🤖 **AI Chat Interface**
+<img src="./assets/AiChat.png" alt="AI Chat with Notes - Split Screen Interface" />
+*Revolutionary split-screen interface to chat with AI about your notes while editing*
+
+### 🎯 **Drag & Drop Magic**
+<img src="./assets/DragDrop.gif" alt="Drag and Drop Reordering - Smooth Animations" />
+*Effortlessly reorganize your notes with smooth drag & drop while maintaining the beautiful grid*
 
 </div>
 
 ---
 
+## 🎨 Design Philosophy
+
+### **Dark Theme First**
+- Designed for extended use with reduced eye strain
+- Purple accent colors for a modern, professional look
+- Glassmorphism effects for depth and elegance
+
+### **User Experience Focus**
+- Intuitive navigation and interactions
+- Smooth animations and micro-interactions
+- Responsive design for all screen sizes
+- Keyboard shortcuts for power users
+
+### **Performance Optimized**
+- Fast loading times with optimized bundle size
+- Efficient re-rendering with React best practices
+- Progressive image loading
+- Minimal API calls with smart caching
+
+---
+
+## 🔮 Future Enhancements
+
+- 🔐 **Advanced Authentication** - Multi-factor authentication
+- ☁️ **Cloud Sync** - Real-time synchronization across devices  
+- 📊 **Analytics Dashboard** - Usage insights and note statistics
+- 🌍 **Collaboration** - Share and collaborate on notes
+- 📱 **Mobile App** - Native iOS and Android applications
+- 🎙️ **Voice Notes** - Speech-to-text functionality
+- 🔍 **Advanced Search** - Full-text search with filters
+- 📤 **Export Options** - PDF, Markdown, and more formats
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** to the branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+### 📋 Areas We Need Help With
+- 🐛 Bug fixes and improvements
+- 🎨 UI/UX enhancements
+- 📱 Mobile responsiveness
+- 🧪 Testing and QA
+- 📚 Documentation
+
+---
+
+## 📞 Support & Feedback
+
 <div align="center">
 
-![Footer Wave](https://capsule-render.vercel.app/api?type=waving&color=8b5cf6&height=100&section=footer&text=Thanks%20for%20visiting!&fontSize=16&fontColor=ffffff&animation=twinkling)
+### Love AI Notes? Here's how to support us:
+
+[![⭐ Star on GitHub](https://img.shields.io/badge/⭐_Star_on-GitHub-181717?style=for-the-badge&logo=github)](https://github.com/yourusername/ai-notes-app)
+
+
+</div>
+
+### 📧 Contact
+- **Email**: tejas22538@iiitd.ac.in
+- **Demo Website**: [ainotesai.vercel.app](https://ainotesai.vercel.app/)
+
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+---
+
+<div align="center">
+
+### 🌟 **Ready to Transform Your Note-Taking?**
+
+[![🚀 Get Started Now](https://img.shields.io/badge/🚀_Get_Started-Now-8b5cf6?style=for-the-badge&logo=rocket)](https://ainotesai.vercel.app/)
+
+---
+
+**Made with ❤️ by [Tejas Jaiswal](https://github.com/tejasj228)**
+
+*AI Notes - Where Intelligence Meets Organization*
 
 </div>

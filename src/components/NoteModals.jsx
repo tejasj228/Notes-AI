@@ -154,7 +154,7 @@ export const NewNoteModal = ({
   );
 };
 
-// Edit Note Modal - FIXED VERSION
+// Edit Note Modal - FIXED VERSION with Local State for Title
 export const EditNoteModal = ({ 
   show, 
   note, 
@@ -164,6 +164,9 @@ export const EditNoteModal = ({
   onClose 
 }) => {
   const textareaRef = useRef(null);
+  
+  // Local state for title to handle editing properly
+  const [titleValue, setTitleValue] = useState('');
   // Local state for keywords to handle editing properly
   const [keywordsValue, setKeywordsValue] = useState('');
 
@@ -175,9 +178,10 @@ export const EditNoteModal = ({
     }
   }, [show, note]);
 
-  // Initialize keywords value when note changes
+  // Initialize title and keywords when note changes
   useEffect(() => {
     if (note) {
+      setTitleValue(note.title || '');
       const keywordsString = typeof note.keywords === 'string'
         ? note.keywords
         : Array.isArray(note.keywords)
@@ -202,6 +206,16 @@ export const EditNoteModal = ({
       }
     };
     input.click();
+  };
+
+  // Handle title change - use local state
+  const handleTitleChange = (e) => {
+    setTitleValue(e.target.value);
+  };
+
+  // Handle title blur - save to main state
+  const handleTitleBlur = () => {
+    onUpdate(note.id, 'title', titleValue);
   };
 
   // Handle keywords change - use local state
@@ -244,13 +258,14 @@ export const EditNoteModal = ({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header - FIXED: Use local state for title */}
         <div className="flex items-center justify-between mb-5">
           <input
             type="text"
             className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4"
-            value={note.title}
-            onChange={(e) => onUpdate(note.id, 'title', e.target.value)}
+            value={titleValue}
+            onChange={handleTitleChange}
+            onBlur={handleTitleBlur}
             placeholder="Note title..."
           />
           <div className="flex gap-2">
@@ -258,6 +273,7 @@ export const EditNoteModal = ({
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
               onClick={() => onDelete(note.id)}
               title="Delete note"
+              style={{ background: 'rgba(255, 255, 255, 0.1)' }}
               onMouseEnter={e => {
                 e.target.style.background = 'rgba(220, 38, 38, 0.3)';
                 e.target.style.color = '#ff6b6b';
@@ -288,7 +304,7 @@ export const EditNoteModal = ({
           onColorChange={color => onUpdate(note.id, 'color', color)}
         />
         
-        {/* Keywords Editor - Fixed version */}
+        {/* Keywords Editor - FIXED: Use local state */}
         <div>
           <input
             type="text"
