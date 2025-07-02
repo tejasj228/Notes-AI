@@ -1,47 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import NotesApp from './NotesApp';
 import './index.css';
 
-const App = () => {
-  const [currentView, setCurrentView] = useState('login'); // 'login', 'signup', 'notes'
-  const [user, setUser] = useState(null);
+// Component to handle auth page routing
+const AuthPage = ({ user, onLogin, onSignup, onGoogleAuth }) => {
+  const navigate = useNavigate();
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Check for saved user session on app load
-  useEffect(() => {
-    const savedUser = localStorage.getItem('notesAppUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setCurrentView('notes');
-    }
-  }, []);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
   // Smooth transition function
-  const transitionToView = (newView, delay = 600) => {
+  const transitionToView = (newPath, delay = 600) => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentView(newView);
+      navigate(newPath);
+      setCurrentPath(newPath);
       setIsTransitioning(false);
     }, delay);
   };
 
-  // Handle successful login
+  // Auth handlers with navigation
   const handleLogin = (loginData) => {
     const userData = {
       email: loginData.email,
-      name: loginData.email.split('@')[0], // Extract name from email
+      name: loginData.email.split('@')[0],
       loginMethod: 'email'
     };
     
-    setUser(userData);
-    localStorage.setItem('notesAppUser', JSON.stringify(userData));
-    transitionToView('notes');
+    onLogin(userData);
+    transitionToView('/notes');
   };
 
-  // Handle successful signup
   const handleSignup = (signupData) => {
     const userData = {
       email: signupData.email,
@@ -49,81 +40,34 @@ const App = () => {
       loginMethod: 'email'
     };
     
-    setUser(userData);
-    localStorage.setItem('notesAppUser', JSON.stringify(userData));
-    transitionToView('notes');
+    onSignup(userData);
+    transitionToView('/notes');
   };
 
-  // Handle Google authentication
   const handleGoogleAuth = () => {
     const userData = {
-      email: 'user@gmail.com', // This would come from Google API
+      email: 'user@gmail.com',
       name: 'Google User',
       loginMethod: 'google'
     };
     
-    setUser(userData);
-    localStorage.setItem('notesAppUser', JSON.stringify(userData));
-    transitionToView('notes');
+    onGoogleAuth(userData);
+    transitionToView('/notes');
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('notesAppUser');
-    transitionToView('login', 400);
-  };
-
-  // Handle switching between login and signup
   const handleSwitchToSignup = () => {
-    transitionToView('signup', 300);
+    transitionToView('/signup', 300);
   };
 
   const handleSwitchToLogin = () => {
-    transitionToView('login', 300);
+    transitionToView('/login', 300);
   };
 
-  // Auth views (no routing needed)
-  const renderAuthView = () => {
-    switch (currentView) {
-      case 'login':
-        return (
-          <Login 
-            onLogin={handleLogin}
-            onSwitchToSignup={handleSwitchToSignup}
-            onGoogleLogin={handleGoogleAuth}
-          />
-        );
-      case 'signup':
-        return (
-          <Signup 
-            onSignup={handleSignup}
-            onSwitchToLogin={handleSwitchToLogin}
-            onGoogleSignup={handleGoogleAuth}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  // If user is not authenticated, show auth views
-  if (!user || currentView !== 'notes') {
-    return (
-      <div className="app">
-        {/* Transition Overlay */}
-        {isTransitioning && (
-          <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse" style={{ zIndex: 9999 }}>
-            <div className="w-12 h-12 rounded-full animate-spin" style={{ border: '3px solid rgba(255, 255, 255, 0.3)', borderTop: '3px solid white' }}></div>
-          </div>
-        )}
-        
-        {renderAuthView()}
-      </div>
-    );
+  // If user is authenticated, redirect to notes
+  if (user) {
+    return <Navigate to="/notes" replace />;
   }
 
-  // If user is authenticated, show routed app
   return (
     <div className="app">
       {/* Transition Overlay */}
@@ -133,28 +77,110 @@ const App = () => {
         </div>
       )}
       
-      <Router>
-        <Routes>
-          {/* Default redirect to notes */}
-          <Route path="/" element={<Navigate to="/notes" replace />} />
-          
-          {/* Notes routes - No individual note routes */}
-          <Route path="/notes" element={<NotesApp user={user} onLogout={handleLogout} />} />
-          
-          {/* Trash routes - No individual note routes */}
-          <Route path="/trash" element={<NotesApp user={user} onLogout={handleLogout} />} />
-          
-          {/* Folder routes - No individual note routes */}
-          <Route path="/folder/:folderId" element={<NotesApp user={user} onLogout={handleLogout} />} />
-          
-          {/* AI Chat routes - Only these change URL for specific notes */}
-          <Route path="/ai-chat/:noteId" element={<NotesApp user={user} onLogout={handleLogout} />} />
-          
-          {/* Catch all - redirect to notes */}
-          <Route path="*" element={<Navigate to="/notes" replace />} />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="/login" element={
+          <Login 
+            onLogin={handleLogin}
+            onSwitchToSignup={handleSwitchToSignup}
+            onGoogleLogin={handleGoogleAuth}
+          />
+        } />
+        <Route path="/signup" element={
+          <Signup 
+            onSignup={handleSignup}
+            onSwitchToLogin={handleSwitchToLogin}
+            onGoogleSignup={handleGoogleAuth}
+          />
+        } />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     </div>
+  );
+};
+
+// Component to handle app routing (when authenticated)
+const AppRouter = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleLogout = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      onLogout();
+      navigate('/login');
+      setIsTransitioning(false);
+    }, 400);
+  };
+
+  return (
+    <div className="app">
+      {/* Transition Overlay */}
+      {isTransitioning && (
+        <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse" style={{ zIndex: 9999 }}>
+          <div className="w-12 h-12 rounded-full animate-spin" style={{ border: '3px solid rgba(255, 255, 255, 0.3)', borderTop: '3px solid white' }}></div>
+        </div>
+      )}
+      
+      <Routes>
+        <Route path="/" element={<Navigate to="/notes" replace />} />
+        <Route path="/notes" element={<NotesApp user={user} onLogout={handleLogout} />} />
+        <Route path="/trash" element={<NotesApp user={user} onLogout={handleLogout} />} />
+        <Route path="/folder/:folderId" element={<NotesApp user={user} onLogout={handleLogout} />} />
+        <Route path="/ai-chat/:noteId" element={<NotesApp user={user} onLogout={handleLogout} />} />
+        <Route path="*" element={<Navigate to="/notes" replace />} />
+      </Routes>
+    </div>
+  );
+};
+
+const App = () => {
+  const [user, setUser] = useState(null);
+
+  // Check for saved user session on app load
+  useEffect(() => {
+    const savedUser = localStorage.getItem('notesAppUser');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Handle successful login
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem('notesAppUser', JSON.stringify(userData));
+  };
+
+  // Handle successful signup
+  const handleSignup = (userData) => {
+    setUser(userData);
+    localStorage.setItem('notesAppUser', JSON.stringify(userData));
+  };
+
+  // Handle Google authentication
+  const handleGoogleAuth = (userData) => {
+    setUser(userData);
+    localStorage.setItem('notesAppUser', JSON.stringify(userData));
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('notesAppUser');
+  };
+
+  return (
+    <Router>
+      {user ? (
+        <AppRouter user={user} onLogout={handleLogout} />
+      ) : (
+        <AuthPage 
+          user={user}
+          onLogin={handleLogin}
+          onSignup={handleSignup}
+          onGoogleAuth={handleGoogleAuth}
+        />
+      )}
+    </Router>
   );
 };
 
