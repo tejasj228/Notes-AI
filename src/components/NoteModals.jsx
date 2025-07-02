@@ -154,7 +154,7 @@ export const NewNoteModal = ({
   );
 };
 
-// Edit Note Modal - FIXED VERSION with Local State for Title
+// Edit Note Modal - FIXED VERSION with Local State for Color
 export const EditNoteModal = ({ 
   show, 
   note, 
@@ -169,6 +169,8 @@ export const EditNoteModal = ({
   const [titleValue, setTitleValue] = useState('');
   // Local state for keywords to handle editing properly
   const [keywordsValue, setKeywordsValue] = useState('');
+  // FIXED: Local state for color to handle editing properly
+  const [colorValue, setColorValue] = useState('purple');
 
   useEffect(() => {
     if (show && note && textareaRef.current) {
@@ -178,7 +180,7 @@ export const EditNoteModal = ({
     }
   }, [show, note]);
 
-  // Initialize title and keywords when note changes
+  // Initialize title, keywords, and color when note changes
   useEffect(() => {
     if (note) {
       setTitleValue(note.title || '');
@@ -188,6 +190,8 @@ export const EditNoteModal = ({
           ? note.keywords.join(', ')
           : '';
       setKeywordsValue(keywordsString);
+      // FIXED: Initialize color from note
+      setColorValue(note.color || 'purple');
     }
   }, [note]);
 
@@ -230,6 +234,12 @@ export const EditNoteModal = ({
       .filter(Boolean)
       .slice(0, 3);
     onUpdate(note.id, 'keywords', keywords);
+  };
+
+  // FIXED: Handle color change - use local state and update immediately
+  const handleColorChange = (color) => {
+    setColorValue(color);
+    onUpdate(note.id, 'color', color);
   };
 
   if (!show || !note) return null;
@@ -298,10 +308,10 @@ export const EditNoteModal = ({
           </div>
         </div>
 
-        {/* Color Picker */}
+        {/* Color Picker - FIXED: Use local state */}
         <ColorPicker
-          selectedColor={note.color}
-          onColorChange={color => onUpdate(note.id, 'color', color)}
+          selectedColor={colorValue}
+          onColorChange={handleColorChange}
         />
         
         {/* Keywords Editor - FIXED: Use local state */}
