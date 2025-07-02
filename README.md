@@ -153,8 +153,6 @@ vercel --prod
 *Dedicated folder view showing only folder-specific notes for better organization*
 
 ### 🤖 **AI Chat Interface**
-<img src="./assets/AiChat.png" alt="AI Chat with Notes - Split Screen Interface" />
-*Revolutionary split-screen interface to chat with AI about your notes while editing*
 
 ### 🎯 **Drag & Drop Magic**
 <img src="./assets/DragDrop.gif" alt="Drag and Drop Reordering - Smooth Animations" />
