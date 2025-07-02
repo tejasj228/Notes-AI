@@ -1,30 +1,56 @@
 import { useState } from 'react';
 import { DEFAULT_NOTES, DEFAULT_FOLDERS, PAGES } from '../utils/constants';
 import { getRandomSize } from '../utils/helpers';
+import { useParams, useLocation } from 'react-router-dom';
 
 export const useNotesData = () => {
   // State
   const [notes, setNotes] = useState(DEFAULT_NOTES);
   const [folders, setFolders] = useState(DEFAULT_FOLDERS);
   const [trashedNotes, setTrashedNotes] = useState([]);
-  const [currentPage, setCurrentPage] = useState(PAGES.NOTES);
-  const [currentFolder, setCurrentFolder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Get URL parameters and location
+  const { noteId, folderId } = useParams();
+  const location = useLocation();
+
+  // Determine current page from URL
+  const getCurrentPageFromURL = () => {
+    const path = location.pathname;
+    if (path.startsWith('/ai-chat/')) return 'ai-chat';
+    if (path.startsWith('/trash')) return 'trash';
+    if (path.startsWith('/folder/')) return 'folder';
+    return 'notes';
+  };
+
+  // Get current folder from URL
+  const getCurrentFolderFromURL = () => {
+    if (folderId) {
+      return folders.find(f => f.id.toString() === folderId || 
+                              f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+    }
+    return null;
+  };
 
   // Get current notes based on page and folder
   const getCurrentNotes = () => {
-    if (currentPage === PAGES.TRASH) {
+    const currentPage = getCurrentPageFromURL();
+    const currentFolder = getCurrentFolderFromURL();
+    
+    if (currentPage === 'trash') {
       return trashedNotes;
-    } else if (currentPage === PAGES.FOLDER && currentFolder) {
+    } else if (currentPage === 'folder' && currentFolder) {
       return notes.filter(note => note.folderId === currentFolder.id);
     } else {
       return notes.filter(note => note.folderId === null);
     }
   };
 
-  // Create new note
+  // Create new note - RETURN the created note
   const createNote = (noteData) => {
-    const folderId = currentPage === PAGES.FOLDER && currentFolder ? currentFolder.id : null;
+    const currentPage = getCurrentPageFromURL();
+    const currentFolder = getCurrentFolderFromURL();
+    const folderId = currentPage === 'folder' && currentFolder ? currentFolder.id : null;
     
     const newNote = {
       id: Date.now(),
@@ -47,12 +73,13 @@ export const useNotesData = () => {
     });
 
     setNotes(updatedNotes);
-    return newNote;
+    return newNote; // Return the created note
   };
 
   // Update note
   const updateNote = (noteId, field, value) => {
-    if (currentPage !== PAGES.TRASH) {
+    const currentPage = getCurrentPageFromURL();
+    if (currentPage !== 'trash') {
       setNotes(notes.map(note => 
         note.id === noteId ? { ...note, [field]: value } : note
       ));
@@ -91,6 +118,8 @@ export const useNotesData = () => {
 
   // Reorder notes - EXACT logic from working oldcode.jsx
   const reorderNotes = (updatedCurrentNotes, draggedNote, page, hoverIndex) => {
+    const currentFolder = getCurrentFolderFromURL();
+    
     // Reorder within the current context (folder or main)
     const reorderedNotes = updatedCurrentNotes.map((note, index) => ({
       ...note,
@@ -107,7 +136,7 @@ export const useNotesData = () => {
     }
   };
 
-  // Create new folder
+  // Create new folder - RETURN the created folder
   const createFolder = (folderData) => {
     const newFolder = {
       id: Date.now(),
@@ -117,7 +146,7 @@ export const useNotesData = () => {
     };
 
     setFolders([...folders, newFolder]);
-    return newFolder;
+    return newFolder; // Return the created folder
   };
 
   // Update folder
@@ -125,60 +154,11 @@ export const useNotesData = () => {
     setFolders(folders.map(f =>
       f.id === folderId ? { ...f, ...updates } : f
     ));
-    
-    // Update current folder if it's the one being edited
-    if (currentFolder?.id === folderId) {
-      setCurrentFolder({ ...currentFolder, ...updates });
-    }
   };
 
   // Delete folder
   const deleteFolder = (folderId) => {
     setFolders(folders.filter(f => f.id !== folderId));
-    
-    // If we're currently viewing this folder, go back to notes
-    if (currentFolder?.id === folderId) {
-      setCurrentPage(PAGES.NOTES);
-      setCurrentFolder(null);
-    }
-  };
-
-  // Navigation functions
-  const switchToNotes = () => {
-    setCurrentPage(PAGES.NOTES);
-    setCurrentFolder(null);
-    setSearchTerm('');
-  };
-
-  const switchToTrash = () => {
-    setCurrentPage(PAGES.TRASH);
-    setCurrentFolder(null);
-    setSearchTerm('');
-  };
-
-  const openFolder = (folder) => {
-    setCurrentPage(PAGES.FOLDER);
-    setCurrentFolder(folder);
-    setSearchTerm('');
-  };
-
-  const goBackToNotes = () => {
-    setCurrentPage(PAGES.NOTES);
-    setCurrentFolder(null);
-    setSearchTerm('');
-  };
-
-  // Helper functions
-  const getPageTitle = () => {
-    if (currentPage === PAGES.TRASH) return 'Trash';
-    if (currentPage === PAGES.FOLDER && currentFolder) return currentFolder.name;
-    return 'Notes';
-  };
-
-  const getSearchPlaceholder = () => {
-    if (currentPage === PAGES.TRASH) return 'Search trash...';
-    if (currentPage === PAGES.FOLDER && currentFolder) return `Search in ${currentFolder.name}...`;
-    return 'Search notes...';
   };
 
   return {
@@ -186,8 +166,6 @@ export const useNotesData = () => {
     notes,
     folders,
     trashedNotes,
-    currentPage,
-    currentFolder,
     searchTerm,
     setSearchTerm,
     
@@ -205,14 +183,8 @@ export const useNotesData = () => {
     updateFolder,
     deleteFolder,
     
-    // Navigation
-    switchToNotes,
-    switchToTrash,
-    openFolder,
-    goBackToNotes,
-    
-    // Helpers
-    getPageTitle,
-    getSearchPlaceholder
+    // URL-based helpers
+    getCurrentPageFromURL,
+    getCurrentFolderFromURL
   };
 };

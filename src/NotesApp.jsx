@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import TopNavigation from './components/TopNavigation';
 import Sidebar from './components/Sidebar';
 import NotesGrid from './components/NotesGrid';
@@ -10,13 +11,15 @@ import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { getRandomColor, getRandomSize } from './utils/helpers';
 
 const NotesApp = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { noteId, folderId } = useParams();
+
   // Custom hooks for data management
   const {
     notes,
     folders,
     trashedNotes,
-    currentPage,
-    currentFolder,
     searchTerm,
     setSearchTerm,
     createNote,
@@ -25,34 +28,71 @@ const NotesApp = ({ user, onLogout }) => {
     permanentlyDeleteNote,
     restoreNote,
     reorderNotes,
-    getCurrentNotes,
     createFolder,
     updateFolder,
-    deleteFolder,
-    switchToNotes,
-    switchToTrash,
-    openFolder,
-    goBackToNotes,
-    getPageTitle,
-    getSearchPlaceholder
+    deleteFolder
   } = useNotesData();
 
+  // Determine current page and folder from URL
+  const getCurrentPageFromURL = () => {
+    const path = location.pathname;
+    if (path.startsWith('/ai-chat/')) return 'ai-chat';
+    if (path.startsWith('/trash')) return 'trash';
+    if (path.startsWith('/folder/')) return 'folder';
+    return 'notes';
+  };
+
+  const getCurrentFolderFromURL = () => {
+    if (folderId) {
+      return folders.find(f => f.id.toString() === folderId || 
+                              f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+    }
+    return null;
+  };
+
+  const getCurrentNotesForPage = () => {
+    const currentPage = getCurrentPageFromURL();
+    const currentFolder = getCurrentFolderFromURL();
+    
+    if (currentPage === 'trash') {
+      return trashedNotes;
+    } else if (currentPage === 'folder' && currentFolder) {
+      return notes.filter(note => note.folderId === currentFolder.id);
+    } else {
+      return notes.filter(note => note.folderId === null);
+    }
+  };
+
+  // Get current note for AI chat or edit modal
+  const getCurrentNoteFromURL = () => {
+    if (noteId) {
+      const allNotes = [...notes, ...trashedNotes];
+      return allNotes.find(note => 
+        note.id.toString() === noteId || 
+        note.title.toLowerCase().replace(/\s+/g, '-') === noteId
+      );
+    }
+    return null;
+  };
+
   // Drag and drop functionality
-  const dragHandlers = useDragAndDrop(currentPage, getCurrentNotes, reorderNotes);
+  const currentPage = getCurrentPageFromURL();
+  const currentFolder = getCurrentFolderFromURL();
+  const dragHandlers = useDragAndDrop(currentPage, getCurrentNotesForPage, reorderNotes);
 
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedNote, setSelectedNote] = useState(null);
-  const [currentView, setCurrentView] = useState('notes');
-  const [aiChatNote, setAiChatNote] = useState(null);
   
-  // Modal states
+  // MODAL STATE - These don't affect URL
   const [showNewNotePopup, setShowNewNotePopup] = useState(false);
   const [showNewFolderPopup, setShowNewFolderPopup] = useState(false);
   const [showRenameFolder, setShowRenameFolder] = useState(false);
   const [imagePopup, setImagePopup] = useState({ open: false, src: '' });
   
-  // Draft states - Initialize with safe defaults
+  // EDIT NOTE MODAL STATE - Separate from URL, just a popup
+  const [selectedNote, setSelectedNote] = useState(null);
+  
+  // Draft states
   const [newNoteDraft, setNewNoteDraft] = useState({
     title: '',
     content: '',
@@ -96,7 +136,45 @@ const NotesApp = ({ user, onLogout }) => {
     };
   }, [showNewNotePopup, selectedNote]);
 
-  // Note operations
+  // Navigation functions with routing
+  const switchToNotes = () => {
+    navigate('/notes');
+    setSearchTerm('');
+  };
+
+  const switchToTrash = () => {
+    navigate('/trash');
+    setSearchTerm('');
+  };
+
+  const openFolder = (folder) => {
+    const folderSlug = folder.name.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/folder/${folderSlug}`);
+    setSearchTerm('');
+  };
+
+  // FIXED: openNote - Just open modal, don't change URL
+  const openNote = (note) => {
+    setSelectedNote(note);
+  };
+
+  // FIXED: closeNotePopup - Just close modal, don't change URL
+  const closeNotePopup = () => {
+    setSelectedNote(null);
+  };
+
+  // NAVIGATION: handleOpenWithAI - Changes URL
+  const handleOpenWithAI = (note) => {
+    const noteSlug = note.title.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/ai-chat/${noteSlug}`);
+  };
+
+  // NAVIGATION: handleBackFromAI - Browser back
+  const handleBackFromAI = () => {
+    navigate(-1); // Use browser back
+  };
+
+  // MODAL: Note operations - Don't change URL
   const openNewNotePopup = () => {
     setNewNoteDraft({
       title: '',
@@ -121,7 +199,7 @@ const NotesApp = ({ user, onLogout }) => {
       keywordsArray = newNoteDraft.keywords.slice(0, 3);
     }
 
-    createNote({
+    const newNote = createNote({
       title: newNoteDraft.title || 'Untitled Note',
       content: newNoteDraft.content || '',
       keywords: keywordsArray,
@@ -129,34 +207,15 @@ const NotesApp = ({ user, onLogout }) => {
     });
     
     setShowNewNotePopup(false);
-  };
-
-  const openNote = (note) => {
-    setSelectedNote(note);
-  };
-
-  const closeNotePopup = () => {
-    setSelectedNote(null);
+    // Don't navigate after creating note, stay on same page
   };
 
   const handleDeleteNote = (noteId) => {
     deleteNote(noteId);
-    setSelectedNote(null);
+    setSelectedNote(null); // Just close modal
   };
 
-  // AI functionality
-  const handleOpenWithAI = (note) => {
-    setAiChatNote(note);
-    setCurrentView('ai-chat');
-    setSelectedNote(null);
-  };
-
-  const handleBackToNotes = () => {
-    setCurrentView('notes');
-    setAiChatNote(null);
-  };
-
-  // Folder operations
+  // MODAL: Folder operations - Don't change URL unless specified
   const openNewFolderPopup = () => {
     setNewFolderDraft({
       name: '',
@@ -167,8 +226,9 @@ const NotesApp = ({ user, onLogout }) => {
 
   const saveNewFolder = () => {
     if (!newFolderDraft.name || !newFolderDraft.name.trim()) return;
-    createFolder(newFolderDraft);
+    const newFolder = createFolder(newFolderDraft);
     setShowNewFolderPopup(false);
+    // Don't auto-navigate to new folder, let user decide
   };
 
   const handleRenameFolder = (folder) => {
@@ -187,7 +247,40 @@ const NotesApp = ({ user, onLogout }) => {
       color: renameFolderDraft.color
     });
     setShowRenameFolder(false);
+    
+    // Update URL if we're currently in this folder
+    if (currentFolder && currentFolder.id === renameFolderDraft.id) {
+      const newFolderSlug = renameFolderDraft.name.toLowerCase().replace(/\s+/g, '-');
+      navigate(`/folder/${newFolderSlug}`);
+    }
   };
+
+  const handleDeleteFolder = (folderId) => {
+    deleteFolder(folderId);
+    // If we're currently viewing this folder, navigate to notes
+    if (currentFolder && currentFolder.id === folderId) {
+      navigate('/notes');
+    }
+  };
+
+  // Helper functions
+  const getPageTitle = () => {
+    const currentPage = getCurrentPageFromURL();
+    if (currentPage === 'trash') return 'Trash';
+    if (currentPage === 'folder' && currentFolder) return currentFolder.name;
+    return 'Notes';
+  };
+
+  const getSearchPlaceholder = () => {
+    const currentPage = getCurrentPageFromURL();
+    if (currentPage === 'trash') return 'Search trash...';
+    if (currentPage === 'folder' && currentFolder) return `Search in ${currentFolder.name}...`;
+    return 'Search notes...';
+  };
+
+  // Get current note for AI chat only (not for edit modal)
+  const aiChatNote = getCurrentNoteFromURL();
+  const isAIChatPage = getCurrentPageFromURL() === 'ai-chat';
 
   return (
     <div className="min-h-screen" style={{ background: '#1a1a1a' }}>
@@ -244,29 +337,22 @@ const NotesApp = ({ user, onLogout }) => {
       `}</style>
 
       {/* Conditional Rendering */}
-      {currentView === 'ai-chat' ? (
+      {isAIChatPage ? (
         <AIChatPage
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           folders={folders}
           user={user}
-          onSwitchToNotes={handleBackToNotes}
-          onSwitchToTrash={() => {
-            setCurrentView('notes');
-            setAiChatNote(null);
-            switchToTrash();
-          }}
-          onOpenFolder={(folder) => {
-            setCurrentView('notes');
-            setAiChatNote(null);
-            openFolder(folder);
-          }}
+          onSwitchToNotes={switchToNotes}
+          onSwitchToTrash={switchToTrash}
+          onOpenFolder={openFolder}
           onAddFolder={openNewFolderPopup}
           onRenameFolder={handleRenameFolder}
-          onDeleteFolder={deleteFolder}
+          onDeleteFolder={handleDeleteFolder}
           onLogout={onLogout}
           selectedNote={aiChatNote}
           onUpdateNote={updateNote}
+          onBackToNotes={handleBackFromAI}
         />
       ) : (
         <>
@@ -276,7 +362,7 @@ const NotesApp = ({ user, onLogout }) => {
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             onAddNote={openNewNotePopup}
-            onGoBack={goBackToNotes}
+            onGoBack={() => navigate(-1)}
             getSearchPlaceholder={getSearchPlaceholder}
           />
 
@@ -292,7 +378,7 @@ const NotesApp = ({ user, onLogout }) => {
             onOpenFolder={openFolder}
             onAddFolder={openNewFolderPopup}
             onRenameFolder={handleRenameFolder}
-            onDeleteFolder={deleteFolder}
+            onDeleteFolder={handleDeleteFolder}
             onLogout={onLogout}
           />
 
@@ -305,7 +391,7 @@ const NotesApp = ({ user, onLogout }) => {
             <NotesGrid
               currentPage={currentPage}
               currentFolder={currentFolder}
-              notes={getCurrentNotes()}
+              notes={getCurrentNotesForPage()}
               searchTerm={searchTerm}
               onOpenNote={openNote}
               onAddNote={openNewNotePopup}
@@ -317,9 +403,10 @@ const NotesApp = ({ user, onLogout }) => {
         </>
       )}
 
-      {/* Modals */}
-      {currentView !== 'ai-chat' && (
+      {/* MODALS - These don't change URL */}
+      {!isAIChatPage && (
         <>
+          {/* New Note Modal - No URL change */}
           {showNewNotePopup && (
             <NewNoteModal
               show={showNewNotePopup}
@@ -330,6 +417,7 @@ const NotesApp = ({ user, onLogout }) => {
             />
           )}
 
+          {/* Edit Note Modal - Just a popup, no URL change */}
           {selectedNote && (
             <EditNoteModal
               show={!!selectedNote}
@@ -341,6 +429,7 @@ const NotesApp = ({ user, onLogout }) => {
             />
           )}
 
+          {/* Folder Modals - No URL change */}
           {showNewFolderPopup && (
             <NewFolderModal
               show={showNewFolderPopup}
@@ -361,6 +450,7 @@ const NotesApp = ({ user, onLogout }) => {
             />
           )}
 
+          {/* Image Popup - No URL change */}
           {imagePopup.open && (
             <ImagePopup
               show={imagePopup.open}

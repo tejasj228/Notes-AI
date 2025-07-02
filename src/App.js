@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import NotesApp from './NotesApp';
 import './index.css';
+
 const App = () => {
   const [currentView, setCurrentView] = useState('login'); // 'login', 'signup', 'notes'
   const [user, setUser] = useState(null);
@@ -81,8 +83,8 @@ const App = () => {
     transitionToView('login', 300);
   };
 
-  // Render current view
-  const renderCurrentView = () => {
+  // Auth views (no routing needed)
+  const renderAuthView = () => {
     switch (currentView) {
       case 'login':
         return (
@@ -100,18 +102,28 @@ const App = () => {
             onGoogleSignup={handleGoogleAuth}
           />
         );
-      case 'notes':
-        return (
-          <NotesApp 
-            user={user}
-            onLogout={handleLogout}
-          />
-        );
       default:
         return null;
     }
   };
 
+  // If user is not authenticated, show auth views
+  if (!user || currentView !== 'notes') {
+    return (
+      <div className="app">
+        {/* Transition Overlay */}
+        {isTransitioning && (
+          <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse" style={{ zIndex: 9999 }}>
+            <div className="w-12 h-12 rounded-full animate-spin" style={{ border: '3px solid rgba(255, 255, 255, 0.3)', borderTop: '3px solid white' }}></div>
+          </div>
+        )}
+        
+        {renderAuthView()}
+      </div>
+    );
+  }
+
+  // If user is authenticated, show routed app
   return (
     <div className="app">
       {/* Transition Overlay */}
@@ -121,7 +133,27 @@ const App = () => {
         </div>
       )}
       
-      {renderCurrentView()}
+      <Router>
+        <Routes>
+          {/* Default redirect to notes */}
+          <Route path="/" element={<Navigate to="/notes" replace />} />
+          
+          {/* Notes routes - No individual note routes */}
+          <Route path="/notes" element={<NotesApp user={user} onLogout={handleLogout} />} />
+          
+          {/* Trash routes - No individual note routes */}
+          <Route path="/trash" element={<NotesApp user={user} onLogout={handleLogout} />} />
+          
+          {/* Folder routes - No individual note routes */}
+          <Route path="/folder/:folderId" element={<NotesApp user={user} onLogout={handleLogout} />} />
+          
+          {/* AI Chat routes - Only these change URL for specific notes */}
+          <Route path="/ai-chat/:noteId" element={<NotesApp user={user} onLogout={handleLogout} />} />
+          
+          {/* Catch all - redirect to notes */}
+          <Route path="*" element={<Navigate to="/notes" replace />} />
+        </Routes>
+      </Router>
     </div>
   );
 };

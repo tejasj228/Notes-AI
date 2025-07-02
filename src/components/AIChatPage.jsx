@@ -61,7 +61,8 @@ const AIChatPage = ({
   onDeleteFolder,
   onLogout,
   selectedNote, // The note passed from NotesApp
-  onUpdateNote // Add this prop to update note content
+  onUpdateNote, // Add this prop to update note content
+  onBackToNotes // Router navigation function
 }) => {
   const [messages, setMessages] = useState([
     {
@@ -292,6 +293,13 @@ const AIChatPage = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  // ORIGINAL: Handle back navigation
+  const handleBackToNotes = () => {
+    if (onBackToNotes) {
+      onBackToNotes(); // Use router navigation
     }
   };
 
