@@ -29,7 +29,7 @@ const NotesGrid = ({
     handleGridDrop
   } = dragHandlers;
 
-  // Add CSS for drag animations - UPDATED to remove transparency
+  // Add CSS for drag animations - UPDATED to remove transparency AND fix z-index
   React.useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -45,6 +45,8 @@ const NotesGrid = ({
       
       .drag-selected {
         animation: dragFloat 2s ease-in-out infinite alternate, dragPulse 1.5s ease-in-out infinite;
+        /* FIXED: Lower z-index to stay below top navigation (z-50) */
+        z-index: 40 !important;
       }
     `;
     document.head.appendChild(style);
@@ -84,7 +86,7 @@ const NotesGrid = ({
     </div>
   );
 
-  // Note Card Component - FIXED DRAG STYLING
+  // Note Card Component - FIXED DRAG STYLING AND Z-INDEX
   const NoteCard = ({ note, index }) => {
     const images = extractImageSrcs(note.content, 2);
 
@@ -112,7 +114,8 @@ const NotesGrid = ({
             : dragOverIndex === index 
               ? 'rgba(139, 92, 246, 0.6)' 
               : 'transparent',
-          zIndex: draggedNote && draggedNote.id === note.id ? '50' : 'auto',
+          // FIXED: Use z-index 40 instead of 50 to stay below top navigation
+          zIndex: draggedNote && draggedNote.id === note.id ? '40' : 'auto',
           transition: draggedNote && draggedNote.id === note.id 
             ? 'border-color 0.3s ease, transform 0.3s ease' 
             : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
