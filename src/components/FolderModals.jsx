@@ -8,9 +8,28 @@ export const NewFolderModal = ({
   folderDraft, 
   setFolderDraft, 
   onSave, 
-  onClose 
+  onClose,
+  existingFoldersCount = 0 // Add this prop to check current folder count
 }) => {
+  const maxFolders = 10;
+  const maxNameLength = 10;
+  const canCreateFolder = existingFoldersCount < maxFolders;
+
   if (!show) return null;
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    // Restrict to max 10 characters
+    if (value.length <= maxNameLength) {
+      setFolderDraft(prev => ({ ...prev, name: value }));
+    }
+  };
+
+  const handleSave = () => {
+    if (canCreateFolder && folderDraft.name.trim()) {
+      onSave();
+    }
+  };
 
   return (
     <div 
@@ -43,31 +62,61 @@ export const NewFolderModal = ({
             <X size={16} />
           </button>
         </div>
+
+        {/* Folder Limit Warning */}
+        {!canCreateFolder && (
+          <div className="mb-4 p-3 rounded-lg border" style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            borderColor: 'rgba(239, 68, 68, 0.3)'
+          }}>
+            <p className="text-red-400 text-sm">
+              You've reached the maximum limit of {maxFolders} folders. Delete a folder to create a new one.
+            </p>
+          </div>
+        )}
         
         {/* Folder Name */}
         <div className="mb-5">
-          <label className="block text-sm text-gray-300 mb-2 font-medium">Folder Name</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm text-gray-300 font-medium">Folder Name</label>
+            <span className="text-xs text-gray-400">
+              {folderDraft.name.length}/{maxNameLength}
+            </span>
+          </div>
           <input
             type="text"
-            className="w-full border rounded-xl p-3 text-gray-200 outline-none mb-4"
+            className="w-full border rounded-xl p-3 text-gray-200 outline-none mb-2"
             style={{
               background: 'rgba(255,255,255,0.08)',
               color: '#f3f3f3',
-              borderColor: 'rgba(255,255,255,0.15)'
+              borderColor: folderDraft.name.length === maxNameLength 
+                ? 'rgba(239, 68, 68, 0.5)' 
+                : 'rgba(255,255,255,0.15)'
             }}
             value={folderDraft.name}
-            onChange={e => setFolderDraft(prev => ({ ...prev, name: e.target.value }))}
+            onChange={handleNameChange}
             placeholder="Enter folder name..."
             autoFocus
+            disabled={!canCreateFolder}
+            maxLength={maxNameLength}
             onFocus={e => {
-              e.target.style.borderColor = '#8b5cf6';
-              e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+              if (canCreateFolder) {
+                e.target.style.borderColor = '#8b5cf6';
+                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+              }
             }}
             onBlur={e => {
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.target.style.borderColor = folderDraft.name.length === maxNameLength 
+                ? 'rgba(239, 68, 68, 0.5)' 
+                : 'rgba(255, 255, 255, 0.1)';
               e.target.style.background = 'rgba(255, 255, 255, 0.05)';
             }}
           />
+          {folderDraft.name.length === maxNameLength && (
+            <p className="text-xs text-red-400">
+              Maximum {maxNameLength} characters reached
+            </p>
+          )}
         </div>
         
         {/* Color Picker */}
@@ -94,15 +143,19 @@ export const NewFolderModal = ({
             Cancel
           </button>
           <button
-            className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer transition-all duration-300 hover:-translate-y-0.5"
+            className="border-none rounded-xl px-6 py-3 text-sm font-medium cursor-pointer transition-all duration-300 hover:-translate-y-0.5"
             style={{
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
+              background: (canCreateFolder && folderDraft.name.trim()) 
+                ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                : 'rgba(255, 255, 255, 0.1)',
+              color: (canCreateFolder && folderDraft.name.trim()) ? '#ffffff' : '#888888',
+              boxShadow: '0 0 0 rgba(139, 92, 246, 0)',
+              cursor: (canCreateFolder && folderDraft.name.trim()) ? 'pointer' : 'not-allowed'
             }}
-            onClick={onSave}
-            disabled={!folderDraft.name.trim()}
+            onClick={handleSave}
+            disabled={!canCreateFolder || !folderDraft.name.trim()}
             onMouseEnter={e => {
-              if (!e.target.disabled) {
+              if (canCreateFolder && folderDraft.name.trim()) {
                 e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
               }
             }}
@@ -127,7 +180,17 @@ export const RenameFolderModal = ({
   onSave, 
   onClose 
 }) => {
+  const maxNameLength = 10;
+
   if (!show) return null;
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    // Restrict to max 10 characters
+    if (value.length <= maxNameLength) {
+      setFolderDraft(prev => ({ ...prev, name: value }));
+    }
+  };
 
   return (
     <div 
@@ -157,31 +220,43 @@ export const RenameFolderModal = ({
 
         {/* Folder Name */}
         <div className="mb-5">
-          <label className="block text-sm text-gray-300 mb-2 font-medium">Folder Name</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm text-gray-300 font-medium">Folder Name</label>
+            <span className="text-xs text-gray-400">
+              {folderDraft.name.length}/{maxNameLength}
+            </span>
+          </div>
           <input
             type="text"
-            className="w-full border rounded-xl p-3 text-gray-200 outline-none mb-4"
+            className="w-full border rounded-xl p-3 text-gray-200 outline-none mb-2"
             style={{
               background: 'rgba(255,255,255,0.08)',
               color: '#f3f3f3',
-              borderColor: 'rgba(255,255,255,0.15)'
+              borderColor: folderDraft.name.length === maxNameLength 
+                ? 'rgba(239, 68, 68, 0.5)' 
+                : 'rgba(255,255,255,0.15)'
             }}
             value={folderDraft.name}
-            onChange={e => setFolderDraft(prev => ({ 
-              ...prev, 
-              name: e.target.value.slice(0, 50) // Limit length
-            }))}
+            onChange={handleNameChange}
             placeholder="Enter folder name..."
             autoFocus
+            maxLength={maxNameLength}
             onFocus={e => {
               e.target.style.borderColor = '#8b5cf6';
               e.target.style.background = 'rgba(255, 255, 255, 0.08)';
             }}
             onBlur={e => {
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.target.style.borderColor = folderDraft.name.length === maxNameLength 
+                ? 'rgba(239, 68, 68, 0.5)' 
+                : 'rgba(255, 255, 255, 0.1)';
               e.target.style.background = 'rgba(255, 255, 255, 0.05)';
             }}
           />
+          {folderDraft.name.length === maxNameLength && (
+            <p className="text-xs text-red-400">
+              Maximum {maxNameLength} characters reached
+            </p>
+          )}
         </div>
 
         {/* Color Picker */}
@@ -210,13 +285,15 @@ export const RenameFolderModal = ({
           <button
             className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer transition-all duration-300 hover:-translate-y-0.5"
             style={{
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              background: folderDraft.name.trim() 
+                ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                : 'rgba(255, 255, 255, 0.1)',
               boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
             }}
             onClick={onSave}
             disabled={!folderDraft.name.trim()}
             onMouseEnter={e => {
-              if (!e.target.disabled) {
+              if (folderDraft.name.trim()) {
                 e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
               }
             }}

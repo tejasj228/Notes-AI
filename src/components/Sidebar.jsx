@@ -22,6 +22,9 @@ const Sidebar = ({
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [folderMenuOpen, setFolderMenuOpen] = useState(null);
 
+  const maxFolders = 10;
+  const canAddFolder = folders.length < maxFolders;
+
   return (
     <div 
       className={`fixed left-0 top-0 h-screen border-r transition-all duration-300 z-40 ${
@@ -92,16 +95,34 @@ const Sidebar = ({
               <>
                 <Folder size={20} />
                 <span className="flex-1">Folders</span>
-                <button
-                  className="border-none bg-transparent text-gray-400 hover:text-violet-500 p-1 rounded transition-colors duration-200"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddFolder();
-                  }}
-                  title="Add Folder"
-                >
-                  <FolderPlus size={16} />
-                </button>
+                <div className="relative group">
+                  <button
+                    className={`border-none bg-transparent p-1 rounded transition-all duration-200 ${
+                      canAddFolder 
+                        ? 'text-gray-400 hover:text-violet-500 cursor-pointer' 
+                        : 'text-gray-600 cursor-not-allowed'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (canAddFolder) {
+                        onAddFolder();
+                      }
+                    }}
+                    disabled={!canAddFolder}
+                    title={canAddFolder ? "Add Folder" : `Maximum ${maxFolders} folders allowed`}
+                  >
+                    <FolderPlus size={16} />
+                  </button>
+                  
+                  {/* Tooltip for disabled state */}
+                  {!canAddFolder && (
+                    <div className="absolute right-0 top-8 hidden group-hover:block z-50">
+                      <div className="bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap border border-gray-600">
+                        Max {maxFolders} folders reached
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </button>
@@ -129,7 +150,7 @@ const Sidebar = ({
                       <FolderOpen size={16} /> : 
                       <Folder size={16} />
                     }
-                    <span className="truncate">{folder.name}</span>
+                    <span className="truncate" title={folder.name}>{folder.name}</span>
                     <span 
                       className="w-2 h-2 rounded-full ml-auto"
                       style={{ background: getFolderColor(folder.color) }}
@@ -157,6 +178,13 @@ const Sidebar = ({
                   )}
                 </div>
               ))}
+              
+              {/* Folder count indicator */}
+              {sidebarOpen && (
+                <div className="px-4 py-2 text-xs text-gray-500">
+                  {folders.length}/{maxFolders} folders
+                </div>
+              )}
             </div>
           )}
         </div>

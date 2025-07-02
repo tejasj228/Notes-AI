@@ -161,6 +161,21 @@ export const insertImageAtCaret = (editorRef, imageUrl) => {
   }
 };
 
+// Handle image insertion
+export const handleInsertImage = async (editorRef, setContent) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const resizedDataUrl = await resizeImage(file);
+    insertImageAtCaret(editorRef, resizedDataUrl);
+    setContent(editorRef.current.innerHTML);
+  };
+  input.click();
+};
+
 // Filter notes based on search term
 export const filterNotes = (notes, searchTerm) => {
   if (!searchTerm) return notes;

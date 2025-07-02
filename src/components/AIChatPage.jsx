@@ -4,6 +4,50 @@ import { FormattingToolbar } from './UI';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
 import Sidebar from './Sidebar';
 
+// Simple markdown parser function
+const parseMarkdown = (text) => {
+  if (!text) return '';
+  
+  let html = text
+    // Bold text: **text** or __text__
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+    
+    // Italic text: *text* or _text_
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+    
+    // Strikethrough: ~~text~~
+    .replace(/~~(.*?)~~/g, '<del>$1</del>')
+    
+    // Inline code: `code`
+    .replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>')
+    
+    // Code blocks: ```code```
+    .replace(/```([^`]+)```/g, '<pre style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto;"><code style="font-family: monospace;">$1</code></pre>')
+    
+    // Line breaks
+    .replace(/\n/g, '<br>')
+    
+    // Unordered lists: - item or * item
+    .replace(/^[\s]*[-*]\s+(.+)$/gm, '<li>$1</li>')
+    
+    // Ordered lists: 1. item
+    .replace(/^[\s]*\d+\.\s+(.+)$/gm, '<li>$1</li>')
+    
+    // Headers: # Header
+    .replace(/^### (.*$)/gm, '<h3 style="font-size: 1.1em; font-weight: 600; margin: 12px 0 8px 0; color: #e2e8f0;">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 style="font-size: 1.25em; font-weight: 600; margin: 16px 0 8px 0; color: #e2e8f0;">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 style="font-size: 1.5em; font-weight: 600; margin: 16px 0 8px 0; color: #e2e8f0;">$1</h1>');
+  
+  // Wrap consecutive <li> elements in <ul>
+  html = html.replace(/(<li>.*<\/li>)/gs, (match) => {
+    return `<ul style="margin: 8px 0; padding-left: 20px;">${match}</ul>`;
+  });
+  
+  return html;
+};
+
 const AIChatPage = ({ 
   sidebarOpen, 
   setSidebarOpen,
@@ -128,12 +172,28 @@ const AIChatPage = ({
     input.click();
   };
 
-  // Typing animation for AI responses
+  // Typing animation for AI responses with stop functionality
   const typeMessage = async (content, messageId) => {
     const words = content.split(' ');
     let currentText = '';
+    let shouldContinue = true;
+    
+    // Create a ref to track if we should stop typing
+    const checkShouldStop = () => {
+      return shouldContinue;
+    };
+    
+    // Store the stop function for this specific message
+    window.currentStopFunction = () => {
+      shouldContinue = false;
+    };
     
     for (let i = 0; i < words.length; i++) {
+      // Check if typing was stopped
+      if (!checkShouldStop()) {
+        break;
+      }
+      
       currentText += (i > 0 ? ' ' : '') + words[i];
       
       setMessages(prev => prev.map(msg => 
@@ -146,6 +206,16 @@ const AIChatPage = ({
       await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
     }
     
+    // Clean up
+    window.currentStopFunction = null;
+    setIsTyping(false);
+  };
+
+  // Stop typing function
+  const stopTyping = () => {
+    if (window.currentStopFunction) {
+      window.currentStopFunction();
+    }
     setIsTyping(false);
   };
 
@@ -299,8 +369,9 @@ const AIChatPage = ({
                 background: 'rgba(255, 255, 255, 0.05)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 color: '#cccccc',
-                height: 'calc(100vh - 240px)' // Take remaining height minus header and toolbar
+                height: 'calc(100vh - 240px)'
               }}
+              // Always allow editing, even for new notes
               onFocus={e => {
                 e.target.style.borderColor = '#8b5cf6';
                 e.target.style.background = 'rgba(255, 255, 255, 0.08)';
@@ -309,11 +380,13 @@ const AIChatPage = ({
                 e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                 e.target.style.background = 'rgba(255, 255, 255, 0.05)';
               }}
+              // Set initial content for new notes
+              dangerouslySetInnerHTML={{ __html: noteContent || '' }}
             />
             
             {/* Formatting Toolbar with Image Insert */}
-            <div className="py-4 flex justify-end items-center gap-3">
-              <button
+            <div className="py-4 flex justify-between items-center gap-3">
+              {/* <button
                 type="button"
                 className="border-none rounded-md p-2 text-gray-300 cursor-pointer transition-all duration-300 flex items-center text-xs"
                 title="Insert Image"
@@ -332,23 +405,40 @@ const AIChatPage = ({
                 }}
               >
                 🖼️ Insert Image
-              </button>
-              <FormattingToolbar editorRef={noteEditorRef} />
+              </button> */}
             </div>
           </div>
         </div>
 
         {/* Resize Handle */}
         <div
-          className="w-1 bg-gray-600 cursor-col-resize hover:bg-purple-500 transition-colors duration-200 flex items-center justify-center"
+          className="w-1 cursor-col-resize flex items-center justify-center transition-all duration-200 group"
           onMouseDown={handleMouseDown}
-          style={{ background: isDragging ? '#8b5cf6' : 'rgba(255, 255, 255, 0.1)' }}
+          style={{ 
+            background: isDragging ? '#8b5cf6' : 'rgba(255, 255, 255, 0.1)',
+            borderLeft: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.05)',
+            borderRight: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.05)'
+          }}
+          onMouseEnter={e => {
+            if (!isDragging) {
+              e.target.style.background = '#8b5cf6';
+              e.target.style.borderLeft = '1px solid #8b5cf6';
+              e.target.style.borderRight = '1px solid #8b5cf6';
+            }
+          }}
+          onMouseLeave={e => {
+            if (!isDragging) {
+              e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.target.style.borderLeft = '1px solid rgba(255, 255, 255, 0.05)';
+              e.target.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+            }
+          }}
         >
-          <GripVertical size={16} className="text-gray-400" />
+          <GripVertical size={16} className="text-gray-400 group-hover:text-white transition-colors duration-200" />
         </div>
 
         {/* Right Panel - Chat Interface */}
-        <div className="flex-1 flex flex-col" style={{ background: '#1a1a1a', minHeight: '100vh' }}>
+        <div className="flex-1 flex flex-col relative" style={{ background: '#1a1a1a', minHeight: '100vh' }}>
           {/* Chat Header */}
           <div className="p-6 border-b flex items-center gap-3" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
@@ -365,7 +455,7 @@ const AIChatPage = ({
             ref={chatContainerRef}
             className="flex-1 overflow-y-auto p-6 space-y-4"
             style={{ 
-              height: 'calc(100vh - 200px)' // Fixed height calculation
+              paddingBottom: '100px' // Space for floating input
             }}
           >
             {messages.map((message) => (
@@ -407,12 +497,17 @@ const AIChatPage = ({
                     borderRadius: message.type === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px'
                   }}
                 >
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                  <div className="text-sm leading-relaxed">
                     {/* Show "Thinking..." for the last AI message when typing and content is empty */}
                     {isTyping && message.type === 'ai' && !message.content && message.id === Math.max(...messages.filter(m => m.type === 'ai').map(m => m.id)) ? (
                       <span className="text-gray-400">Thinking...</span>
                     ) : (
-                      message.content
+                      // FIXED: Parse markdown for AI messages, plain text for user messages
+                      message.type === 'ai' ? (
+                        <div dangerouslySetInnerHTML={{ __html: parseMarkdown(message.content) }} />
+                      ) : (
+                        <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>
+                      )
                     )}
                   </div>
                 </div>
@@ -428,54 +523,71 @@ const AIChatPage = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Message Input */}
-          <div className="px-6 pb-6 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-            <div className="flex gap-3 items-end pt-6">
-              <div className="flex-1 relative">
-                <textarea
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask anything about your note..."
-                  className="w-full p-4 pr-12 border rounded-2xl resize-none outline-none text-gray-200 placeholder-gray-400"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    minHeight: '56px',
-                    maxHeight: '120px'
-                  }}
-                  rows={1}
-                  disabled={isTyping}
-                  onFocus={e => {
-                    e.target.style.borderColor = '#8b5cf6';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                  }}
-                  onBlur={e => {
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-                  }}
-                />
-              </div>
-              
-              <button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim() || isTyping}
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          {/* Floating Message Input - Only over chat area */}
+          <div 
+            className="absolute bottom-6 left-6 right-6"
+          >
+            <div 
+              className="relative flex items-center"
+              style={{ height: '56px' }} // Match textarea minHeight
+            >
+              <textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask anything about your note..."
+                className="w-full h-full p-4 pr-14 border rounded-2xl resize-none outline-none text-gray-200 placeholder-gray-400 shadow-2xl hide-scrollbar"
                 style={{
-                  background: inputMessage.trim() && !isTyping 
-                    ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' 
-                    : 'rgba(255, 255, 255, 0.1)'
+                  background: '#2a2a2a',
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  minHeight: '56px',
+                  maxHeight: '120px',
+                  overflowY: 'hidden' // Hide vertical scrollbar
+                }}
+                rows={1}
+                disabled={isTyping}
+                onFocus={e => {
+                  e.target.style.borderColor = '#8b5cf6';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                }}
+              />
+              
+              {/* Send/Stop Button - Perfectly centered */}
+              <button
+                onClick={isTyping ? stopTyping : sendMessage}
+                disabled={!isTyping && !inputMessage.trim()}
+                className="absolute w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  border: 'none',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)'
                 }}
                 onMouseEnter={e => {
-                  if (inputMessage.trim() && !isTyping) {
-                    e.target.style.transform = 'scale(1.05)';
-                  }
+                  e.target.style.transform = 'translateY(-50%) scale(1.05)';
                 }}
                 onMouseLeave={e => {
-                  e.target.style.transform = 'scale(1)';
+                  e.target.style.transform = 'translateY(-50%) scale(1)';
                 }}
               >
-                <Send size={18} className="text-white" />
+                {isTyping ? (
+                  // Stop icon (always centered)
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    style={{ display: 'block' }}
+                  >
+                    <rect x="6" y="6" width="12" height="12" rx="3" />
+                  </svg>
+                ) : (
+                  // Send icon
+                  <Send size={16} className="text-white" />
+                )}
               </button>
             </div>
           </div>

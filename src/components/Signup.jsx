@@ -20,8 +20,8 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
       newErrors.name = 'Name must be at least 2 characters';
     }
     
-    if (!signupData.email.includes('@')) {
-      newErrors.email = 'Please enter a valid email';
+    if (!signupData.email.includes('@') || !signupData.email.includes('.')) {
+      newErrors.email = 'Please enter a valid email address';
     }
     
     if (signupData.password.length < 6) {
@@ -41,6 +41,7 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
     if (!validateForm()) return;
     
     setIsLoading(true);
+    
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
@@ -56,6 +57,14 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
     }, 1200);
   };
 
+  const handleInputChange = (field, value) => {
+    setSignupData({...signupData, [field]: value});
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors({...errors, [field]: ''});
+    }
+  };
+
   return (
     <div className="auth-container">
       {/* Loading Overlay */}
@@ -65,46 +74,47 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
         </div>
       )}
 
-      {/* Background Elements */}
-      <div className="floating-shapes">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className={`shape shape-${i + 1}`}></div>
-        ))}
-        {/* Floating particles */}
-        {[...Array(15)].map((_, i) => (
-          <div 
-            key={i}
-            className="particle" 
-            style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 4}s`,
-              animationDuration: `${4 + Math.random() * 3}s`
-            }}
-          />
+      {/* Enhanced Background Effects */}
+      <div className="floating-particles">
+        {[...Array(9)].map((_, i) => (
+          <div key={i} className="particle"></div>
         ))}
       </div>
 
+      <div className="floating-shapes">
+        <div className="shape shape-1"></div>
+        <div className="shape shape-2"></div>
+        <div className="shape shape-3"></div>
+        <div className="shape shape-4"></div>
+      </div>
+
+      <div className="geometric-lines">
+        <div className="animated-line line-horizontal"></div>
+        <div className="animated-line line-vertical"></div>
+      </div>
+
       <div className="auth-card">
-        <div className="auth-header">
+        <div className="auth-header signup-header">
           <div className="auth-logo">
-            <StickyNote size={36} />
-            NOTES AI
+            <StickyNote size={32} strokeWidth={2.5} />
+            <span>NOTES AI</span>
           </div>
-          <p className="auth-subtitle">Create your account and start taking notes</p>
+          <p className="auth-subtitle">Create your account and start organizing</p>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form signup-form" onSubmit={handleSubmit}>
           <div className="input-group">
             <input
               type="text"
               className={`auth-input ${errors.name ? 'error' : ''}`}
-              placeholder="Enter your full name"
+              placeholder="Full name"
               value={signupData.name}
-              onChange={(e) => setSignupData({...signupData, name: e.target.value})}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               required
               disabled={isLoading}
+              autoComplete="name"
             />
-            <User className="input-icon" size={20} />
+            <User className="input-icon" size={20} strokeWidth={2} />
             {errors.name && <span className="error-text">{errors.name}</span>}
           </div>
 
@@ -112,13 +122,14 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
             <input
               type="email"
               className={`auth-input ${errors.email ? 'error' : ''}`}
-              placeholder="Enter your email"
+              placeholder="Email address"
               value={signupData.email}
-              onChange={(e) => setSignupData({...signupData, email: e.target.value})}
+              onChange={(e) => handleInputChange('email', e.target.value)}
               required
               disabled={isLoading}
+              autoComplete="email"
             />
-            <Mail className="input-icon" size={20} />
+            <Mail className="input-icon" size={20} strokeWidth={2} />
             {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
 
@@ -126,18 +137,20 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
             <input
               type={showPassword ? "text" : "password"}
               className={`auth-input ${errors.password ? 'error' : ''}`}
-              placeholder="Create a password"
+              placeholder="Create password"
               value={signupData.password}
-              onChange={(e) => setSignupData({...signupData, password: e.target.value})}
+              onChange={(e) => handleInputChange('password', e.target.value)}
               required
               disabled={isLoading}
+              autoComplete="new-password"
             />
-            <Lock className="input-icon" size={20} />
+            <Lock className="input-icon" size={20} strokeWidth={2} />
             <button
               type="button"
               className="password-toggle"
               onClick={() => setShowPassword(!showPassword)}
               disabled={isLoading}
+              aria-label="Toggle password visibility"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -148,19 +161,24 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
             <input
               type="password"
               className={`auth-input ${errors.confirmPassword ? 'error' : ''}`}
-              placeholder="Confirm your password"
+              placeholder="Confirm password"
               value={signupData.confirmPassword}
-              onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
+              onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
               required
               disabled={isLoading}
+              autoComplete="new-password"
             />
-            <Lock className="input-icon" size={20} />
+            <Lock className="input-icon" size={20} strokeWidth={2} />
             {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
           </div>
 
           <button type="submit" className="auth-button" disabled={isLoading}>
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? 'Creating account...' : 'Create Account'}
           </button>
+
+          <div className="auth-divider signup-divider">
+            <span>or</span>
+          </div>
 
           <button 
             type="button" 
@@ -168,7 +186,7 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
             onClick={handleGoogleAuth}
             disabled={isLoading}
           >
-            <svg className="google-icon" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="google-icon" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -178,14 +196,14 @@ const Signup = ({ onSignup, onSwitchToLogin, onGoogleSignup }) => {
           </button>
         </form>
 
-        <div className="auth-divider">
-          <span>or</span>
-        </div>
-
         <div className="auth-switch">
           Already have an account?{' '}
-          <button onClick={onSwitchToLogin} disabled={isLoading}>
-            Sign in here
+          <button 
+            type="button"
+            onClick={onSwitchToLogin} 
+            disabled={isLoading}
+          >
+            Sign in
           </button>
         </div>
       </div>

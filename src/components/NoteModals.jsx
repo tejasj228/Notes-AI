@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { ColorPicker, KeywordsEditor, ContentEditor } from './UI';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
@@ -74,12 +74,12 @@ export const NewNoteModal = ({
         style={{ 
           background: '#2a2a2a',
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          width: '900px',
-          height: '710px', // reduced from 800px
+          width: '820px',         // reduced from 900px
+          height: '650px',        // reduced from 710px
           maxWidth: '98vw',
           maxHeight: '98vh',
           minWidth: '340px',
-          minHeight: '400px', // reduced from 440px
+          minHeight: '400px',
           display: 'flex'
         }}
         onClick={e => e.stopPropagation()}
@@ -154,7 +154,7 @@ export const NewNoteModal = ({
   );
 };
 
-// Edit Note Modal - EXACT COPY from your original working NoteModals.jsx
+// Edit Note Modal - FIXED VERSION
 export const EditNoteModal = ({ 
   show, 
   note, 
@@ -164,6 +164,8 @@ export const EditNoteModal = ({
   onClose 
 }) => {
   const textareaRef = useRef(null);
+  // Local state for keywords to handle editing properly
+  const [keywordsValue, setKeywordsValue] = useState('');
 
   useEffect(() => {
     if (show && note && textareaRef.current) {
@@ -172,6 +174,18 @@ export const EditNoteModal = ({
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [show, note]);
+
+  // Initialize keywords value when note changes
+  useEffect(() => {
+    if (note) {
+      const keywordsString = typeof note.keywords === 'string'
+        ? note.keywords
+        : Array.isArray(note.keywords)
+          ? note.keywords.join(', ')
+          : '';
+      setKeywordsValue(keywordsString);
+    }
+  }, [note]);
 
   // Handle image insertion
   const handleInsertImage = async () => {
@@ -190,9 +204,9 @@ export const EditNoteModal = ({
     input.click();
   };
 
-  // Handle keywords change
+  // Handle keywords change - use local state
   const handleKeywordsChange = (e) => {
-    onUpdate(note.id, 'keywords', e.target.value);
+    setKeywordsValue(e.target.value);
   };
 
   const handleKeywordsBlur = (e) => {
@@ -220,12 +234,12 @@ export const EditNoteModal = ({
         style={{ 
           background: '#2a2a2a',
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          width: '900px',
-          height: '710px', // reduced from 800px
+          width: '820px',         // reduced from 900px
+          height: '650px',        // reduced from 710px
           maxWidth: '98vw',
           maxHeight: '98vh',
           minWidth: '340px',
-          minHeight: '400px', // reduced from 440px
+          minHeight: '400px',
           display: 'flex'
         }}
         onClick={e => e.stopPropagation()}
@@ -274,17 +288,20 @@ export const EditNoteModal = ({
           onColorChange={color => onUpdate(note.id, 'color', color)}
         />
         
-        {/* Keywords Editor */}
-        <KeywordsEditor
-          keywords={typeof note.keywords === 'string'
-            ? note.keywords
-            : Array.isArray(note.keywords)
-              ? note.keywords.join(', ')
-              : ''
-          }
-          onChange={handleKeywordsChange}
-          onBlur={handleKeywordsBlur}
-        />
+        {/* Keywords Editor - Fixed version */}
+        <div>
+          <input
+            type="text"
+            className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500"
+            value={keywordsValue}
+            onChange={handleKeywordsChange}
+            onBlur={handleKeywordsBlur}
+            placeholder="Keywords (comma separated)..."
+          />
+          <div className="text-xs text-gray-400 mb-2 text-right">
+            {keywordsValue.split(',').map(k => k.trim()).filter(Boolean).length}/3 keywords
+          </div>
+        </div>
         
         {/* Content Editor */}
         <ContentEditor

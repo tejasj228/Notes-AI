@@ -59,18 +59,18 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     };
   }, [draggedNote]);
 
-  // Drag handlers - Exact copy from working oldcode.jsx
+  // FIXED: Drag handlers without opacity changes
   const handleDragStart = (e, note, index) => {
     if (currentPage === 'trash') return;
     setDraggedNote(note);
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', note.id.toString());
-    e.target.style.opacity = '0.5';
+    // REMOVED: e.target.style.opacity = '0.5'; - This was causing transparency
   };
 
   const handleDragEnd = (e) => {
-    e.target.style.opacity = '1';
+    // REMOVED: e.target.style.opacity = '1'; - No need to reset opacity
     setDraggedNote(null);
     setDragOverIndex(null);
     setDraggedIndex(null);

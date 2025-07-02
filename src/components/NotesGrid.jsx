@@ -29,7 +29,7 @@ const NotesGrid = ({
     handleGridDrop
   } = dragHandlers;
 
-  // Add CSS for drag animations
+  // Add CSS for drag animations - UPDATED to remove transparency
   React.useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -84,7 +84,7 @@ const NotesGrid = ({
     </div>
   );
 
-  // Note Card Component
+  // Note Card Component - FIXED DRAG STYLING
   const NoteCard = ({ note, index }) => {
     const images = extractImageSrcs(note.content, 2);
 
@@ -100,9 +100,8 @@ const NotesGrid = ({
           ${getSizeClasses(note.size)}
         `}
         style={{
-          background: draggedNote && draggedNote.id === note.id 
-            ? `linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, ${getNoteBackground(note.color)} 70%)`
-            : getNoteBackground(note.color),
+          // FIXED: Keep the original gradient when dragging - no overlay or transparency
+          background: getNoteBackground(note.color),
           transform: dragOverIndex === index && !(draggedNote && draggedNote.id === note.id)
             ? 'translateY(-8px) scale(1.02)' 
             : draggedNote && draggedNote.id === note.id
@@ -113,15 +112,22 @@ const NotesGrid = ({
             : dragOverIndex === index 
               ? 'rgba(139, 92, 246, 0.6)' 
               : 'transparent',
-          opacity: '1',
           zIndex: draggedNote && draggedNote.id === note.id ? '50' : 'auto',
           transition: draggedNote && draggedNote.id === note.id 
-            ? 'background 0.3s ease, border-color 0.3s ease' 
+            ? 'border-color 0.3s ease, transform 0.3s ease' 
             : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
         draggable={currentPage !== PAGES.TRASH}
-        onDragStart={(e) => handleDragStart(e, note, index)}
-        onDragEnd={handleDragEnd}
+        onDragStart={(e) => {
+          handleDragStart(e, note, index);
+          // FIXED: Don't change opacity on drag start
+          // e.target.style.opacity = '0.5'; // REMOVED THIS LINE
+        }}
+        onDragEnd={(e) => {
+          handleDragEnd(e);
+          // FIXED: Don't reset opacity since we never changed it
+          // e.target.style.opacity = '1'; // REMOVED THIS LINE
+        }}
         onDragOver={handleDragOver}
         onDragEnter={(e) => handleDragEnter(e, index)}
         onDrop={(e) => handleDrop(e, index)}

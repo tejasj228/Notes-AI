@@ -1,69 +1,234 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
 import { COLORS } from '../utils/constants';
 import { getColorPickerBackground } from '../utils/helpers';
 
-// Formatting Toolbar Component
+// Bulletproof Formatting Toolbar Component
 export const FormattingToolbar = ({ editorRef }) => {
-  const handleFormatting = (cmd) => {
+  const executeCommand = (command, value = null) => {
     const editor = editorRef.current;
     if (!editor) return;
+
+    // Focus the editor first
+    editor.focus();
     
-    if (cmd === 'insertUnorderedList' || cmd === 'insertOrderedList') {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        if (!range.collapsed) {
-          document.execCommand(cmd, false, null);
-        } else {
-          const listType = cmd === 'insertUnorderedList' ? 'ul' : 'ol';
-          const listItem = document.createElement('li');
-          listItem.innerHTML = '&nbsp;';
-          const list = document.createElement(listType);
-          list.appendChild(listItem);
-          range.insertNode(list);
-          const newRange = document.createRange();
-          newRange.setStart(listItem, 0);
-          newRange.setEnd(listItem, 0);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        }
-      }
-    } else {
-      document.execCommand(cmd, false, null);
+    // Save the current selection
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) {
+      // If no selection, place cursor at end of editor
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
+
+    // Execute the command
+    document.execCommand(command, false, value);
+    
+    // Keep focus on editor
     editor.focus();
   };
 
+  const handleButtonClick = (e, command) => {
+    e.preventDefault();
+    e.stopPropagation();
+    executeCommand(command);
+  };
+
   return (
-    <div className="flex gap-2">
-      {[
-        { icon: Bold, cmd: 'bold', title: 'Bold' },
-        { icon: Italic, cmd: 'italic', title: 'Italic' },
-        { icon: Underline, cmd: 'underline', title: 'Underline' },
-        { icon: Strikethrough, cmd: 'strikeThrough', title: 'Strikethrough' },
-        { icon: List, cmd: 'insertUnorderedList', title: 'Bullet List' },
-        { icon: ListOrdered, cmd: 'insertOrderedList', title: 'Numbered List' }
-      ].map(({ icon: Icon, cmd, title }) => (
-        <button 
-          key={cmd}
-          type="button"
-          title={title}
-          className="
-            border-none rounded-md p-2 text-gray-300 cursor-pointer
-            transition-all duration-300 flex items-center
-            bg-[rgba(255,255,255,0.08)]
-            hover:bg-[rgba(139,92,246,0.15)]
-            hover:text-[#8b5cf6]
-          "
-          onMouseDown={e => {
-            e.preventDefault();
-            handleFormatting(cmd);
-          }}
-        >
-          <Icon size={16} />
-        </button>
-      ))}
+    <div className="flex gap-2" style={{ userSelect: 'none' }}>
+      <button
+        type="button"
+        className="format-btn"
+        title="Bold (Ctrl+B)"
+        style={{
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#cccccc',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '32px',
+          height: '32px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseDown={e => e.preventDefault()}
+        onClick={e => handleButtonClick(e, 'bold')}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(139,92,246,0.15)';
+          e.target.style.color = '#8b5cf6';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255,255,255,0.08)';
+          e.target.style.color = '#cccccc';
+        }}
+      >
+        <Bold size={16} />
+      </button>
+
+      <button
+        type="button"
+        className="format-btn"
+        title="Italic (Ctrl+I)"
+        style={{
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#cccccc',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '32px',
+          height: '32px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseDown={e => e.preventDefault()}
+        onClick={e => handleButtonClick(e, 'italic')}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(139,92,246,0.15)';
+          e.target.style.color = '#8b5cf6';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255,255,255,0.08)';
+          e.target.style.color = '#cccccc';
+        }}
+      >
+        <Italic size={16} />
+      </button>
+
+      <button
+        type="button"
+        className="format-btn"
+        title="Underline (Ctrl+U)"
+        style={{
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#cccccc',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '32px',
+          height: '32px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseDown={e => e.preventDefault()}
+        onClick={e => handleButtonClick(e, 'underline')}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(139,92,246,0.15)';
+          e.target.style.color = '#8b5cf6';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255,255,255,0.08)';
+          e.target.style.color = '#cccccc';
+        }}
+      >
+        <Underline size={16} />
+      </button>
+
+      <button
+        type="button"
+        className="format-btn"
+        title="Strikethrough"
+        style={{
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#cccccc',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '32px',
+          height: '32px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseDown={e => e.preventDefault()}
+        onClick={e => handleButtonClick(e, 'strikeThrough')}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(139,92,246,0.15)';
+          e.target.style.color = '#8b5cf6';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255,255,255,0.08)';
+          e.target.style.color = '#cccccc';
+        }}
+      >
+        <Strikethrough size={16} />
+      </button>
+
+      <button
+        type="button"
+        className="format-btn"
+        title="Bullet List"
+        style={{
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#cccccc',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '32px',
+          height: '32px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseDown={e => e.preventDefault()}
+        onClick={e => handleButtonClick(e, 'insertUnorderedList')}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(139,92,246,0.15)';
+          e.target.style.color = '#8b5cf6';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255,255,255,0.08)';
+          e.target.style.color = '#cccccc';
+        }}
+      >
+        <List size={16} />
+      </button>
+
+      <button
+        type="button"
+        className="format-btn"
+        title="Numbered List"
+        style={{
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#cccccc',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '32px',
+          height: '32px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseDown={e => e.preventDefault()}
+        onClick={e => handleButtonClick(e, 'insertOrderedList')}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(139,92,246,0.15)';
+          e.target.style.color = '#8b5cf6';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255,255,255,0.08)';
+          e.target.style.color = '#cccccc';
+        }}
+      >
+        <ListOrdered size={16} />
+      </button>
     </div>
   );
 };
@@ -168,7 +333,9 @@ export const FolderMenu = ({ folderId, onRename, onDelete, onClose }) => {
 export const KeywordsEditor = ({ keywords, onChange, onBlur, placeholder = "Keywords (comma separated)..." }) => {
   const keywordCount = Array.isArray(keywords) 
     ? keywords.filter(k => k.trim()).length 
-    : 0;
+    : typeof keywords === 'string'
+      ? keywords.split(',').map(k => k.trim()).filter(Boolean).length
+      : 0;
 
   return (
     <>
@@ -192,7 +359,7 @@ export const KeywordsEditor = ({ keywords, onChange, onBlur, placeholder = "Keyw
   );
 };
 
-// Content Editor Component
+// Content Editor Component - FIXED: Removed internal button layout
 export const ContentEditor = ({ 
   editorRef, 
   content, 
@@ -201,6 +368,13 @@ export const ContentEditor = ({
   placeholder = "Start writing your note here...",
   className = ""
 }) => {
+  // Set initial content when component mounts or content changes
+  useEffect(() => {
+    if (editorRef.current && content !== undefined && editorRef.current.innerHTML !== content) {
+      editorRef.current.innerHTML = content || '';
+    }
+  }, [content]);
+
   const handlePaste = (e) => {
     // If image is present in clipboard, allow default paste (browser will handle image)
     if (
@@ -215,6 +389,12 @@ export const ContentEditor = ({
     document.execCommand('insertText', false, text);
   };
 
+  const handleInput = (e) => {
+    if (onChange) {
+      onChange(e);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div
@@ -222,14 +402,14 @@ export const ContentEditor = ({
         className={`note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1 ${className}`}
         contentEditable={true}
         suppressContentEditableWarning={true}
-        onInput={onChange}
+        onInput={handleInput}
         onPaste={handlePaste}
         data-placeholder={placeholder}
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          minHeight: '440px',
-          maxHeight: '700px',
+          minHeight: '380px',  // Adjusted for smaller modal
+          maxHeight: '520px',  // Adjusted for smaller modal
           color: '#cccccc',
           overflowY: 'auto',
           flex: 1
@@ -243,7 +423,9 @@ export const ContentEditor = ({
           e.target.style.background = 'rgba(255, 255, 255, 0.05)';
         }}
       />
-      <div className="flex items-center justify-between mt-2 w-full">
+      
+      {/* Toolbar Section - Separate from buttons */}
+      {/* <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -267,9 +449,7 @@ export const ContentEditor = ({
           </button>
           <FormattingToolbar editorRef={editorRef} />
         </div>
-        {/* Action buttons will be placed here from NoteModals */}
-        {/** children or slot for action buttons if needed **/}
-      </div>
+      </div> */}
     </div>
   );
 };
