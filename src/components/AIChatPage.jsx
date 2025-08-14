@@ -103,13 +103,17 @@ const AIChatPage = ({
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [noteContent, setNoteContent] = useState(selectedNote?.content || '');
-  const [panelWidth, setPanelWidth] = useState(40); // Will be adjusted based on screen size
+  const [panelWidth, setPanelWidth] = useState(() => {
+    // Set initial panel width based on screen size
+    const isMobileScreen = window.innerWidth < 768;
+    return isMobileScreen ? 45 : 40; // Mobile gets 45% for notes, desktop gets 40%
+  }); // Will be adjusted based on screen size
   const [isDragging, setIsDragging] = useState(false);
   const [imagePopup, setImagePopup] = useState({ open: false, src: '' }); // Add image popup state
   const [currentChatId, setCurrentChatId] = useState(null); // Track current chat
   const [chatSessions, setChatSessions] = useState({}); // Store all chat sessions by note ID
   const [chatHistory, setChatHistory] = useState([]); // Store chat history for current note
-  const [isMobile, setIsMobile] = useState(false); // Track if mobile view
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Track if mobile view - initialized correctly
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight); // Track viewport height
   const [isUpdatingMessages, setIsUpdatingMessages] = useState(false); // Track when messages are being updated via chat
   const [initializedNotes, setInitializedNotes] = useState(new Set()); // Track which notes have been initialized

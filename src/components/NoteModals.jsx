@@ -85,16 +85,16 @@ export const NewNoteModal = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5 px-1 sm:px-0">
+        <div className="flex items-center justify-between mb-5 px-2 sm:px-1">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-2 sm:mr-4"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-3 sm:mr-4"
             value={noteDraft.title}
             onChange={e => setNoteDraft(prev => ({ ...prev, title: e.target.value }))}
             placeholder="Note title..."
           />
           <button
-            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 flex-shrink-0"
+            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 flex-shrink-0 ml-2"
             style={{ background: 'rgba(255, 255, 255, 0.1)' }}
             onClick={onClose}
             title="Close"
@@ -271,16 +271,16 @@ export const EditNoteModal = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header - FIXED: Use local state for title */}
-        <div className="flex items-center justify-between mb-5 px-1 sm:px-0">
+        <div className="flex items-center justify-between mb-5 px-2 sm:px-1">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-2 sm:mr-4"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-3 sm:mr-4"
             value={titleValue}
             onChange={handleTitleChange}
             onBlur={handleTitleBlur}
             placeholder="Note title..."
           />
-          <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-2 flex-shrink-0">
             <button 
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
               onClick={() => onDelete(note.id)}
