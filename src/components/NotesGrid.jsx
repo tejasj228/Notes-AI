@@ -74,7 +74,7 @@ const NotesGrid = ({
 
   return (
     <div 
-      className="grid gap-3 md:gap-5 max-w-6xl mx-auto py-3 md:py-5 px-4 md:px-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      className="grid gap-3 md:gap-5 max-w-6xl mx-auto py-3 md:py-5 w-full md:px-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       onDragOver={handleGridDragOver}
       onDrop={handleGridDrop}
     >
