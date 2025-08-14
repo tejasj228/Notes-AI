@@ -13,6 +13,35 @@ export const NewNoteModal = ({
 }) => {
   const newNoteTextareaRef = useRef(null);
 
+  // Disable scrolling when modal is open
+  useEffect(() => {
+    if (show) {
+      // Disable scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      // Re-enable scrolling
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [show]);
+
   useEffect(() => {
     if (show) {
       // Only set content if the modal is shown and the editor is empty (first open)
@@ -85,16 +114,16 @@ export const NewNoteModal = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5 px-2 sm:px-1">
+        <div className="flex items-center justify-between mb-5 px-3 sm:px-2">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-3 sm:mr-4"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4 sm:mr-5"
             value={noteDraft.title}
             onChange={e => setNoteDraft(prev => ({ ...prev, title: e.target.value }))}
             placeholder="Note title..."
           />
           <button
-            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 flex-shrink-0 ml-2"
+            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 flex-shrink-0"
             style={{ background: 'rgba(255, 255, 255, 0.1)' }}
             onClick={onClose}
             title="Close"
@@ -173,6 +202,35 @@ export const EditNoteModal = ({
   const [keywordsValue, setKeywordsValue] = useState('');
   // FIXED: Local state for color to handle editing properly
   const [colorValue, setColorValue] = useState('purple');
+
+  // Disable scrolling when modal is open
+  useEffect(() => {
+    if (show) {
+      // Disable scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      // Re-enable scrolling
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [show]);
 
   useEffect(() => {
     if (show && note && textareaRef.current) {
@@ -271,16 +329,16 @@ export const EditNoteModal = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header - FIXED: Use local state for title */}
-        <div className="flex items-center justify-between mb-5 px-2 sm:px-1">
+        <div className="flex items-center justify-between mb-5 px-3 sm:px-2">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-3 sm:mr-4"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4 sm:mr-5"
             value={titleValue}
             onChange={handleTitleChange}
             onBlur={handleTitleBlur}
             placeholder="Note title..."
           />
-          <div className="flex gap-2 sm:gap-2 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-3 flex-shrink-0">
             <button 
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
               onClick={() => onDelete(note.id)}
@@ -389,6 +447,35 @@ export const EditNoteModal = ({
 
 // Image Popup Modal
 export const ImagePopup = ({ show, imageSrc, onClose }) => {
+  // Disable scrolling when modal is open
+  useEffect(() => {
+    if (show) {
+      // Disable scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      // Re-enable scrolling
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [show]);
+
   if (!show) return null;
 
   return (
