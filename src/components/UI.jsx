@@ -236,13 +236,15 @@ export const FormattingToolbar = ({ editorRef }) => {
 // Color Picker Component
 export const ColorPicker = ({ selectedColor, onColorChange, label = "Color:" }) => {
   return (
-    <div className="flex gap-2 items-center mb-4">
+    <div className="flex gap-2 items-center mb-4 flex-wrap">
       <span className="text-sm text-gray-300 mr-2 font-medium">{label}</span>
       {COLORS.map((color) => (
         <div
           key={color}
-          className="w-8 h-8 rounded-full cursor-pointer border-3 transition-all duration-300 relative hover:scale-110"
+          className="flex-shrink-0 rounded-full cursor-pointer border-3 transition-all duration-300 relative hover:scale-110"
           style={{
+            width: '32px',
+            height: '32px',
             background: getColorPickerBackground(color),
             borderColor: selectedColor === color ? '#ffffff' : 'transparent',
             transform: selectedColor === color ? 'scale(1.15)' : 'scale(1)'
@@ -408,8 +410,8 @@ export const ContentEditor = ({
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          minHeight: '380px',  // Adjusted for smaller modal
-          maxHeight: '520px',  // Adjusted for smaller modal
+          minHeight: '200px',  // Reduced for better modal fit
+          maxHeight: '400px',  // Reduced for better modal fit
           color: '#cccccc',
           overflowY: 'auto',
           flex: 1

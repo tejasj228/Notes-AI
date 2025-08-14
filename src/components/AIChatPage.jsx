@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, GripVertical } from 'lucide-react';
-import { FormattingToolbar } from './UI';
+import { Send, User, Bot, GripVertical, Menu } from 'lucide-react';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
-import Sidebar from './Sidebar';
+import ChatSidebar from './ChatSidebar';
+
+// Hide scrollbars for webkit browsers
+const chatInputStyles = `
+  .chat-input::-webkit-scrollbar {
+    display: none;
+  }
+`;
 
 // Simple markdown parser function
 const parseMarkdown = (text) => {
@@ -74,9 +80,16 @@ const AIChatPage = ({
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [noteContent, setNoteContent] = useState(selectedNote?.content || '');
-  const [panelWidth, setPanelWidth] = useState(40); // Percentage width for left panel
+  const [panelWidth, setPanelWidth] = useState(40); // Will be adjusted based on screen size
   const [isDragging, setIsDragging] = useState(false);
   const [imagePopup, setImagePopup] = useState({ open: false, src: '' }); // Add image popup state
+  const [currentChatId, setCurrentChatId] = useState(null); // Track current chat
+  const [chatSessions, setChatSessions] = useState({}); // Store all chat sessions by note ID
+  const [chatHistory, setChatHistory] = useState([]); // Store chat history for current note
+  const [isMobile, setIsMobile] = useState(false); // Track if mobile view
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight); // Track viewport height
+  const [isUpdatingMessages, setIsUpdatingMessages] = useState(false); // Track when messages are being updated via chat
+  const [initializedNotes, setInitializedNotes] = useState(new Set()); // Track which notes have been initialized
   
   const messagesEndRef = useRef(null);
   const noteEditorRef = useRef(null);
@@ -87,13 +100,57 @@ const AIChatPage = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Initialize chat session for the selected note
+  useEffect(() => {
+    console.log('Chat initialization useEffect triggered for note ID:', selectedNote?.id);
+    if (selectedNote) {
+      const noteId = selectedNote.id;
+      const existingSessions = chatSessions[noteId] || [];
+      
+      // Load chat history for this note (sorted by creation date, newest first)
+      const sortedSessions = existingSessions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setChatHistory(sortedSessions);
+      
+      // Only create a new chat if:
+      // 1. We haven't initialized this note before, AND
+      // 2. There are no existing sessions for this note
+      if (!initializedNotes.has(noteId) && existingSessions.length === 0) {
+        console.log('Creating initial chat for new note');
+        setInitializedNotes(prev => new Set([...prev, noteId]));
+        handleNewChat();
+      } else if (existingSessions.length > 0 && !currentChatId) {
+        console.log('Setting current chat to most recent session');
+        setCurrentChatId(sortedSessions[0].id);
+        setMessages(sortedSessions[0].messages || []);
+      } else {
+        console.log('Note already initialized or has existing sessions');
+      }
+    }
+  }, [selectedNote?.id]); // Only depend on note ID, not the entire note object
+
   // Set note content when selectedNote changes
   useEffect(() => {
-    if (selectedNote && noteEditorRef.current) {
-      noteEditorRef.current.innerHTML = selectedNote.content || '';
+    if (selectedNote) {
+      const newContent = selectedNote.content || '';
+      
+      if (noteContent !== newContent) {
+        setNoteContent(newContent);
+      }
     }
-    // eslint-disable-next-line
-  }, [selectedNote]);
+  }, [selectedNote?.id, selectedNote?.content]); // More specific dependencies
+
+  // Ensure content is set when noteEditorRef becomes available or panel width changes
+  useEffect(() => {
+    if (noteEditorRef.current && selectedNote && (!isMobile || panelWidth >= 15)) {
+      const currentContent = noteEditorRef.current.innerHTML;
+      const expectedContent = selectedNote.content || '';
+      
+      // Only update if content is different to avoid cursor jumping
+      if (currentContent !== expectedContent) {
+        noteEditorRef.current.innerHTML = expectedContent;
+      }
+    }
+  }, [selectedNote?.content, panelWidth, isMobile]); // Trigger when panel visibility changes
 
   // Handle image clicks - ENABLE POPUP
   useEffect(() => {
@@ -115,16 +172,80 @@ const AIChatPage = ({
     };
   }, [selectedNote]);
 
+  // Helper function to save and restore cursor position
+  const saveCursorPosition = (element) => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(element);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      return preCaretRange.toString().length;
+    }
+    return 0;
+  };
+
+  const restoreCursorPosition = (element, position) => {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    let currentPos = 0;
+    let walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    let node;
+    while (node = walker.nextNode()) {
+      const textLength = node.textContent.length;
+      if (currentPos + textLength >= position) {
+        range.setStart(node, position - currentPos);
+        range.setEnd(node, position - currentPos);
+        break;
+      }
+      currentPos += textLength;
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
   // Handle note content changes and save them
   const handleNoteContentChange = (newContent) => {
-    setNoteContent(newContent);
-    // Save changes back to the main notes data
-    if (selectedNote && onUpdateNote) {
-      onUpdateNote(selectedNote.id, 'content', newContent);
+    // Only update if content actually changed to prevent cursor jumping
+    if (newContent !== noteContent) {
+      setNoteContent(newContent);
+      // Save changes back to the main notes data
+      if (selectedNote && onUpdateNote) {
+        onUpdateNote(selectedNote.id, 'content', newContent);
+      }
     }
   };
 
-  // Handle panel resize
+  // Add mobile detection and viewport height tracking
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileScreen = window.innerWidth < 768;
+      setIsMobile(isMobileScreen);
+      setViewportHeight(window.innerHeight);
+      
+      // Set appropriate initial panel size based on screen type
+      if (isMobileScreen && panelWidth === 40) {
+        // For mobile, start with 45% for note area (giving 55% to chat)
+        setPanelWidth(45);
+      } else if (!isMobileScreen && panelWidth === 45) {
+        // For desktop, use 40% width split
+        setPanelWidth(40);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [panelWidth]);
+
+  // Handle panel resize for responsive layout
   const handleMouseDown = (e) => {
     setIsDragging(true);
     e.preventDefault();
@@ -134,9 +255,27 @@ const AIChatPage = ({
     const handleMouseMove = (e) => {
       if (!isDragging) return;
       
-      const newWidth = (e.clientX / window.innerWidth) * 100;
-      if (newWidth > 20 && newWidth < 70) {
-        setPanelWidth(newWidth);
+      let newPanelSize;
+      
+      if (isMobile) {
+        // Mobile: vertical resize (adjust height percentage)
+        const containerHeight = window.innerHeight - 120; // Account for headers
+        const mouseY = e.clientY || (e.touches && e.touches[0].clientY);
+        newPanelSize = ((mouseY - 120) / containerHeight) * 100; // 120px for headers
+        
+        // Allow full range: 5% to 95% (if goes beyond, just show one area)
+        if (newPanelSize >= 5 && newPanelSize <= 95) {
+          setPanelWidth(newPanelSize);
+        }
+      } else {
+        // Desktop: horizontal resize (adjust width percentage)
+        const mouseX = e.clientX || (e.touches && e.touches[0].clientX);
+        newPanelSize = (mouseX / window.innerWidth) * 100;
+        
+        // Allow full range: 5% to 95% (if goes beyond, just show one area)
+        if (newPanelSize >= 5 && newPanelSize <= 95) {
+          setPanelWidth(newPanelSize);
+        }
       }
     };
 
@@ -144,16 +283,28 @@ const AIChatPage = ({
       setIsDragging(false);
     };
 
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      handleMouseMove(e);
+    };
+
     if (isDragging) {
+      // Mouse events
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      
+      // Touch events for mobile
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleMouseUp);
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, isMobile]);
 
   // Handle image insertion for notes editor
   const handleInsertImage = async () => {
@@ -282,9 +433,15 @@ const AIChatPage = ({
       // Start typing animation
       await typeMessage(aiResponse, aiMessageId);
       
+      // Now that the conversation is complete, update chat history
+      setIsUpdatingMessages(true);
+      
     } catch (error) {
       console.error('Error calling Gemini API:', error);
       await typeMessage(`Error: ${error.message}`, aiMessageId);
+      
+      // Update chat history even for errors
+      setIsUpdatingMessages(true);
     }
   };
 
@@ -296,6 +453,11 @@ const AIChatPage = ({
     }
   };
 
+  // Handle send message button click
+  const handleSendMessage = () => {
+    sendMessage();
+  };
+
   // ORIGINAL: Handle back navigation
   const handleBackToNotes = () => {
     if (onBackToNotes) {
@@ -303,296 +465,526 @@ const AIChatPage = ({
     }
   };
 
+  // Chat history handlers
+  const handleNewChat = (isManual = false) => {
+    if (!selectedNote) return;
+    
+    console.log('handleNewChat called for note:', selectedNote.id, 'isManual:', isManual);
+    
+    const newChatId = `${selectedNote.id}_${Date.now()}`;
+    const initialMessage = {
+      id: Date.now(),
+      type: 'ai',
+      content: `Hello! I can help you analyze, improve, or work with your note "${selectedNote.title}". What would you like to do?`
+    };
+    
+    setCurrentChatId(newChatId);
+    setMessages([initialMessage]);
+    setInputMessage('');
+    setIsTyping(false);
+    
+    // Create new chat session
+    const newChatSession = {
+      id: newChatId,
+      title: `New Chat - ${selectedNote.title}`,
+      preview: "Starting a new conversation...",
+      timestamp: "Just now",
+      noteId: selectedNote.id,
+      noteTitle: selectedNote.title,
+      messages: [initialMessage],
+      createdAt: new Date()
+    };
+    
+    // Update chat sessions
+    setChatSessions(prev => ({
+      ...prev,
+      [selectedNote.id]: [newChatSession, ...(prev[selectedNote.id] || [])]
+    }));
+    
+    // Update chat history for current note
+    setChatHistory(prev => [newChatSession, ...prev]);
+    setSidebarOpen(true);
+    
+    // Mark as initialized if manual
+    if (isManual) {
+      setInitializedNotes(prev => new Set([...prev, selectedNote.id]));
+    }
+  };
+
+  const handleSelectChat = (chat) => {
+    if (!chat || !selectedNote) return;
+    
+    setCurrentChatId(chat.id);
+    
+    // Load messages for this chat (in a real app, this would come from storage)
+    // For now, create a mock conversation
+    const mockMessages = [
+      {
+        id: 1,
+        type: 'ai',
+        content: `Hello! I can help you analyze, improve, or work with your note "${selectedNote.title}". What would you like to do?`
+      },
+      {
+        id: 2,
+        type: 'user',
+        content: "Can you help me improve this content?"
+      },
+      {
+        id: 3,
+        type: 'ai',
+        content: chat.preview
+      }
+    ];
+    
+    setMessages(chat.messages || mockMessages);
+    setInputMessage('');
+    setIsTyping(false);
+  };
+
+  const handleDeleteChat = (chatId) => {
+    if (!selectedNote) return;
+    
+    const noteId = selectedNote.id;
+    
+    // Remove from chat sessions
+    setChatSessions(prev => ({
+      ...prev,
+      [noteId]: (prev[noteId] || []).filter(chat => chat.id !== chatId)
+    }));
+    
+    // Remove from current chat history
+    setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
+    
+    // If it's the current chat, start a new one
+    if (chatId === currentChatId) {
+      handleNewChat(true);
+    }
+  };
+
+  // Manual function to update chat history after conversation
+  const updateChatHistory = (messagesToSave) => {
+    if (!currentChatId || !selectedNote || !messagesToSave || messagesToSave.length <= 1) return;
+    
+    const noteId = selectedNote.id;
+    
+    // Update the current chat session with new messages
+    setChatSessions(prev => {
+      const noteSessions = prev[noteId] || [];
+      const updatedSessions = noteSessions.map(session => {
+        if (session.id === currentChatId) {
+          // Generate title from first user message or keep existing
+          const userMessages = messagesToSave.filter(m => m.type === 'user');
+          const title = userMessages.length > 0 
+            ? `${userMessages[0].content.substring(0, 50)}...`
+            : session.title;
+          
+          const preview = messagesToSave.length > 1 
+            ? messagesToSave[messagesToSave.length - 1].content.substring(0, 100) + "..."
+            : session.preview;
+          
+          return {
+            ...session,
+            title,
+            preview,
+            messages: [...messagesToSave],
+            timestamp: "Just now"
+          };
+        }
+        return session;
+      });
+      
+      return {
+        ...prev,
+        [noteId]: updatedSessions
+      };
+    });
+    
+    // Update chat history
+    setChatHistory(prev => prev.map(chat => {
+      if (chat.id === currentChatId) {
+        const userMessages = messagesToSave.filter(m => m.type === 'user');
+        const title = userMessages.length > 0 
+          ? `${userMessages[0].content.substring(0, 50)}...`
+          : chat.title;
+        
+        const preview = messagesToSave.length > 1 
+          ? messagesToSave[messagesToSave.length - 1].content.substring(0, 100) + "..."
+          : chat.preview;
+        
+        return {
+          ...chat,
+          title,
+          preview,
+          messages: [...messagesToSave],
+          timestamp: "Just now"
+        };
+      }
+      return chat;
+    }));
+  };
+
+  // Update chat session when messages change (only for actual chat interactions)
+  useEffect(() => {
+    // Only update if we have a flag indicating this is a chat interaction
+    if (isUpdatingMessages) {
+      // Get current messages state when the flag is triggered
+      setMessages(currentMessages => {
+        updateChatHistory(currentMessages);
+        return currentMessages; // Return same messages, no change
+      });
+      // Reset the flag after updating
+      setIsUpdatingMessages(false);
+    }
+  }, [isUpdatingMessages]); // Only depend on the flag, not messages
+
   return (
-    <div className="min-h-screen flex" style={{ background: '#1a1a1a' }}>
-      {/* Use the same Sidebar component */}
-      <Sidebar
+    <>
+      <style>{chatInputStyles}</style>
+      <div className="min-h-screen relative" style={{ background: '#1a1a1a' }}>
+      {/* Mobile Overlay for Sidebar */}
+      {sidebarOpen && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ChatSidebar with responsive behavior */}
+      <ChatSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        currentPage={null} // No page selected in AI mode
-        currentFolder={null}
-        folders={folders}
         user={user}
-        onSwitchToNotes={onSwitchToNotes}
-        onSwitchToTrash={onSwitchToTrash}
-        onOpenFolder={onOpenFolder}
-        onAddFolder={onAddFolder}
-        onRenameFolder={onRenameFolder}
-        onDeleteFolder={onDeleteFolder}
         onLogout={onLogout}
+        onNewChat={() => handleNewChat(true)}
+        currentChatId={currentChatId}
+        onSelectChat={handleSelectChat}
+        onDeleteChat={handleDeleteChat}
+        chatHistory={chatHistory}
+        selectedNote={selectedNote}
+        onBackToNotes={onBackToNotes}
       />
 
-      {/* Main Content - Fixed positioning to avoid overlap */}
+      {/* Main Content */}
       <div 
-        className="flex transition-all duration-300"
-        style={{ 
-          marginLeft: sidebarOpen ? '256px' : '72px', // 256px = w-64, 72px = w-18
-          width: `calc(100vw - ${sidebarOpen ? '256px' : '72px'})`,
-          height: '100vh'
+        className={`absolute right-0 top-0 flex flex-col h-screen transition-all duration-300`}
+        style={{
+          left: isMobile ? '0px' : (sidebarOpen ? '256px' : '72px'),
+          width: isMobile ? '100%' : `calc(100% - ${sidebarOpen ? '256px' : '72px'})`
         }}
       >
-        {/* Left Panel - Note Viewer */}
-        <div 
-          className="flex flex-col border-r"
-          style={{ 
-            width: `${panelWidth}%`,
-            background: '#2a2a2a',
-            borderColor: 'rgba(255, 255, 255, 0.1)'
-          }}
-        >
-          {/* Note Header */}
-          <div className="p-6 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-            <h1 className="text-xl font-semibold text-gray-200 mb-2">
-              {selectedNote?.title || 'No Note Selected'}
-            </h1>
-            {selectedNote?.keywords && selectedNote.keywords.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {selectedNote.keywords.map((keyword, index) => (
-                  <span 
-                    key={index}
-                    className="inline-block text-gray-300 border rounded-lg px-3 py-1 text-xs"
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      borderColor: '#444'
-                    }}
-                  >
-                    {keyword}
-                  </span>
-                ))}
+        {/* Mobile Header with Hamburger */}
+        {isMobile && (
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+            <button
+              onClick={onBackToNotes}
+              className="text-lg font-semibold text-gray-200 hover:text-white transition-colors"
+            >
+              AI Assistant
+            </button>
+            <div className="w-8"></div>
+          </div>
+        )}
+
+        {/* Split Container */}
+        <div className={`flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'} h-full`}>
+          {/* Note Panel */}
+          <div 
+            className="flex flex-col border-b md:border-b-0 md:border-r h-full"
+            style={{ 
+              background: '#2a2a2a',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              width: isMobile ? '100%' : `${panelWidth}%`,
+              height: isMobile ? `${panelWidth}%` : '100%', // Use panelWidth for mobile height too
+              minHeight: isMobile ? '5%' : 'auto', // Allow very small panels
+              maxHeight: isMobile ? '95%' : 'auto'
+            }}
+          >
+            {/* Show collapsed state when notes area is too small */}
+            {isMobile && panelWidth < 15 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-gray-500 text-sm">Notes (Collapsed)</div>
               </div>
+            ) : (
+              <>
+                {/* Note Header */}
+                <div className="p-4 md:p-6 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                  <h1 className="text-lg md:text-xl font-semibold text-gray-200 mb-2">
+                    {selectedNote?.title || 'No Note Selected'}
+                  </h1>
+                  {selectedNote?.keywords && selectedNote.keywords.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {selectedNote.keywords.map((keyword, index) => (
+                    <span 
+                      key={index}
+                      className="inline-block text-gray-300 border rounded-lg px-2 md:px-3 py-1 text-xs"
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        borderColor: '#444'
+                      }}
+                    >
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Note Content Editor */}
+            <div className="flex-1 flex flex-col min-h-0 p-4 md:p-6 pb-0">
+              <div
+                ref={noteEditorRef}
+                className="note-content-editable flex-1 border rounded-xl p-3 md:p-4 text-sm leading-relaxed overflow-y-auto outline-none"
+                contentEditable={true}
+                suppressContentEditableWarning={true}
+                onInput={e => handleNoteContentChange(e.currentTarget.innerHTML)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#cccccc',
+                  minHeight: '200px'
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = '#8b5cf6';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                }}
+              />
+            </div>
+              </>
             )}
           </div>
 
-          {/* Note Content Editor */}
-          <div className="flex-1 flex flex-col" style={{ minHeight: 0, padding: '24px 24px 0 24px' }}>
+          {/* Resize Handle - Desktop: vertical, Mobile: horizontal */}
+          {!isMobile ? (
+            // Desktop vertical resize handle
             <div
-              ref={noteEditorRef}
-              className="note-content-editable flex-1 border rounded-xl p-4 text-sm leading-relaxed overflow-y-auto outline-none"
-              contentEditable={true}
-              suppressContentEditableWarning={true}
-              onInput={e => handleNoteContentChange(e.currentTarget.innerHTML)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#cccccc',
-                height: 'calc(100vh - 240px)'
+              className="w-1 cursor-col-resize flex items-center justify-center transition-all duration-200 group"
+              onMouseDown={handleMouseDown}
+              style={{ 
+                background: isDragging ? '#8b5cf6' : 'rgba(255, 255, 255, 0.1)',
+                borderLeft: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.05)',
+                borderRight: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.05)'
               }}
-              onFocus={e => {
-                e.target.style.borderColor = '#8b5cf6';
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+              onMouseEnter={e => {
+                if (!isDragging) {
+                  e.target.style.background = '#8b5cf6';
+                  e.target.style.borderLeft = '1px solid #8b5cf6';
+                  e.target.style.borderRight = '1px solid #8b5cf6';
+                }
               }}
-              onBlur={e => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+              onMouseLeave={e => {
+                if (!isDragging) {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.borderLeft = '1px solid rgba(255, 255, 255, 0.05)';
+                  e.target.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
+                }
               }}
-            />
-            
-            {/* Formatting Toolbar with Image Insert */}
-            <div className="py-4 flex justify-between items-center gap-3">
-              {/* <button
-                type="button"
-                className="border-none rounded-md p-2 text-gray-300 cursor-pointer transition-all duration-300 flex items-center text-xs"
-                title="Insert Image"
-                onClick={handleInsertImage}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  height: '32px'
-                }}
-                onMouseEnter={e => {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-                  e.target.style.color = '#ffffff';
-                }}
-                onMouseLeave={e => {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                  e.target.style.color = '#cccccc';
-                }}
-              >
-                🖼️ Insert Image
-              </button> */}
+            >
+              <GripVertical size={16} className="text-gray-400 group-hover:text-white transition-colors duration-200" />
             </div>
-          </div>
-        </div>
-
-        {/* Resize Handle */}
-        <div
-          className="w-1 cursor-col-resize flex items-center justify-center transition-all duration-200 group"
-          onMouseDown={handleMouseDown}
-          style={{ 
-            background: isDragging ? '#8b5cf6' : 'rgba(255, 255, 255, 0.1)',
-            borderLeft: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.05)',
-            borderRight: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.05)'
-          }}
-          onMouseEnter={e => {
-            if (!isDragging) {
-              e.target.style.background = '#8b5cf6';
-              e.target.style.borderLeft = '1px solid #8b5cf6';
-              e.target.style.borderRight = '1px solid #8b5cf6';
-            }
-          }}
-          onMouseLeave={e => {
-            if (!isDragging) {
-              e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-              e.target.style.borderLeft = '1px solid rgba(255, 255, 255, 0.05)';
-              e.target.style.borderRight = '1px solid rgba(255, 255, 255, 0.05)';
-            }
-          }}
-        >
-          <GripVertical size={16} className="text-gray-400 group-hover:text-white transition-colors duration-200" />
-        </div>
-
-        {/* Right Panel - Chat Interface */}
-        <div className="flex-1 flex flex-col relative" style={{ background: '#1a1a1a', minHeight: '100vh' }}>
-          {/* Chat Header */}
-          <div className="p-6 border-b flex items-center gap-3" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
-              <Bot size={16} className="text-white" />
+          ) : (
+            // Mobile horizontal resize handle
+            <div
+              className="h-2 cursor-row-resize flex items-center justify-center transition-all duration-200 group relative touch-manipulation"
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleMouseDown}
+              style={{ 
+                background: isDragging ? '#8b5cf6' : 'rgba(255, 255, 255, 0.15)',
+                borderTop: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
+                borderBottom: isDragging ? '1px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
+                width: '100%',
+                minHeight: '8px'
+              }}
+              onMouseEnter={e => {
+                if (!isDragging) {
+                  e.target.style.background = '#8b5cf6';
+                  e.target.style.borderTop = '1px solid #8b5cf6';
+                  e.target.style.borderBottom = '1px solid #8b5cf6';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isDragging) {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+                  e.target.style.borderTop = '1px solid rgba(255, 255, 255, 0.1)';
+                  e.target.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+                }
+              }}
+            >
+              <div className="rotate-90 p-1">
+                <GripVertical size={14} className="text-gray-400 group-hover:text-white transition-colors duration-200" />
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-200">AI Assistant</h2>
-              <p className="text-sm text-gray-400">Ready to help with your note</p>
-            </div>
-          </div>
+          )}
 
-          {/* Messages Container */}
+          {/* Chat Panel */}
           <div 
-            ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-6 space-y-4"
+            className="flex-1 flex flex-col relative"
             style={{ 
-              paddingBottom: '100px' // Space for floating input
+              background: '#1a1a1a',
+              height: isMobile ? `${100 - panelWidth}%` : '100%',
+              minHeight: isMobile ? '5%' : 'auto' // Allow very small panels
             }}
           >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.type === 'ai' && (
-                  <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
-                    {/* Show thinking dots if this is the last AI message and we're typing, otherwise show bot icon */}
-                    {isTyping && message.id === Math.max(...messages.filter(m => m.type === 'ai').map(m => m.id)) ? (
-                      <div className="flex space-x-0.5">
-                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ 
-                          animationDelay: '0ms',
-                          animationDuration: '1.4s'
-                        }}></div>
-                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ 
-                          animationDelay: '0.2s',
-                          animationDuration: '1.4s'
-                        }}></div>
-                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ 
-                          animationDelay: '0.4s',
-                          animationDuration: '1.4s'
-                        }}></div>
-                      </div>
-                    ) : (
-                      <Bot size={14} className="text-white" />
-                    )}
+            {/* Show collapsed state when chat area is too small */}
+            {isMobile && (100 - panelWidth) < 15 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-gray-500 text-sm">AI Assistant (Collapsed)</div>
+              </div>
+            ) : (
+              <>
+                {/* Chat Header - Hidden on mobile */}
+                {!isMobile && (
+                  <div className="flex p-6 border-b items-center gap-3" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                    <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                      <Bot size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-200">AI Assistant</h2>
+                      <p className="text-sm text-gray-400">Ready to help with your note</p>
+                    </div>
                   </div>
                 )}
-                
-                <div
-                  className={`max-w-[75%] px-3 py-2 rounded-2xl ${
-                    message.type === 'user'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-700 text-gray-200'
-                  }`}
-                  style={{
-                    borderRadius: message.type === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px'
+
+                {/* Messages Container */}
+                <div 
+                  ref={chatContainerRef}
+                  className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
+                  style={{ 
+                    paddingBottom: '100px'
                   }}
                 >
-                  <div className="text-sm leading-relaxed">
-                    {/* Show "Thinking..." for the last AI message when typing and content is empty */}
-                    {isTyping && message.type === 'ai' && !message.content && message.id === Math.max(...messages.filter(m => m.type === 'ai').map(m => m.id)) ? (
-                      <span className="text-gray-400">Thinking...</span>
-                    ) : (
-                      // FIXED: Parse markdown for AI messages, plain text for user messages
-                      message.type === 'ai' ? (
-                        <div dangerouslySetInnerHTML={{ __html: parseMarkdown(message.content) }} />
+                  {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {message.type === 'ai' && (
+                    <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
+                      {isTyping && message.id === Math.max(...messages.filter(m => m.type === 'ai').map(m => m.id)) ? (
+                        <div className="flex space-x-0.5">
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ 
+                            animationDelay: '0ms',
+                            animationDuration: '1.4s'
+                          }}></div>
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ 
+                            animationDelay: '0.2s',
+                            animationDuration: '1.4s'
+                          }}></div>
+                          <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ 
+                            animationDelay: '0.4s',
+                            animationDuration: '1.4s'
+                          }}></div>
+                        </div>
                       ) : (
-                        <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {message.type === 'user' && (
-                  <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User size={14} className="text-white" />
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Floating Message Input - Only over chat area */}
-          <div 
-            className="absolute bottom-6 left-6 right-6"
-          >
-            <div 
-              className="relative flex items-center"
-              style={{ height: '56px' }} // Match textarea minHeight
-            >
-              <textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask anything about your note..."
-                className="w-full h-full p-4 pr-14 border rounded-2xl resize-none outline-none text-gray-200 placeholder-gray-400 shadow-2xl hide-scrollbar"
-                style={{
-                  background: '#2a2a2a',
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                  minHeight: '56px',
-                  maxHeight: '120px',
-                  overflowY: 'hidden' // Hide vertical scrollbar
-                }}
-                rows={1}
-                disabled={isTyping}
-                onFocus={e => {
-                  e.target.style.borderColor = '#8b5cf6';
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                }}
-              />
-              
-              {/* Send/Stop Button - Perfectly centered */}
-              <button
-                onClick={isTyping ? stopTyping : sendMessage}
-                disabled={!isTyping && !inputMessage.trim()}
-                className="absolute w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  border: 'none',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)'
-                }}
-                onMouseEnter={e => {
-                  e.target.style.transform = 'translateY(-50%) scale(1.05)';
-                }}
-                onMouseLeave={e => {
-                  e.target.style.transform = 'translateY(-50%) scale(1)';
-                }}
-              >
-                {isTyping ? (
-                  // Stop icon (always centered)
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    style={{ display: 'block' }}
+                        <Bot size={14} className="text-white" />
+                      )}
+                    </div>
+                  )}
+                  
+                  <div
+                    className={`max-w-[75%] px-3 py-2 rounded-2xl ${
+                      message.type === 'user'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-200'
+                    }`}
+                    style={{
+                      borderRadius: message.type === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px'
+                    }}
                   >
-                    <rect x="6" y="6" width="12" height="12" rx="3" />
-                  </svg>
-                ) : (
-                  // Send icon
-                  <Send size={16} className="text-white" />
-                )}
-              </button>
+                    <div className="text-sm leading-relaxed">
+                      {isTyping && message.type === 'ai' && !message.content && message.id === Math.max(...messages.filter(m => m.type === 'ai').map(m => m.id)) ? (
+                        <span className="text-gray-400">Thinking...</span>
+                      ) : (
+                        message.type === 'ai' ? (
+                          <div dangerouslySetInnerHTML={{ __html: parseMarkdown(message.content) }} />
+                        ) : (
+                          <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {message.type === 'user' && (
+                    <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0 mt-1">
+                      <User size={14} className="text-white" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              <div ref={messagesEndRef} />
             </div>
+
+            {/* Floating Message Input */}
+            <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6">
+              <div 
+                className="relative flex items-center"
+                style={{ height: '56px' }}
+              >
+                <textarea
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask anything about your note..."
+                  className="w-full h-full p-4 pr-14 border rounded-2xl resize-none outline-none text-gray-200 placeholder-gray-400 shadow-2xl chat-input"
+                  style={{
+                    background: 'rgba(30, 30, 30, 0.95)',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(20px)',
+                    minHeight: '56px',
+                    maxHeight: '56px',
+                    overflow: 'hidden',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = '#8b5cf6';
+                    e.target.style.background = 'rgba(40, 40, 40, 0.95)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    e.target.style.background = 'rgba(30, 30, 30, 0.95)';
+                  }}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isTyping}
+                  className="absolute right-3 p-2 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: inputMessage.trim() && !isTyping
+                      ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                      : 'rgba(255, 255, 255, 0.1)',
+                    border: 'none'
+                  }}
+                >
+                  {isTyping ? (
+                    <svg
+                      className="text-white"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      style={{ display: 'block' }}
+                    >
+                      <rect x="6" y="6" width="12" height="12" rx="3" />
+                    </svg>
+                  ) : (
+                    <Send size={16} className="text-white" />
+                  )}
+                </button>
+              </div>
+            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -672,6 +1064,7 @@ const AIChatPage = ({
         </div>
       )}
     </div>
+    </>
   );
 };
 

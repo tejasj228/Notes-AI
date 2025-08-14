@@ -26,16 +26,26 @@ const Sidebar = ({
   const canAddFolder = folders.length < maxFolders;
 
   return (
-    <div 
-      className={`fixed left-0 top-0 h-screen border-r transition-all duration-300 z-40 ${
-        sidebarOpen ? 'w-64' : 'w-18'
-      }`}
-      style={{ 
-        background: 'rgba(30, 30, 30, 0.95)', 
-        backdropFilter: 'blur(20px)',
-        borderColor: 'rgba(255, 255, 255, 0.1)'
-      }}
-    >
+    <>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div 
+        className={`fixed left-0 top-0 h-screen border-r transition-all duration-300 z-40 ${
+          sidebarOpen ? 'w-64' : 'w-18'
+        } ${sidebarOpen ? 'block' : 'hidden md:block'}`}
+        style={{ 
+          background: 'rgba(30, 30, 30, 0.95)', 
+          backdropFilter: 'blur(20px)',
+          borderColor: 'rgba(255, 255, 255, 0.1)'
+        }}
+      >
       {/* Header */}
       <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
         {sidebarOpen && (
@@ -43,8 +53,18 @@ const Sidebar = ({
             NOTES AI
           </div>
         )}
+        {/* Hamburger button - show on mobile when sidebar is open */}
         <button 
-          className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
+          className="md:hidden bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
+          onMouseLeave={e => e.target.style.background = 'transparent'}
+        >
+          <Menu size={20} />
+        </button>
+        {/* Desktop hamburger button */}
+        <button 
+          className="hidden md:block bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
           onMouseLeave={e => e.target.style.background = 'transparent'}
@@ -245,7 +265,8 @@ const Sidebar = ({
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

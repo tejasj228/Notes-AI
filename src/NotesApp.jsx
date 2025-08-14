@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Search, Plus, Menu } from 'lucide-react';
 import TopNavigation from './components/TopNavigation';
 import Sidebar from './components/Sidebar';
 import NotesGrid from './components/NotesGrid';
@@ -171,6 +172,13 @@ const NotesApp = ({ user, onLogout }) => {
 
   // NAVIGATION: handleBackFromAI - Browser back
   const handleBackFromAI = () => {
+    // Reset all modal states when navigating back from AI chat
+    setSelectedNote(null);
+    setShowNewNotePopup(false);
+    setShowNewFolderPopup(false);
+    setShowRenameFolder(false);
+    setImagePopup({ open: false, src: '' });
+    
     navigate(-1); // Use browser back
   };
 
@@ -356,15 +364,48 @@ const NotesApp = ({ user, onLogout }) => {
         />
       ) : (
         <>
-          <TopNavigation
-            currentPage={currentPage}
-            currentFolder={currentFolder}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            onAddNote={openNewNotePopup}
-            onGoBack={() => navigate(-1)}
-            getSearchPlaceholder={getSearchPlaceholder}
-          />
+          {/* TopNavigation - Only show on desktop */}
+          <div className="hidden md:block">
+            <TopNavigation
+              currentPage={currentPage}
+              currentFolder={currentFolder}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onAddNote={openNewNotePopup}
+              onGoBack={() => navigate(-1)}
+              getSearchPlaceholder={getSearchPlaceholder}
+            />
+          </div>
+
+          {/* Mobile Search Bar with Hamburger - Only show when sidebar is closed */}
+          <div className={`md:hidden fixed top-3 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-sm ${sidebarOpen ? 'hidden' : 'block'}`}>
+            <div className="relative">
+              {/* Hamburger Button - Inside search bar */}
+              <button
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200 z-20"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu size={18} />
+              </button>
+              
+              {/* Search Icon */}
+              <Search className="absolute left-12 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" size={18} />
+              
+              {/* Search Input */}
+              <input
+                type="text"
+                placeholder={getSearchPlaceholder()}
+                className="w-full border rounded-full py-2.5 pl-20 pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400"
+                style={{
+                  background: 'rgba(60, 60, 60, 0.9)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(20px)'
+                }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
 
           <Sidebar
             sidebarOpen={sidebarOpen}
@@ -383,10 +424,12 @@ const NotesApp = ({ user, onLogout }) => {
           />
 
           <div 
-            className={`transition-all duration-300 pt-25 px-10 pb-10 min-h-screen ${
-              sidebarOpen ? 'ml-64' : 'ml-18'
-            }`}
-            style={{ paddingTop: '100px' }}
+            className={`transition-all duration-300 min-h-screen px-4 md:px-10 pb-10 ${
+              sidebarOpen ? 'md:ml-64' : 'md:ml-18'
+            } ml-0`}
+            style={{ 
+              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '70px') : '100px'
+            }}
           >
             <NotesGrid
               currentPage={currentPage}
@@ -401,6 +444,19 @@ const NotesApp = ({ user, onLogout }) => {
             />
           </div>
         </>
+      )}
+
+      {/* Mobile Floating Add Button */}
+      {!isAIChatPage && !showNewNotePopup && !selectedNote && !showNewFolderPopup && !showRenameFolder && !imagePopup.open && (
+        <button
+          className="md:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 z-50"
+          style={{ background: '#7c3aed' }}
+          onClick={openNewNotePopup}
+          onMouseEnter={e => e.target.style.background = '#6d28d9'}
+          onMouseLeave={e => e.target.style.background = '#7c3aed'}
+        >
+          <Plus size={24} />
+        </button>
       )}
 
       {/* MODALS - These don't change URL */}

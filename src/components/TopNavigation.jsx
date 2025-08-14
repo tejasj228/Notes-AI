@@ -13,7 +13,7 @@ const TopNavigation = ({
 }) => {
   return (
     <div 
-      className="fixed top-5 left-1/2 transform -translate-x-1/2 flex items-center gap-4 px-5 py-3 rounded-full z-50 border"
+      className="fixed top-3 md:top-5 left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:gap-4 px-3 md:px-6 py-2 md:py-3 rounded-full z-50 border w-11/12 md:w-4/5 max-w-2xl"
       style={{ 
         background: 'rgba(40, 40, 40, 0.9)', 
         backdropFilter: 'blur(20px)',
@@ -35,16 +35,15 @@ const TopNavigation = ({
       )}
       
       {/* Search Input */}
-      <div className="relative flex items-center">
-        <Search className="absolute left-4 text-gray-400 z-10" size={20} />
+      <div className="relative flex items-center flex-1">
+        <Search className="absolute left-3 md:left-4 text-gray-400 z-10" size={18} />
         <input
           type="text"
           placeholder={getSearchPlaceholder()}
-          className="border rounded-full py-2.5 pl-11 pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400"
+          className="border rounded-full py-2 md:py-2.5 pl-9 md:pl-11 pr-3 md:pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400 w-full"
           style={{
             background: 'rgba(60, 60, 60, 0.8)',
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            width: '300px'
+            borderColor: 'rgba(255, 255, 255, 0.1)'
           }}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -62,26 +61,18 @@ const TopNavigation = ({
       {/* Add Note Button */}
       {(currentPage === PAGES.NOTES || (currentPage === PAGES.FOLDER && currentFolder)) && (
         <button 
-          className="border-none rounded-full px-5 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+          className="border-none rounded-full px-3 md:px-5 py-2 md:py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-1 md:gap-2 transition-all duration-300 hover:-translate-y-0.5"
           style={{ background: '#7c3aed' }}
           onClick={onAddNote}
           onMouseEnter={e => e.target.style.background = '#6d28d9'}
           onMouseLeave={e => e.target.style.background = '#7c3aed'}
         >
-          <Plus size={20} />
-          Add a note...
+          <Plus size={16} className="md:hidden" />
+          <Plus size={20} className="hidden md:block" />
+          <span className="hidden sm:inline">Add a note...</span>
+          <span className="sm:hidden">Add</span>
         </button>
       )}
-
-      {/* User Avatar */}
-      <div 
-        className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105"
-        style={{ background: '#8b5cf6' }}
-        onMouseEnter={e => e.target.style.background = '#7c3aed'}
-        onMouseLeave={e => e.target.style.background = '#8b5cf6'}
-      >
-        <User size={20} />
-      </div>
     </div>
   );
 };

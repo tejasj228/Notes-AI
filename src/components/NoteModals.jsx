@@ -119,19 +119,21 @@ export const NewNoteModal = ({
         />
         
         {/* Content Editor */}
-        <ContentEditor
-          editorRef={newNoteTextareaRef}
-          content={undefined} // Don't pass content prop to avoid resetting innerHTML
-          onChange={() => {
-            if (newNoteTextareaRef.current) {
-              setNoteDraft(prev => ({ ...prev, content: newNoteTextareaRef.current.innerHTML }));
-            }
-          }}
-          onImageInsert={handleInsertImage}
-        />
+        <div className="flex-1 flex flex-col min-h-0 mb-4">
+          <ContentEditor
+            editorRef={newNoteTextareaRef}
+            content={undefined} // Don't pass content prop to avoid resetting innerHTML
+            onChange={() => {
+              if (newNoteTextareaRef.current) {
+                setNoteDraft(prev => ({ ...prev, content: newNoteTextareaRef.current.innerHTML }));
+              }
+            }}
+            onImageInsert={handleInsertImage}
+          />
+        </div>
 
         {/* Save Button */}
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end flex-shrink-0">
           <button
             className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
             style={{
@@ -330,15 +332,17 @@ export const EditNoteModal = ({
         </div>
         
         {/* Content Editor */}
-        <ContentEditor
-          editorRef={textareaRef}
-          content={note.content}
-          onChange={e => onUpdate(note.id, 'content', e.currentTarget.innerHTML)}
-          onImageInsert={handleInsertImage}
-        />
+        <div className="flex-1 flex flex-col min-h-0 mb-4">
+          <ContentEditor
+            editorRef={textareaRef}
+            content={note.content}
+            onChange={e => onUpdate(note.id, 'content', e.currentTarget.innerHTML)}
+            onImageInsert={handleInsertImage}
+          />
+        </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-3 mt-4">
+        <div className="flex justify-end gap-3 flex-shrink-0">
           <button
             className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
             style={{
