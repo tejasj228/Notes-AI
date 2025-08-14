@@ -25,6 +25,27 @@ const NotesGrid = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is on a 3-dot button (MoreVertical icon)
+      const isClickOn3DotButton = event.target.closest('button') && 
+                                  event.target.closest('button').querySelector('svg') &&
+                                  event.target.closest('.menu-container');
+      
+      // Check if click is inside any menu
+      const isClickInsideMenu = event.target.closest('.menu-container');
+      
+      // Only close if click is outside both menu and 3-dot button
+      if (!isClickInsideMenu && !isClickOn3DotButton) {
+        setShowTrashMenu(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
   
   const {
     draggedNote,
@@ -85,7 +106,7 @@ const NotesGrid = ({
           <div
             key={note.id}
             className={`
-              rounded-xl md:rounded-2xl p-3 md:p-5 transition-all duration-300 relative overflow-hidden flex flex-col justify-start h-full
+              note-card rounded-xl md:rounded-2xl p-3 md:p-5 transition-all duration-300 relative overflow-hidden flex flex-col justify-start h-full
               ${currentPage !== PAGES.TRASH ? 'cursor-grab' : 'cursor-default'}
               ${draggedNote && draggedNote.id === note.id ? 'opacity-30 cursor-grabbing z-50' : ''}
               ${dragOverIndex === index ? 'border-2' : ''}
@@ -129,9 +150,9 @@ const NotesGrid = ({
             }}
           >
             {currentPage === PAGES.TRASH && (
-              <div className="absolute top-4 right-4 z-10">
+              <div className="absolute top-4 right-4 z-10 menu-container">
                 <button 
-                  className="border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer transition-all duration-300"
+                  className="border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer transition-all duration-300 menu-container"
                   style={{
                     background: 'rgba(0, 0, 0, 0.3)',
                     color: 'rgba(255, 255, 255, 0.8)'
@@ -141,48 +162,56 @@ const NotesGrid = ({
                     setShowTrashMenu(showTrashMenu === note.id ? null : note.id);
                   }}
                   onMouseEnter={e => {
-                    e.target.style.background = 'rgba(0, 0, 0, 0.5)';
-                    e.target.style.color = '#ffffff';
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)';
+                    e.currentTarget.style.color = '#ffffff';
                   }}
                   onMouseLeave={e => {
-                    e.target.style.background = 'rgba(0, 0, 0, 0.3)';
-                    e.target.style.color = 'rgba(255, 255, 255, 0.8)';
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
+                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
                   }}
                 >
                   <MoreVertical size={16} />
                 </button>
                 {showTrashMenu === note.id && (
                   <div 
-                    className="absolute top-10 right-0 border rounded-lg py-2 min-w-40 z-20"
+                    className="absolute border rounded-lg py-2 z-50 menu-container"
                     style={{
                       background: '#2a2a2a',
                       borderColor: 'rgba(255, 255, 255, 0.1)',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4)',
+                      top: '45px', // Below the 3-dot button
+                      right: '5px', // Aligned with the right edge
+                      minWidth: isMobile ? '120px' : '160px',
+                      maxWidth: isMobile ? '120px' : '160px'
                     }}
                   >
                     <button 
-                      className="bg-transparent border-none w-full py-3 px-4 text-gray-200 text-sm cursor-pointer flex items-center justify-start gap-3 transition-colors duration-200 hover:bg-white/10"
+                      className={`bg-transparent border-none w-full text-gray-200 cursor-pointer flex items-center justify-start gap-2 transition-colors duration-200 hover:bg-white/10 menu-container ${
+                        isMobile ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'
+                      }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onRestoreNote(note.id);
                         setShowTrashMenu(null);
                       }}
                     >
-                      <RotateCcw size={16} />
+                      <RotateCcw size={isMobile ? 14 : 16} />
                       Restore
                     </button>
                     <button 
-                      className="bg-transparent border-none w-full py-3 px-4 text-red-400 text-sm cursor-pointer flex items-center justify-start gap-3 transition-colors duration-200"
+                      className={`bg-transparent border-none w-full text-red-400 cursor-pointer flex items-center justify-start gap-2 transition-colors duration-200 menu-container ${
+                        isMobile ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'
+                      }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onPermanentDeleteNote(note.id);
                         setShowTrashMenu(null);
                       }}
-                      onMouseEnter={e => e.target.style.background = 'rgba(220, 38, 38, 0.1)'}
-                      onMouseLeave={e => e.target.style.background = 'transparent'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <Trash2 size={16} />
-                      Remove from trash
+                      <Trash2 size={isMobile ? 14 : 16} />
+                      {isMobile ? 'Remove' : 'Remove from trash'}
                     </button>
                   </div>
                 )}

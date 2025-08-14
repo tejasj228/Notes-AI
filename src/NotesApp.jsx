@@ -448,7 +448,7 @@ const NotesApp = ({ user, onLogout }) => {
               sidebarOpen ? 'md:ml-64' : 'md:ml-18'
             } ml-0`}
             style={{ 
-              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '50px') : '80px',
+              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '80px') : '120px',
               minHeight: '100vh',
               minHeight: '100dvh' // Dynamic viewport height for mobile
             }}
@@ -469,7 +469,7 @@ const NotesApp = ({ user, onLogout }) => {
       )}
 
       {/* Mobile Floating Add Button */}
-      {!isAIChatPage && !showNewNotePopup && !selectedNote && !showNewFolderPopup && !showRenameFolder && !imagePopup.open && (
+      {!isAIChatPage && !showNewNotePopup && !selectedNote && !showNewFolderPopup && !showRenameFolder && !imagePopup.open && currentPage !== 'trash' && (
         <button
           className="md:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 z-50"
           style={{ background: '#7c3aed' }}

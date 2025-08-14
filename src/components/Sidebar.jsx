@@ -29,6 +29,22 @@ const Sidebar = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Close folder menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside any menu or 3-dot button
+      const isClickInsideMenu = event.target.closest('.folder-menu-container');
+      const isClickOn3Dot = event.target.closest('button') && event.target.closest('button').querySelector('svg');
+      
+      if (!isClickInsideMenu && !isClickOn3Dot) {
+        setFolderMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const maxFolders = 10;
   const canAddFolder = folders.length < maxFolders;
 
@@ -186,7 +202,7 @@ const Sidebar = ({
                     />
                     {/* 3-dots menu button */}
                     <button
-                      className="ml-2 border-none bg-transparent text-gray-400 hover:text-violet-500 p-1 rounded transition-colors duration-200"
+                      className="ml-2 border-none bg-transparent text-gray-400 hover:text-violet-500 p-1 rounded transition-colors duration-200 folder-menu-container"
                       onClick={e => {
                         e.stopPropagation();
                         setFolderMenuOpen(folder.id === folderMenuOpen ? null : folder.id);
