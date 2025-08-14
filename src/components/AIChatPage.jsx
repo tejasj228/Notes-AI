@@ -3,10 +3,36 @@ import { Send, User, Bot, GripVertical, Menu } from 'lucide-react';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
 import ChatSidebar from './ChatSidebar';
 
-// Hide scrollbars for webkit browsers
+// Hide scrollbars for webkit browsers and handle mobile viewport
 const chatInputStyles = `
   .chat-input::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Handle mobile viewport height changes */
+  @supports (height: 100svh) {
+    .mobile-vh {
+      height: 100svh !important;
+      min-height: 100svh !important;
+    }
+  }
+  
+  /* Support for older browsers */
+  @supports not (height: 100svh) {
+    .mobile-vh {
+      height: 100vh !important;
+      min-height: 100vh !important;
+    }
+  }
+  
+  /* Mobile safe area handling */
+  @supports (padding: max(0px)) {
+    .mobile-safe-bottom {
+      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    }
+    .mobile-safe-bottom-chat {
+      padding-bottom: max(20px, calc(20px + env(safe-area-inset-bottom))) !important;
+    }
   }
 `;
 
@@ -640,7 +666,13 @@ const AIChatPage = ({
   return (
     <>
       <style>{chatInputStyles}</style>
-      <div className="min-h-screen relative" style={{ background: '#1a1a1a' }}>
+      <div className="relative" style={{ 
+        background: '#1a1a1a',
+        minHeight: '100vh',
+        minHeight: '100dvh', // Dynamic viewport height for mobile
+        height: '100vh',
+        height: '100svh' // Small viewport height as fallback
+      }}>
       {/* Mobile Overlay for Sidebar */}
       {sidebarOpen && isMobile && (
         <div 
@@ -666,8 +698,10 @@ const AIChatPage = ({
 
       {/* Main Content */}
       <div 
-        className={`absolute right-0 top-0 flex flex-col h-screen transition-all duration-300`}
+        className={`absolute right-0 top-0 flex flex-col transition-all duration-300`}
         style={{
+          height: '100vh',
+          height: '100svh', // Small viewport height for mobile browsers
           left: isMobile ? '0px' : (sidebarOpen ? '256px' : '72px'),
           width: isMobile ? '100%' : `calc(100% - ${sidebarOpen ? '256px' : '72px'})`
         }}
@@ -859,7 +893,7 @@ const AIChatPage = ({
                   ref={chatContainerRef}
                   className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
                   style={{ 
-                    paddingBottom: '100px'
+                    paddingBottom: '80px' // Reduced padding for better mobile experience
                   }}
                 >
                   {messages.map((message) => (
@@ -924,8 +958,8 @@ const AIChatPage = ({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Floating Message Input */}
-            <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6">
+            {/* Floating Message Input - Mobile Safe Area */}
+            <div className={`absolute bottom-0 left-0 right-0 p-4 md:p-6 ${isMobile ? 'mobile-safe-bottom' : ''}`}>
               <div 
                 className="relative flex items-center"
                 style={{ height: '56px' }}

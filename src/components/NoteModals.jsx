@@ -62,7 +62,7 @@ export const NewNoteModal = ({
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-50 p-5"
+      className="fixed inset-0 flex items-center justify-center z-50 p-3 sm:p-5"
       style={{ 
         background: 'rgba(0, 0, 0, 0.8)',
         backdropFilter: 'blur(10px)' 
@@ -70,7 +70,7 @@ export const NewNoteModal = ({
       onClick={onClose}
     >
       <div 
-        className="rounded-2xl p-6 border relative flex flex-col box-border overflow-hidden"
+        className="rounded-2xl p-4 sm:p-6 border relative flex flex-col box-border overflow-hidden"
         style={{ 
           background: '#2a2a2a',
           borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -85,16 +85,16 @@ export const NewNoteModal = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-5 px-1 sm:px-0">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-2 sm:mr-4"
             value={noteDraft.title}
             onChange={e => setNoteDraft(prev => ({ ...prev, title: e.target.value }))}
             placeholder="Note title..."
           />
           <button
-            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
+            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 flex-shrink-0"
             style={{ background: 'rgba(255, 255, 255, 0.1)' }}
             onClick={onClose}
             title="Close"
@@ -248,7 +248,7 @@ export const EditNoteModal = ({
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-50 p-5"
+      className="fixed inset-0 flex items-center justify-center z-50 p-3 sm:p-5"
       style={{ 
         background: 'rgba(0, 0, 0, 0.8)',
         backdropFilter: 'blur(10px)' 
@@ -256,7 +256,7 @@ export const EditNoteModal = ({
       onClick={onClose}
     >
       <div 
-        className="rounded-2xl p-6 border relative flex flex-col box-border overflow-hidden"
+        className="rounded-2xl p-4 sm:p-6 border relative flex flex-col box-border overflow-hidden"
         style={{ 
           background: '#2a2a2a',
           borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -271,16 +271,16 @@ export const EditNoteModal = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header - FIXED: Use local state for title */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-5 px-1 sm:px-0">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-2 sm:mr-4"
             value={titleValue}
             onChange={handleTitleChange}
             onBlur={handleTitleBlur}
             placeholder="Note title..."
           />
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2 flex-shrink-0">
             <button 
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
               onClick={() => onDelete(note.id)}
@@ -393,7 +393,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-50 p-5"
+      className="fixed inset-0 flex items-center justify-center z-50 p-3 sm:p-5"
       style={{ 
         background: 'rgba(0, 0, 0, 0.8)',
         backdropFilter: 'blur(10px)' 
@@ -416,7 +416,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
         }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end w-full" style={{padding: 24, paddingBottom: 0}}>
+        <div className="flex items-center justify-end w-full px-4 sm:px-6 pt-4 sm:pt-6" style={{paddingBottom: 0}}>
           <a
             href={imageSrc}
             download={`note-image-${Date.now()}.jpg`}
@@ -432,7 +432,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
             </svg>
           </a>
           <button
-            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 ml-2"
+            className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300 ml-1 sm:ml-2"
             style={{ background: 'rgba(255, 255, 255, 0.1)' }}
             onClick={onClose}
             title="Close"
@@ -442,7 +442,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
             <X size={16} />
           </button>
         </div>
-        <div className="flex justify-center items-center w-full h-full" style={{ minHeight: '40vh', padding: 24 }}>
+        <div className="flex justify-center items-center w-full h-full px-4 sm:px-6 pb-4 sm:pb-6" style={{ minHeight: '40vh' }}>
           <img 
             src={imageSrc} 
             alt="Preview" 

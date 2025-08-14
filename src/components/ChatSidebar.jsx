@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, MessageSquare, LogOut, Trash2, Plus } from 'lucide-react';
 
-// Add custom CSS for line clamping
+// Add custom CSS for line clamping and mobile viewport
 const chatSidebarStyles = `
   .line-clamp-2 {
     display: -webkit-box;
@@ -26,6 +26,13 @@ const chatSidebarStyles = `
   
   .chat-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(139, 92, 246, 0.5);
+  }
+  
+  /* Mobile safe area handling */
+  @supports (padding: max(0px)) {
+    .mobile-safe-bottom-chat {
+      padding-bottom: max(20px, calc(20px + env(safe-area-inset-bottom))) !important;
+    }
   }
 `;
 
@@ -101,10 +108,10 @@ const ChatSidebar = ({
       <div 
         className={`
           ${isMobile 
-            ? `fixed left-0 top-0 h-screen z-50 transition-transform duration-300 ${
+            ? `fixed left-0 top-0 z-50 transition-transform duration-300 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               }`
-            : 'relative h-screen'
+            : 'relative'
           }
           ${sidebarOpen ? 'w-64' : 'w-18'}
           border-r transition-all duration-300 flex flex-col
@@ -112,7 +119,9 @@ const ChatSidebar = ({
         style={{ 
           background: 'rgba(30, 30, 30, 0.95)', 
           backdropFilter: 'blur(20px)',
-          borderColor: 'rgba(255, 255, 255, 0.1)'
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          height: '100vh',
+          height: '100svh' // Small viewport height for mobile browsers
         }}
       >
         {/* Header */}
@@ -249,7 +258,7 @@ const ChatSidebar = ({
 
             {/* User Info & Logout - Always at bottom when open */}
             <div 
-              className="absolute bottom-5 left-5 right-5 p-5 rounded-xl border"
+              className={`absolute bottom-0 left-0 right-0 p-5 rounded-xl border ${isMobile ? 'mobile-safe-bottom-chat' : ''}`}
               style={{ 
                 background: 'rgba(40, 40, 40, 0.5)',
                 borderColor: 'rgba(255, 255, 255, 0.1)'
