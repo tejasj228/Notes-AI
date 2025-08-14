@@ -432,7 +432,7 @@ const NotesApp = ({ user, onLogout }) => {
               sidebarOpen ? 'md:ml-64' : 'md:ml-18'
             } ml-0`}
             style={{ 
-              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '70px') : '100px',
+              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '50px') : '80px',
               minHeight: '100vh',
               minHeight: '100dvh' // Dynamic viewport height for mobile
             }}

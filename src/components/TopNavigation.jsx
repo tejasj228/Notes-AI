@@ -13,7 +13,7 @@ const TopNavigation = ({
 }) => {
   return (
     <div 
-      className="fixed top-3 md:top-5 left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:gap-4 px-3 md:px-6 py-2 md:py-3 rounded-full z-50 border w-11/12 md:w-4/5 max-w-2xl"
+      className="fixed top-3 md:top-5 left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:gap-4 px-3 md:px-6 py-2 md:py-3 rounded-md md:rounded-lg z-50 border w-11/12 md:w-4/5 max-w-2xl"
       style={{ 
         background: 'rgba(40, 40, 40, 0.9)', 
         backdropFilter: 'blur(20px)',
@@ -40,7 +40,7 @@ const TopNavigation = ({
         <input
           type="text"
           placeholder={getSearchPlaceholder()}
-          className="border rounded-full py-2 md:py-2.5 pl-9 md:pl-11 pr-3 md:pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400 w-full"
+          className="border rounded-md md:rounded-lg py-2 md:py-2.5 pl-9 md:pl-11 pr-3 md:pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400 w-full"
           style={{
             background: 'rgba(60, 60, 60, 0.8)',
             borderColor: 'rgba(255, 255, 255, 0.1)'
