@@ -291,7 +291,11 @@ const NotesApp = ({ user, onLogout }) => {
   const isAIChatPage = getCurrentPageFromURL() === 'ai-chat';
 
   return (
-    <div className="min-h-screen" style={{ background: '#1a1a1a' }}>
+    <div style={{ 
+      background: '#1a1a1a',
+      minHeight: '100vh',
+      minHeight: '100dvh' // Dynamic viewport height for mobile
+    }}>
       {/* Global Styles */}
       <style>{`
         * {
@@ -424,11 +428,13 @@ const NotesApp = ({ user, onLogout }) => {
           />
 
           <div 
-            className={`transition-all duration-300 min-h-screen px-4 md:px-10 pb-10 ${
+            className={`transition-all duration-300 px-4 md:px-10 pb-10 ${
               sidebarOpen ? 'md:ml-64' : 'md:ml-18'
             } ml-0`}
             style={{ 
-              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '70px') : '100px'
+              paddingTop: window.innerWidth <= 768 ? (sidebarOpen ? '20px' : '70px') : '100px',
+              minHeight: '100vh',
+              minHeight: '100dvh' // Dynamic viewport height for mobile
             }}
           >
             <NotesGrid

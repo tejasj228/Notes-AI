@@ -28,10 +28,10 @@ const chatSidebarStyles = `
     background: rgba(139, 92, 246, 0.5);
   }
   
-  /* Mobile safe area handling */
-  @supports (padding: max(0px)) {
-    .mobile-safe-bottom-chat {
-      padding-bottom: max(20px, calc(20px + env(safe-area-inset-bottom))) !important;
+  /* Mobile safe area handling - simplified */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .mobile-chat-safe {
+      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
     }
   }
 `;
@@ -121,7 +121,7 @@ const ChatSidebar = ({
           backdropFilter: 'blur(20px)',
           borderColor: 'rgba(255, 255, 255, 0.1)',
           height: '100vh',
-          height: '100svh' // Small viewport height for mobile browsers
+          height: '100dvh' // Dynamic viewport height for mobile browsers
         }}
       >
         {/* Header */}
@@ -258,10 +258,11 @@ const ChatSidebar = ({
 
             {/* User Info & Logout - Always at bottom when open */}
             <div 
-              className={`absolute bottom-0 left-0 right-0 p-5 rounded-xl border ${isMobile ? 'mobile-safe-bottom-chat' : ''}`}
+              className="absolute bottom-5 left-5 right-5 p-5 rounded-xl border"
               style={{ 
                 background: 'rgba(40, 40, 40, 0.5)',
-                borderColor: 'rgba(255, 255, 255, 0.1)'
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom, 0px))' : '20px'
               }}
             >
               <div className="text-sm text-gray-400 mb-3 leading-5">

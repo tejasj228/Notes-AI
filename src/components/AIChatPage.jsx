@@ -10,28 +10,25 @@ const chatInputStyles = `
   }
   
   /* Handle mobile viewport height changes */
-  @supports (height: 100svh) {
+  @supports (height: 100dvh) {
     .mobile-vh {
-      height: 100svh !important;
-      min-height: 100svh !important;
+      height: 100dvh !important;
+      min-height: 100dvh !important;
     }
   }
   
   /* Support for older browsers */
-  @supports not (height: 100svh) {
+  @supports not (height: 100dvh) {
     .mobile-vh {
       height: 100vh !important;
       min-height: 100vh !important;
     }
   }
   
-  /* Mobile safe area handling */
-  @supports (padding: max(0px)) {
-    .mobile-safe-bottom {
-      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
-    }
-    .mobile-safe-bottom-chat {
-      padding-bottom: max(20px, calc(20px + env(safe-area-inset-bottom))) !important;
+  /* Mobile safe area handling - simplified */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .mobile-input-safe {
+      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
     }
   }
 `;
@@ -671,7 +668,7 @@ const AIChatPage = ({
         minHeight: '100vh',
         minHeight: '100dvh', // Dynamic viewport height for mobile
         height: '100vh',
-        height: '100svh' // Small viewport height as fallback
+        height: '100dvh' // Dynamic viewport height as primary
       }}>
       {/* Mobile Overlay for Sidebar */}
       {sidebarOpen && isMobile && (
@@ -701,7 +698,7 @@ const AIChatPage = ({
         className={`absolute right-0 top-0 flex flex-col transition-all duration-300`}
         style={{
           height: '100vh',
-          height: '100svh', // Small viewport height for mobile browsers
+          height: '100dvh', // Dynamic viewport height for mobile browsers
           left: isMobile ? '0px' : (sidebarOpen ? '256px' : '72px'),
           width: isMobile ? '100%' : `calc(100% - ${sidebarOpen ? '256px' : '72px'})`
         }}
@@ -958,8 +955,10 @@ const AIChatPage = ({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Floating Message Input - Mobile Safe Area */}
-            <div className={`absolute bottom-0 left-0 right-0 p-4 md:p-6 ${isMobile ? 'mobile-safe-bottom' : ''}`}>
+            {/* Floating Message Input - Better Mobile Positioning */}
+            <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6" style={{
+              paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : '0px'
+            }}>
               <div 
                 className="relative flex items-center"
                 style={{ height: '56px' }}
