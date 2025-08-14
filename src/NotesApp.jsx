@@ -383,31 +383,47 @@ const NotesApp = ({ user, onLogout }) => {
 
           {/* Mobile Search Bar with Hamburger - Only show when sidebar is closed */}
           <div className={`md:hidden fixed top-3 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-sm ${sidebarOpen ? 'hidden' : 'block'}`}>
-            <div className="relative">
-              {/* Hamburger Button - Inside search bar */}
+            <div 
+              className="relative border rounded-xl px-3 py-3 flex items-center gap-3"
+              style={{ 
+                background: 'rgba(40, 40, 40, 0.9)', 
+                backdropFilter: 'blur(20px)',
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              {/* Hamburger Button - Separate from search */}
               <button
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200 z-20"
+                className="text-gray-400 hover:text-gray-200 transition-colors duration-200 flex-shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu size={18} />
               </button>
               
-              {/* Search Icon */}
-              <Search className="absolute left-12 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" size={18} />
-              
-              {/* Search Input */}
-              <input
-                type="text"
-                placeholder={getSearchPlaceholder()}
-                className="w-full border rounded-full py-2.5 pl-20 pr-4 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400"
-                style={{
-                  background: 'rgba(60, 60, 60, 0.9)',
-                  borderColor: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(20px)'
-                }}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              {/* Search Input Container */}
+              <div className="relative flex items-center flex-1">
+                <Search className="absolute left-3 text-gray-400 z-10" size={18} />
+                
+                {/* Search Input */}
+                <input
+                  type="text"
+                  placeholder={getSearchPlaceholder()}
+                  className="w-full border rounded-xl py-2 pl-10 pr-3 text-gray-200 text-sm outline-none transition-all duration-300 placeholder-gray-400"
+                  style={{
+                    background: 'rgba(60, 60, 60, 0.8)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                  }}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={e => {
+                    e.target.style.background = 'rgba(70, 70, 70, 0.9)';
+                    e.target.style.borderColor = '#8b5cf6';
+                  }}
+                  onBlur={e => {
+                    e.target.style.background = 'rgba(60, 60, 60, 0.8)';
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                />
+              </div>
             </div>
           </div>
 
