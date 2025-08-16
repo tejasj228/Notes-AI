@@ -23,6 +23,8 @@ const NotesApp = ({ user, onLogout }) => {
     trashedNotes,
     searchTerm,
     setSearchTerm,
+    loading,
+    error,
     createNote,
     updateNote,
     deleteNote,
@@ -58,7 +60,7 @@ const NotesApp = ({ user, onLogout }) => {
     if (currentPage === 'trash') {
       return trashedNotes;
     } else if (currentPage === 'folder' && currentFolder) {
-      return notes.filter(note => note.folderId === currentFolder.id);
+      return notes.filter(note => note.folderId === (currentFolder._id || currentFolder.id));
     } else {
       return notes.filter(note => note.folderId === null);
     }
@@ -68,10 +70,15 @@ const NotesApp = ({ user, onLogout }) => {
   const getCurrentNoteFromURL = () => {
     if (noteId) {
       const allNotes = [...notes, ...trashedNotes];
-      return allNotes.find(note => 
-        note.id.toString() === noteId || 
-        note.title.toLowerCase().replace(/\s+/g, '-') === noteId
-      );
+      return allNotes.find(note => {
+        if (!note) return false;
+        
+        const noteIdStr = (note._id || note.id);
+        const noteTitleSlug = note.title ? note.title.toLowerCase().replace(/\s+/g, '-') : '';
+        
+        return (noteIdStr && noteIdStr.toString() === noteId) || 
+               (noteTitleSlug && noteTitleSlug === noteId);
+      });
     }
     return null;
   };
@@ -453,17 +460,43 @@ const NotesApp = ({ user, onLogout }) => {
               minHeight: '100dvh' // Dynamic viewport height for mobile
             }}
           >
-            <NotesGrid
-              currentPage={currentPage}
-              currentFolder={currentFolder}
-              notes={getCurrentNotesForPage()}
-              searchTerm={searchTerm}
-              onOpenNote={openNote}
-              onAddNote={openNewNotePopup}
-              onRestoreNote={restoreNote}
-              onPermanentDeleteNote={permanentlyDeleteNote}
-              dragHandlers={dragHandlers}
-            />
+            {loading ? (
+              // Loading Spinner
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+                  <p className="text-gray-400 text-lg">Loading your notes...</p>
+                </div>
+              </div>
+            ) : error ? (
+              // Error State
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="text-red-400 text-6xl mb-4">⚠️</div>
+                  <p className="text-red-400 text-lg mb-2">Failed to load notes</p>
+                  <p className="text-gray-500 text-sm">{error}</p>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Notes Grid
+              <NotesGrid
+                currentPage={currentPage}
+                currentFolder={currentFolder}
+                notes={getCurrentNotesForPage()}
+                searchTerm={searchTerm}
+                onOpenNote={openNote}
+                onAddNote={openNewNotePopup}
+                onRestoreNote={restoreNote}
+                onPermanentDeleteNote={permanentlyDeleteNote}
+                dragHandlers={dragHandlers}
+              />
+            )}
           </div>
         </>
       )}

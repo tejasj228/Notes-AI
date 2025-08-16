@@ -1,0 +1,17 @@
+{
+  "name": "notes-ai-dev",
+  "version": "1.0.0",
+  "description": "Development scripts for Notes-AI full-stack application",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "npm start",
+    "backend-only": "cd backend && npm run dev",
+    "install-all": "npm install && cd backend && npm install",
+    "build": "npm run build && cd backend && npm run build",
+    "test": "npm test && cd backend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -266,7 +266,7 @@ export const EditNoteModal = ({
       const resizedDataUrl = await resizeImage(file);
       insertImageAtCaret(textareaRef, resizedDataUrl);
       if (textareaRef.current) {
-        onUpdate(note.id, 'content', textareaRef.current.innerHTML);
+        onUpdate(note._id, 'content', textareaRef.current.innerHTML);
       }
     };
     input.click();
@@ -279,7 +279,7 @@ export const EditNoteModal = ({
 
   // Handle title blur - save to main state
   const handleTitleBlur = () => {
-    onUpdate(note.id, 'title', titleValue);
+    onUpdate(note._id, 'title', titleValue);
   };
 
   // Handle keywords change - use local state
@@ -293,13 +293,13 @@ export const EditNoteModal = ({
       .map(k => k.trim())
       .filter(Boolean)
       .slice(0, 3);
-    onUpdate(note.id, 'keywords', keywords);
+    onUpdate(note._id, 'keywords', keywords);
   };
 
   // FIXED: Handle color change - use local state and update immediately
   const handleColorChange = (color) => {
     setColorValue(color);
-    onUpdate(note.id, 'color', color);
+    onUpdate(note._id, 'color', color);
   };
 
   if (!show || !note) return null;
@@ -341,7 +341,7 @@ export const EditNoteModal = ({
           <div className="flex gap-2 sm:gap-3 flex-shrink-0">
             <button 
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
-              onClick={() => onDelete(note.id)}
+              onClick={() => onDelete(note._id || note.id)}
               title="Delete note"
               style={{ background: 'rgba(255, 255, 255, 0.1)' }}
               onMouseEnter={e => {
@@ -394,7 +394,7 @@ export const EditNoteModal = ({
           <ContentEditor
             editorRef={textareaRef}
             content={note.content}
-            onChange={e => onUpdate(note.id, 'content', e.currentTarget.innerHTML)}
+            onChange={e => onUpdate(note._id, 'content', e.currentTarget.innerHTML)}
             onImageInsert={handleInsertImage}
           />
         </div>

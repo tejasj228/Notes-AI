@@ -3,6 +3,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Auth page glass morphism support */
+@supports (backdrop-filter: blur(16px)) {
+  .backdrop-blur-xl {
+    backdrop-filter: blur(16px);
+  }
+}
+
+/* Fallback for older browsers */
+@supports not (backdrop-filter: blur(16px)) {
+  .backdrop-blur-xl {
+    background: rgba(31, 41, 55, 0.8);
+  }
+}
+
 /* You can import your Auth.css here if needed */
 @import './components/Auth.css';
 * {

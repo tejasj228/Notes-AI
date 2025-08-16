@@ -113,7 +113,7 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
           const [removed] = updatedNotes.splice(draggedIndex, 1);
           updatedNotes.splice(hoverIndex, 0, removed);
 
-          reorderNotes(updatedNotes, draggedNote, currentPage, hoverIndex);
+          reorderNotes(updatedNotes, draggedNote, currentPage, hoverIndex, false);
           setDraggedIndex(hoverIndex);
           setDragOverIndex(hoverIndex);
         }
@@ -123,6 +123,16 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
 
   const handleTouchEnd = (e) => {
     const wasDragging = isDragging;
+    const finalDraggedNote = draggedNote;
+    const finalDraggedIndex = draggedIndex;
+    const finalDragOverIndex = dragOverIndex;
+    
+    // If we were dragging, save the final order to backend
+    if (wasDragging && finalDraggedNote && finalDraggedIndex !== null) {
+      const currentNotes = getCurrentNotes();
+      const finalIndex = finalDragOverIndex !== null ? finalDragOverIndex : finalDraggedIndex;
+      reorderNotes(currentNotes, finalDraggedNote, currentPage, finalIndex, true);
+    }
     
     setTouchStartPos(null);
     setDraggedNote(null);
@@ -146,13 +156,20 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     setDraggedIndex(index);
     setIsDragging(true);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', note.id.toString());
+    e.dataTransfer.setData('text/plain', (note._id || note.id || '').toString());
     
     // Set opacity like in original implementation
     e.target.style.opacity = '0.5';
   };
 
   const handleDragEnd = (e) => {
+    // Save final order to backend if we had a valid drag operation
+    if (draggedNote && draggedIndex !== null) {
+      const currentNotes = getCurrentNotes();
+      const finalIndex = dragOverIndex !== null ? dragOverIndex : draggedIndex;
+      reorderNotes(currentNotes, draggedNote, currentPage, finalIndex, true);
+    }
+    
     // Reset opacity like in original implementation
     e.target.style.opacity = '1';
     setDraggedNote(null);
@@ -174,8 +191,8 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
       const [removed] = updatedNotes.splice(draggedIndex, 1);
       updatedNotes.splice(hoverIndex, 0, removed);
 
-      // This is the EXACT logic from oldcode.jsx that was working
-      reorderNotes(updatedNotes, draggedNote, currentPage, hoverIndex);
+      // Only call reorderNotes for visual feedback, don't save to backend yet
+      reorderNotes(updatedNotes, draggedNote, currentPage, hoverIndex, false);
 
       setDraggedIndex(hoverIndex);
       setDragOverIndex(hoverIndex);
@@ -185,6 +202,14 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
   const handleDrop = (e, index) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // If we have a valid drag operation, save the final order to backend
+    if (draggedNote && draggedIndex !== null) {
+      const currentNotes = getCurrentNotes();
+      const finalIndex = dragOverIndex !== null ? dragOverIndex : index;
+      reorderNotes(currentNotes, draggedNote, currentPage, finalIndex, true);
+    }
+    
     setDraggedNote(null);
     setDragOverIndex(null);
     setDraggedIndex(null);
@@ -199,9 +224,9 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (draggedNote && draggedNote.id && dragOverIndex === null) {
+    if (draggedNote && (draggedNote._id || draggedNote.id) && dragOverIndex === null) {
       const currentNotes = getCurrentNotes();
-      reorderNotes(currentNotes, draggedNote, currentPage, currentNotes.length - 1);
+      reorderNotes(currentNotes, draggedNote, currentPage, currentNotes.length - 1, true);
     }
     setDraggedNote(null);
     setDragOverIndex(null);

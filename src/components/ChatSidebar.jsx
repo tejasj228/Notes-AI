@@ -47,41 +47,16 @@ const ChatSidebar = ({
   onSelectChat,
   onDeleteChat,
   selectedNote,
-  onBackToNotes
+  onBackToNotes,
+  isChatLoading = false
 }) => {
   const [hoveredChat, setHoveredChat] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Generate note-specific mock chat history based on the selected note
-  const generateNoteChatHistory = (note) => {
-    if (!note) return [];
-    
-    return [
-      {
-        id: `${note.id}_chat_1`,
-        title: `Analysis of "${note.title}"`,
-        preview: "Can you help me understand the main concepts in this note?",
-        timestamp: "2 hours ago"
-      },
-      {
-        id: `${note.id}_chat_2`,
-        title: "Summary Request",
-        preview: "Please provide a brief summary of the key points.",
-        timestamp: "Yesterday"
-      },
-      {
-        id: `${note.id}_chat_3`,
-        title: "Questions & Clarifications",
-        preview: "I have some questions about the technical details...",
-        timestamp: "2 days ago"
-      }
-    ];
-  };
-
-  const noteChatHistory = generateNoteChatHistory(selectedNote);
+  // Get actual chat history for the selected note
   const displayHistory = chatHistory.length > 0 
-    ? chatHistory.filter(chat => chat.noteId === selectedNote?.id) 
-    : noteChatHistory;
+    ? chatHistory.filter(chat => chat.noteId === selectedNote?.id || chat.noteId === selectedNote?._id) 
+    : [];
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -196,13 +171,22 @@ const ChatSidebar = ({
                 }}
               >
                 <div className="space-y-1">
-                  {displayHistory.length === 0 ? (
+                  {isChatLoading ? (
+                    // Loading state
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-3"></div>
+                      <p className="text-sm">Loading chat history...</p>
+                      <p className="text-xs mt-1">Please wait...</p>
+                    </div>
+                  ) : displayHistory.length === 0 ? (
+                    // Empty state
                     <div className="text-center py-8 text-gray-500">
                       <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
                       <p className="text-sm">No chat history for this note yet.</p>
                       <p className="text-xs mt-1">Start a conversation to see it here!</p>
                     </div>
                   ) : (
+                    // Chat history list
                     displayHistory.map((chat) => (
                       <div
                         key={chat.id}

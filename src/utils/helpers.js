@@ -93,7 +93,23 @@ export const getFolderColor = (color) => {
   return colors[color] || colors.purple;
 };
 
-// Note size classes
+// Note size styles for CSS Grid
+export const getSizeStyles = (size, isMobile = false) => {
+  // On mobile, all notes should be the same size
+  if (isMobile) {
+    return { gridRowEnd: 'span 2' }; // Medium size for all notes on mobile
+  }
+  
+  // On desktop, use custom sizes
+  const sizeMap = {
+    small: { gridRowEnd: 'span 1', minHeight: '216px' },
+    medium: { gridRowEnd: 'span 2', minHeight: '282px' }, 
+    large: { gridRowEnd: 'span 3', minHeight: '370px' }
+  };
+  return sizeMap[size] || sizeMap.medium;
+};
+
+// Note size classes (kept for compatibility)
 export const getSizeClasses = (size) => {
   const sizeMap = {
     small: 'row-span-1',

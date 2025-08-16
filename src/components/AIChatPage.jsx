@@ -1,12 +1,40 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, GripVertical, Menu } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Send, User, Bot, GripVertical, Menu, ImagePlus } from 'lucide-react';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
+import { aiAPI } from '../api/ai';
 import ChatSidebar from './ChatSidebar';
+
+// Simple debounce function
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 // Hide scrollbars for webkit browsers and handle mobile viewport
 const chatInputStyles = `
   .chat-input::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Make images in note editor draggable */
+  .note-content-editable img {
+    cursor: grab;
+    transition: opacity 0.2s ease;
+  }
+  
+  .note-content-editable img:active {
+    cursor: grabbing;
+  }
+  
+  .note-content-editable img:hover {
+    opacity: 0.8;
   }
   
   /* Handle mobile viewport height changes */
@@ -101,7 +129,9 @@ const AIChatPage = ({
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+  const [selectedImages, setSelectedImages] = useState([]); // Store selected images for the message
   const [isTyping, setIsTyping] = useState(false);
+  const [lastTypingTime, setLastTypingTime] = useState(0);
   const [noteContent, setNoteContent] = useState(selectedNote?.content || '');
   const [panelWidth, setPanelWidth] = useState(() => {
     // Set initial panel width based on screen size
@@ -113,14 +143,29 @@ const AIChatPage = ({
   const [currentChatId, setCurrentChatId] = useState(null); // Track current chat
   const [chatSessions, setChatSessions] = useState({}); // Store all chat sessions by note ID
   const [chatHistory, setChatHistory] = useState([]); // Store chat history for current note
+  const [isChatLoading, setIsChatLoading] = useState(false); // Loading state for chat history
+  const [isSessionLoading, setIsSessionLoading] = useState(false); // Loading state for individual session
+  const [loadedSessions, setLoadedSessions] = useState(new Map()); // Cache loaded sessions
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Track if mobile view - initialized correctly
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight); // Track viewport height
-  const [isUpdatingMessages, setIsUpdatingMessages] = useState(false); // Track when messages are being updated via chat
   const [initializedNotes, setInitializedNotes] = useState(new Set()); // Track which notes have been initialized
+  const [isDragOverChat, setIsDragOverChat] = useState(false); // Track when dragging over chat area
   
   const messagesEndRef = useRef(null);
   const noteEditorRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const chatInputRef = useRef(null);
+
+  // Set up drag events for images in note editor
+  useEffect(() => {
+    if (noteEditorRef.current) {
+      const images = noteEditorRef.current.querySelectorAll('img');
+      images.forEach(img => {
+        img.draggable = true;
+        img.style.cursor = 'grab';
+      });
+    }
+  }, [noteContent]);
 
   // Auto scroll to bottom of chat
   useEffect(() => {
@@ -129,31 +174,101 @@ const AIChatPage = ({
 
   // Initialize chat session for the selected note
   useEffect(() => {
-    console.log('Chat initialization useEffect triggered for note ID:', selectedNote?.id);
+    console.log('Chat initialization useEffect triggered. selectedNote:', {
+      id: selectedNote?.id,
+      _id: selectedNote?._id,
+      title: selectedNote?.title
+    });
     if (selectedNote) {
-      const noteId = selectedNote.id;
-      const existingSessions = chatSessions[noteId] || [];
+      const noteId = selectedNote._id || selectedNote.id;
       
-      // Load chat history for this note (sorted by creation date, newest first)
-      const sortedSessions = existingSessions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setChatHistory(sortedSessions);
+      // Clear cache when switching notes to free memory
+      setLoadedSessions(new Map());
       
-      // Only create a new chat if:
-      // 1. We haven't initialized this note before, AND
-      // 2. There are no existing sessions for this note
-      if (!initializedNotes.has(noteId) && existingSessions.length === 0) {
-        console.log('Creating initial chat for new note');
-        setInitializedNotes(prev => new Set([...prev, noteId]));
-        handleNewChat();
-      } else if (existingSessions.length > 0 && !currentChatId) {
-        console.log('Setting current chat to most recent session');
-        setCurrentChatId(sortedSessions[0].id);
-        setMessages(sortedSessions[0].messages || []);
-      } else {
-        console.log('Note already initialized or has existing sessions');
-      }
+      // Load chat history from backend
+      loadChatHistory(noteId);
     }
-  }, [selectedNote?.id]); // Only depend on note ID, not the entire note object
+  }, [selectedNote?.id, selectedNote?._id]); // Watch both possible ID fields
+
+  // Load chat history from backend
+  const loadChatHistory = async (noteId) => {
+    setIsChatLoading(true);
+    try {
+      // First, load all chat sessions for this note
+      const response = await aiAPI.getChatHistory(noteId);
+      if (response.success && response.data.sessions && response.data.sessions.length > 0) {
+        // Convert backend sessions to frontend format
+        const sessions = response.data.sessions.map(session => ({
+          id: session.sessionId,
+          title: session.firstMessage.length > 30 
+            ? session.firstMessage.substring(0, 30) + "..." 
+            : session.firstMessage,
+          preview: session.lastMessage.substring(0, 100) + (session.lastMessage.length > 100 ? "..." : ""),
+          timestamp: new Date(session.updatedAt).toLocaleDateString(),
+          noteId: noteId,
+          noteTitle: selectedNote?.title,
+          messageCount: session.messageCount,
+          hasImages: session.hasImages,
+          createdAt: new Date(session.createdAt),
+          updatedAt: new Date(session.updatedAt)
+        }));
+        
+        // Sort sessions by most recent first
+        sessions.sort((a, b) => b.updatedAt - a.updatedAt);
+        
+        setChatHistory(sessions);
+        
+        // Always start with a new chat when opening a note
+        await handleNewChat();
+      } else {
+        // No existing chats, create a new session
+        setChatHistory([]);
+        await handleNewChat();
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      // Fallback to creating a new chat
+      setChatHistory([]);
+      await handleNewChat();
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  // Load messages for a specific session
+  const loadSessionMessages = async (noteId, sessionId) => {
+    try {
+      // Check if we already have this session cached
+      const cacheKey = `${noteId}_${sessionId}`;
+      if (loadedSessions.has(cacheKey)) {
+        console.log('Loading session from cache:', sessionId);
+        setMessages(loadedSessions.get(cacheKey));
+        return;
+      }
+
+      console.log('Loading session from API:', sessionId);
+      const response = await aiAPI.getChatHistory(noteId, { sessionId });
+      if (response.success && response.data.messages) {
+        const messages = response.data.messages.map(msg => ({
+          id: msg._id,
+          type: msg.type,
+          content: msg.content,
+          timestamp: msg.createdAt,
+          images: msg.metadata?.images ? msg.metadata.images.map(img => ({
+            ...img,
+            dataUrl: `data:${img.mimeType};base64,${img.base64}`
+          })) : []
+        }));
+        
+        // Cache the messages
+        setLoadedSessions(prev => new Map(prev.set(cacheKey, messages)));
+        setMessages(messages);
+      }
+    } catch (error) {
+      console.error('Error loading session messages:', error);
+      setMessages([]);
+    }
+  };
 
   // Set note content when selectedNote changes
   useEffect(() => {
@@ -172,12 +287,15 @@ const AIChatPage = ({
       const currentContent = noteEditorRef.current.innerHTML;
       const expectedContent = selectedNote.content || '';
       
-      // Only update if content is different to avoid cursor jumping
-      if (currentContent !== expectedContent) {
+      // Only update if content is different and user is not actively typing
+      const timeSinceLastTyping = Date.now() - lastTypingTime;
+      const isUserTyping = timeSinceLastTyping < 1000; // 1 second threshold
+      
+      if (currentContent !== expectedContent && !isUserTyping) {
         noteEditorRef.current.innerHTML = expectedContent;
       }
     }
-  }, [selectedNote?.content, panelWidth, isMobile]); // Trigger when panel visibility changes
+  }, [selectedNote?.content, panelWidth, isMobile, lastTypingTime]); // Trigger when panel visibility changes
 
   // Handle image clicks - ENABLE POPUP
   useEffect(() => {
@@ -238,14 +356,28 @@ const AIChatPage = ({
     selection.addRange(range);
   };
 
+  // Debounced save function to prevent excessive API calls
+  const debouncedSave = useCallback(
+    debounce((noteId, content) => {
+      if (onUpdateNote) {
+        onUpdateNote(noteId, 'content', content);
+      }
+    }, 500),
+    [onUpdateNote]
+  );
+
   // Handle note content changes and save them
   const handleNoteContentChange = (newContent) => {
+    const now = Date.now();
+    setLastTypingTime(now);
+    
     // Only update if content actually changed to prevent cursor jumping
     if (newContent !== noteContent) {
       setNoteContent(newContent);
-      // Save changes back to the main notes data
-      if (selectedNote && onUpdateNote) {
-        onUpdateNote(selectedNote.id, 'content', newContent);
+      
+      // Use debounced save to avoid excessive API calls
+      if (selectedNote) {
+        debouncedSave(selectedNote._id, newContent);
       }
     }
   };
@@ -396,18 +528,145 @@ const AIChatPage = ({
     setIsTyping(false);
   };
 
-  // Send message to Gemini API
+  // Handle image upload for AI chat
+  const handleImageUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      // Convert files to base64 for preview and sending
+      const imagePromises = files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve({
+              file: file,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              dataUrl: e.target.result,
+              base64: e.target.result.split(',')[1] // Remove data:image/...;base64, prefix
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const images = await Promise.all(imagePromises);
+      setSelectedImages(prev => [...prev, ...images]);
+    };
+    input.click();
+  };
+
+  // Remove selected image
+  const removeSelectedImage = (index) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle drag and drop from note editor to chat
+  const handleDragStart = (e) => {
+    // Check if dragging an image from the note editor
+    if (e.target.tagName === 'IMG') {
+      e.dataTransfer.setData('text/plain', e.target.src);
+      e.dataTransfer.setData('image/src', e.target.src);
+      e.dataTransfer.effectAllowed = 'copy';
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragOverChat(true);
+  };
+
+  const handleDragLeave = (e) => {
+    // Only hide drag indicator if leaving the chat input area entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOverChat(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragOverChat(false);
+
+    // Handle image drops from note editor
+    const imageSrc = e.dataTransfer.getData('image/src');
+    if (imageSrc) {
+      // Convert the image src to blob and then to base64
+      try {
+        const response = await fetch(imageSrc);
+        const blob = await response.blob();
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageData = {
+            name: 'Dragged Image',
+            size: blob.size,
+            type: blob.type,
+            dataUrl: e.target.result,
+            base64: e.target.result.split(',')[1]
+          };
+          setSelectedImages(prev => [...prev, imageData]);
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error('Error processing dragged image:', error);
+      }
+    }
+
+    // Handle file drops from outside the app
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+      
+      if (imageFiles.length > 0) {
+        const imagePromises = imageFiles.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              resolve({
+                file: file,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                dataUrl: e.target.result,
+                base64: e.target.result.split(',')[1]
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+
+        const images = await Promise.all(imagePromises);
+        setSelectedImages(prev => [...prev, ...images]);
+      }
+    }
+  };
+
+  // Send message to backend AI API
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if ((!inputMessage.trim() && selectedImages.length === 0) || !selectedNote || !currentChatId) return;
 
     const userMessage = {
       id: Date.now(),
       type: 'user',
-      content: inputMessage
+      content: inputMessage,
+      images: selectedImages.map(img => ({
+        name: img.name,
+        dataUrl: img.dataUrl,
+        base64: img.base64,
+        mimeType: img.type
+      }))
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
+    setSelectedImages([]); // Clear selected images after sending
     setIsTyping(true);
 
     // Create AI message placeholder
@@ -421,54 +680,44 @@ const AIChatPage = ({
     setMessages(prev => [...prev, aiMessage]);
 
     try {
-      // Debug: Check if API key exists
-      const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-      console.log('API Key status:', apiKey ? 'Found' : 'Missing');
-      console.log('API Key preview:', apiKey ? `${apiKey.substring(0, 10)}...` : 'None');
+      // Use backend AI API instead of direct Gemini call
+      const messageData = {
+        message: inputMessage,
+        sessionId: currentChatId,
+        images: selectedImages.map(img => ({
+          name: img.name,
+          base64: img.base64,
+          mimeType: img.type
+        }))
+      };
       
-      if (!apiKey) {
-        throw new Error('Gemini API key not found. Please check your .env file.');
+      const response = await aiAPI.sendMessage(selectedNote._id || selectedNote.id, messageData);
+      
+      if (response.success) {
+        const aiResponse = response.data.aiMessage.content;
+        
+        // Start typing animation
+        await typeMessage(aiResponse, aiMessageId);
+        
+        // Update chat session metadata
+        setTimeout(() => updateChatSession(), 100);
+      } else {
+        throw new Error(response.message || 'AI request failed');
       }
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Context: I'm working with a note titled "${selectedNote?.title || 'Untitled'}" with the following content:\n\n${noteContent}\n\nUser question: ${inputMessage}`
-            }]
-          }]
-        })
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('API Response:', data);
-      
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I couldn\'t process that request.';
-      
-      // Start typing animation
-      await typeMessage(aiResponse, aiMessageId);
-      
-      // Now that the conversation is complete, update chat history
-      setIsUpdatingMessages(true);
       
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
-      await typeMessage(`Error: ${error.message}`, aiMessageId);
+      console.error('Error calling AI API:', error);
+      let errorMessage = 'Sorry, I encountered an error. ';
       
-      // Update chat history even for errors
-      setIsUpdatingMessages(true);
+      if (error.response?.status === 401) {
+        errorMessage += 'Please log in again.';
+      } else if (error.response?.status === 503) {
+        errorMessage += 'AI service is temporarily unavailable.';
+      } else {
+        errorMessage += error.message || 'Please try again.';
+      }
+      
+      await typeMessage(errorMessage, aiMessageId);
     }
   };
 
@@ -496,17 +745,13 @@ const AIChatPage = ({
   const handleNewChat = (isManual = false) => {
     if (!selectedNote) return;
     
-    console.log('handleNewChat called for note:', selectedNote.id, 'isManual:', isManual);
+    const noteId = selectedNote._id || selectedNote.id;
+    console.log('handleNewChat called for note:', noteId, 'isManual:', isManual);
     
-    const newChatId = `${selectedNote.id}_${Date.now()}`;
-    const initialMessage = {
-      id: Date.now(),
-      type: 'ai',
-      content: `Hello! I can help you analyze, improve, or work with your note "${selectedNote.title}". What would you like to do?`
-    };
+    const newChatId = `${noteId}_${Date.now()}`;
     
     setCurrentChatId(newChatId);
-    setMessages([initialMessage]);
+    setMessages([]); // Start with empty messages for new chat
     setInputMessage('');
     setIsTyping(false);
     
@@ -514,155 +759,118 @@ const AIChatPage = ({
     const newChatSession = {
       id: newChatId,
       title: `New Chat - ${selectedNote.title}`,
-      preview: "Starting a new conversation...",
+      preview: "No messages yet...",
       timestamp: "Just now",
-      noteId: selectedNote.id,
+      noteId: noteId,
       noteTitle: selectedNote.title,
-      messages: [initialMessage],
-      createdAt: new Date()
+      messageCount: 0,
+      hasImages: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
-    // Update chat sessions
-    setChatSessions(prev => ({
-      ...prev,
-      [selectedNote.id]: [newChatSession, ...(prev[selectedNote.id] || [])]
-    }));
+    console.log('New chat session created:', newChatSession);
     
-    // Update chat history for current note
+    // Add new session to the top of chat history (only once)
     setChatHistory(prev => [newChatSession, ...prev]);
     setSidebarOpen(true);
     
     // Mark as initialized if manual
     if (isManual) {
-      setInitializedNotes(prev => new Set([...prev, selectedNote.id]));
+      setInitializedNotes(prev => new Set([...prev, noteId]));
     }
   };
 
-  const handleSelectChat = (chat) => {
+  const handleSelectChat = async (chat) => {
     if (!chat || !selectedNote) return;
     
+    console.log('Selecting chat:', chat.id, 'for note:', selectedNote._id || selectedNote.id);
     setCurrentChatId(chat.id);
     
-    // Load messages for this chat (in a real app, this would come from storage)
-    // For now, create a mock conversation
-    const mockMessages = [
-      {
-        id: 1,
-        type: 'ai',
-        content: `Hello! I can help you analyze, improve, or work with your note "${selectedNote.title}". What would you like to do?`
-      },
-      {
-        id: 2,
-        type: 'user',
-        content: "Can you help me improve this content?"
-      },
-      {
-        id: 3,
-        type: 'ai',
-        content: chat.preview
-      }
-    ];
+    // Clear current messages and show loading
+    setMessages([]);
+    setIsSessionLoading(true);
     
-    setMessages(chat.messages || mockMessages);
+    try {
+      // Load messages for this session from backend
+      const noteId = selectedNote._id || selectedNote.id;
+      await loadSessionMessages(noteId, chat.id);
+    } catch (error) {
+      console.error('Error loading chat messages:', error);
+      setMessages([]);
+    } finally {
+      setIsSessionLoading(false);
+    }
+    
     setInputMessage('');
     setIsTyping(false);
   };
 
-  const handleDeleteChat = (chatId) => {
+  const handleDeleteChat = async (chatId) => {
     if (!selectedNote) return;
     
-    const noteId = selectedNote.id;
-    
-    // Remove from chat sessions
-    setChatSessions(prev => ({
-      ...prev,
-      [noteId]: (prev[noteId] || []).filter(chat => chat.id !== chatId)
-    }));
-    
-    // Remove from current chat history
-    setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
-    
-    // If it's the current chat, start a new one
-    if (chatId === currentChatId) {
-      handleNewChat(true);
+    try {
+      console.log('Deleting chat:', chatId);
+      
+      const noteId = selectedNote._id || selectedNote.id;
+      // Delete from backend - send sessionId as a parameter
+      await aiAPI.deleteChatHistory(noteId, { sessionId: chatId });
+      
+      // Remove from current chat history
+      setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
+      
+      // If it's the current chat, create a new one
+      if (chatId === currentChatId) {
+        console.log('Deleted chat was current, creating new chat');
+        await handleNewChat(true);
+      }
+      
+      console.log('Chat deleted successfully');
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      // Show error message to user
+      alert('Failed to delete chat. Please try again.');
     }
   };
 
-  // Manual function to update chat history after conversation
-  const updateChatHistory = (messagesToSave) => {
-    if (!currentChatId || !selectedNote || !messagesToSave || messagesToSave.length <= 1) return;
+  // Update chat session metadata after new messages
+  const updateChatSession = async () => {
+    if (!currentChatId || !selectedNote || messages.length <= 1) return;
     
-    const noteId = selectedNote.id;
+    // Update the cache with new messages
+    const noteId = selectedNote._id || selectedNote.id;
+    const cacheKey = `${noteId}_${currentChatId}`;
+    setLoadedSessions(prev => new Map(prev.set(cacheKey, messages)));
     
-    // Update the current chat session with new messages
-    setChatSessions(prev => {
-      const noteSessions = prev[noteId] || [];
-      const updatedSessions = noteSessions.map(session => {
-        if (session.id === currentChatId) {
-          // Generate title from first user message or keep existing
-          const userMessages = messagesToSave.filter(m => m.type === 'user');
-          const title = userMessages.length > 0 
-            ? `${userMessages[0].content.substring(0, 50)}...`
-            : session.title;
-          
-          const preview = messagesToSave.length > 1 
-            ? messagesToSave[messagesToSave.length - 1].content.substring(0, 100) + "..."
-            : session.preview;
-          
-          return {
-            ...session,
-            title,
-            preview,
-            messages: [...messagesToSave],
-            timestamp: "Just now"
-          };
-        }
-        return session;
-      });
-      
-      return {
-        ...prev,
-        [noteId]: updatedSessions
-      };
-    });
-    
-    // Update chat history
+    // Update the chat session in the frontend state
     setChatHistory(prev => prev.map(chat => {
       if (chat.id === currentChatId) {
-        const userMessages = messagesToSave.filter(m => m.type === 'user');
+        const userMessages = messages.filter(m => m.type === 'user');
         const title = userMessages.length > 0 
-          ? `${userMessages[0].content.substring(0, 50)}...`
+          ? (userMessages[0].content.length > 50 
+            ? `${userMessages[0].content.substring(0, 50)}...`
+            : userMessages[0].content)
           : chat.title;
         
-        const preview = messagesToSave.length > 1 
-          ? messagesToSave[messagesToSave.length - 1].content.substring(0, 100) + "..."
+        const lastMessage = messages[messages.length - 1];
+        const preview = lastMessage 
+          ? (lastMessage.content.length > 100 
+            ? lastMessage.content.substring(0, 100) + "..."
+            : lastMessage.content)
           : chat.preview;
         
         return {
           ...chat,
           title,
           preview,
-          messages: [...messagesToSave],
-          timestamp: "Just now"
+          messageCount: messages.length,
+          hasImages: messages.some(m => m.images && m.images.length > 0),
+          updatedAt: new Date()
         };
       }
       return chat;
     }));
   };
-
-  // Update chat session when messages change (only for actual chat interactions)
-  useEffect(() => {
-    // Only update if we have a flag indicating this is a chat interaction
-    if (isUpdatingMessages) {
-      // Get current messages state when the flag is triggered
-      setMessages(currentMessages => {
-        updateChatHistory(currentMessages);
-        return currentMessages; // Return same messages, no change
-      });
-      // Reset the flag after updating
-      setIsUpdatingMessages(false);
-    }
-  }, [isUpdatingMessages]); // Only depend on the flag, not messages
 
   return (
     <>
@@ -695,6 +903,7 @@ const AIChatPage = ({
         chatHistory={chatHistory}
         selectedNote={selectedNote}
         onBackToNotes={onBackToNotes}
+        isChatLoading={isChatLoading}
       />
 
       {/* Main Content */}
@@ -778,6 +987,7 @@ const AIChatPage = ({
                 contentEditable={true}
                 suppressContentEditableWarning={true}
                 onInput={e => handleNoteContentChange(e.currentTarget.innerHTML)}
+                onDragStart={handleDragStart}
                 style={{
                   background: 'rgba(255, 255, 255, 0.05)',
                   borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -897,7 +1107,35 @@ const AIChatPage = ({
                     paddingBottom: '80px' // Reduced padding for better mobile experience
                   }}
                 >
-                  {messages.map((message) => (
+                  {isChatLoading ? (
+                    // Chat history loading state
+                    <div className="flex items-center justify-center h-full min-h-[300px]">
+                      <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-3"></div>
+                        <p className="text-gray-400">Loading chat history...</p>
+                      </div>
+                    </div>
+                  ) : isSessionLoading ? (
+                    // Individual session loading state
+                    <div className="flex items-center justify-center h-full min-h-[300px]">
+                      <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-3"></div>
+                        <p className="text-gray-400">Loading conversation...</p>
+                      </div>
+                    </div>
+                  ) : messages.length === 0 ? (
+                    // Empty state
+                    <div className="flex items-center justify-center h-full min-h-[300px]">
+                      <div className="text-center">
+                        <div className="text-4xl mb-4">💬</div>
+                        <p className="text-gray-400 mb-2">Start a conversation</p>
+                        <p className="text-gray-500 text-sm">Ask me anything about your note!</p>
+                      </div>
+                    </div>
+                  ) : (
+                    // Messages
+                    <>
+                      {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -942,7 +1180,26 @@ const AIChatPage = ({
                         message.type === 'ai' ? (
                           <div dangerouslySetInnerHTML={{ __html: parseMarkdown(message.content) }} />
                         ) : (
-                          <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>
+                          <div>
+                            {/* Display images if present */}
+                            {message.images && message.images.length > 0 && (
+                              <div className="mb-2 space-y-2">
+                                {message.images.map((image, index) => (
+                                  <img
+                                    key={index}
+                                    src={image.dataUrl}
+                                    alt={image.name || 'Uploaded image'}
+                                    className="max-w-full max-h-48 rounded-lg cursor-pointer"
+                                    onClick={() => setImagePopup({ open: true, src: image.dataUrl })}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {/* Display text content */}
+                            {message.content && (
+                              <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>
+                            )}
+                          </div>
                         )
                       )}
                     </div>
@@ -957,47 +1214,118 @@ const AIChatPage = ({
               ))}
               
               <div ref={messagesEndRef} />
+                    </>
+                  )}
             </div>
 
             {/* Floating Message Input - Better Mobile Positioning */}
-            <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6" style={{
-              paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : '0px'
-            }}>
+            <div 
+              className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6" 
+              style={{
+                paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : '0px'
+              }}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {/* Drag and Drop Indicator */}
+              {isDragOverChat && (
+                <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center pointer-events-none z-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <ImagePlus size={24} className="text-purple-400" />
+                    <div className="text-purple-300 text-sm font-medium">
+                      Drop image here to add to chat
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Selected Images Preview */}
+              {selectedImages.length > 0 && (
+                <div className="mb-3 p-3 rounded-xl" style={{
+                  background: 'rgba(30, 30, 30, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedImages.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image.dataUrl}
+                          alt={image.name}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                        <button
+                          onClick={() => removeSelectedImage(index)}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div 
                 className="relative flex items-center"
                 style={{ height: '56px' }}
               >
                 <textarea
+                  ref={chatInputRef}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask anything about your note..."
-                  className="w-full h-full p-4 pr-14 border rounded-2xl resize-none outline-none text-gray-200 placeholder-gray-400 shadow-2xl chat-input"
+                  className="w-full h-full pl-14 pr-14 py-4 border rounded-2xl resize-none outline-none text-gray-200 placeholder-gray-400 shadow-2xl chat-input"
                   style={{
-                    background: 'rgba(30, 30, 30, 0.95)',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    background: isDragOverChat 
+                      ? 'rgba(139, 92, 246, 0.1)' 
+                      : 'rgba(30, 30, 30, 0.95)',
+                    borderColor: isDragOverChat 
+                      ? '#8b5cf6' 
+                      : 'rgba(255, 255, 255, 0.2)',
                     backdropFilter: 'blur(20px)',
                     minHeight: '56px',
                     maxHeight: '56px',
                     overflow: 'hidden',
                     scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
+                    msOverflowStyle: 'none',
+                    transition: 'all 0.3s ease'
                   }}
                   onFocus={e => {
-                    e.target.style.borderColor = '#8b5cf6';
-                    e.target.style.background = 'rgba(40, 40, 40, 0.95)';
+                    if (!isDragOverChat) {
+                      e.target.style.borderColor = '#8b5cf6';
+                      e.target.style.background = 'rgba(40, 40, 40, 0.95)';
+                    }
                   }}
                   onBlur={e => {
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                    e.target.style.background = 'rgba(30, 30, 30, 0.95)';
+                    if (!isDragOverChat) {
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                      e.target.style.background = 'rgba(30, 30, 30, 0.95)';
+                    }
                   }}
                 />
+                {/* Image Upload Button */}
+                <button
+                  onClick={handleImageUpload}
+                  className="absolute left-3 p-2 rounded-xl transition-all duration-300 hover:bg-white/20"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: 'none'
+                  }}
+                  title="Upload image"
+                >
+                  <ImagePlus size={16} className="text-gray-300" />
+                </button>
+                
+                {/* Send Button */}
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isTyping}
+                  disabled={(!inputMessage.trim() && selectedImages.length === 0) || isTyping}
                   className="absolute right-3 p-2 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    background: inputMessage.trim() && !isTyping
+                    background: (inputMessage.trim() || selectedImages.length > 0) && !isTyping
                       ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
                       : 'rgba(255, 255, 255, 0.1)',
                     border: 'none'

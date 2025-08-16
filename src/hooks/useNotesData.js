@@ -1,18 +1,47 @@
-import { useState } from 'react';
-import { DEFAULT_NOTES, DEFAULT_FOLDERS, PAGES } from '../utils/constants';
-import { getRandomSize } from '../utils/helpers';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import { notesAPI } from '../api/notes';
+import { foldersAPI } from '../api/folders';
+import { trashAPI } from '../api/trash';
 
 export const useNotesData = () => {
   // State
-  const [notes, setNotes] = useState(DEFAULT_NOTES);
-  const [folders, setFolders] = useState(DEFAULT_FOLDERS);
+  const [notes, setNotes] = useState([]);
+
+  const [folders, setFolders] = useState([]);
   const [trashedNotes, setTrashedNotes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Get URL parameters and location
-  const { noteId, folderId } = useParams();
+  const { folderId } = useParams();
   const location = useLocation();
+
+  // Load data from backend
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    try {
+      const [notesRes, foldersRes, trashRes] = await Promise.all([
+        notesAPI.getAllNotes(),
+        foldersAPI.getAllFolders({ includeNotesCount: true }),
+        trashAPI.getTrash(),
+      ]);
+
+      setNotes(notesRes.data.notes);
+      setFolders(foldersRes.data.folders);
+      setTrashedNotes(trashRes.data.notes);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Determine current page from URL
   const getCurrentPageFromURL = () => {
@@ -26,7 +55,7 @@ export const useNotesData = () => {
   // Get current folder from URL
   const getCurrentFolderFromURL = () => {
     if (folderId) {
-      return folders.find(f => f.id.toString() === folderId || 
+      return folders.find(f => f._id === folderId || 
                               f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
     }
     return null;
@@ -40,125 +69,178 @@ export const useNotesData = () => {
     if (currentPage === 'trash') {
       return trashedNotes;
     } else if (currentPage === 'folder' && currentFolder) {
-      return notes.filter(note => note.folderId === currentFolder.id);
+      return notes.filter(note => note.folderId === currentFolder._id);
     } else {
       return notes.filter(note => note.folderId === null);
     }
   };
 
   // Create new note - RETURN the created note
-  const createNote = (noteData) => {
-    const currentPage = getCurrentPageFromURL();
-    const currentFolder = getCurrentFolderFromURL();
-    const folderId = currentPage === 'folder' && currentFolder ? currentFolder.id : null;
-    
-    const newNote = {
-      id: Date.now(),
-      title: noteData.title || 'Untitled Note',
-      content: noteData.content || '',
-      keywords: noteData.keywords || [],
-      color: noteData.color,
-      size: getRandomSize(),
-      order: 0,
-      images: [],
-      folderId
-    };
+  const createNote = async (noteData) => {
+    try {
+      const currentPage = getCurrentPageFromURL();
+      const currentFolder = getCurrentFolderFromURL();
+      const folderId = currentPage === 'folder' && currentFolder ? currentFolder._id : null;
+      
+      const response = await notesAPI.createNote({
+        ...noteData,
+        folderId,
+      });
 
-    // Update order for notes in the same context (folder or main)
-    const updatedNotes = [newNote, ...notes].map((note, index) => {
-      if (note.folderId === folderId) {
-        return { ...note, order: index };
-      }
-      return note;
-    });
-
-    setNotes(updatedNotes);
-    return newNote; // Return the created note
+      const newNote = response.data.note;
+      setNotes((prev) => [newNote, ...prev]);
+      return newNote;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   // Update note
-  const updateNote = (noteId, field, value) => {
-    const currentPage = getCurrentPageFromURL();
-    if (currentPage !== 'trash') {
-      setNotes(notes.map(note => 
-        note.id === noteId ? { ...note, [field]: value } : note
-      ));
+  const updateNote = async (noteId, field, value) => {
+    try {
+      const updates = { [field]: value };
+      const response = await notesAPI.updateNote(noteId, updates);
+
+      setNotes((prev) =>
+        prev.map((note) => {
+          const id = note._id || note.id;
+          return id === noteId ? response.data.note : note;
+        })
+      );
+    } catch (err) {
+      setError(err.message);
+      throw err;
     }
   };
 
   // Delete note (move to trash)
-  const deleteNote = (noteId) => {
-    const noteToDelete = notes.find(note => note.id === noteId);
-    if (noteToDelete) {
-      setNotes(notes.filter(note => note.id !== noteId));
-      setTrashedNotes([...trashedNotes, { ...noteToDelete, trashedAt: new Date() }]);
+  const deleteNote = async (noteId) => {
+    try {
+      await notesAPI.deleteNote(noteId);
+
+      const noteToDelete = notes.find((note) => note._id === noteId);
+      if (noteToDelete) {
+        setNotes((prev) => prev.filter((note) => note._id !== noteId));
+        setTrashedNotes((prev) => [
+          ...prev,
+          { ...noteToDelete, trashedAt: new Date() },
+        ]);
+      }
+    } catch (err) {
+      setError(err.message);
+      throw err;
     }
   };
 
   // Permanently delete note from trash
-  const permanentlyDeleteNote = (noteId) => {
-    setTrashedNotes(trashedNotes.filter(note => note.id !== noteId));
-  };
-
-  // Restore note from trash
-  const restoreNote = (noteId) => {
-    const noteToRestore = trashedNotes.find(note => note.id === noteId);
-    if (noteToRestore) {
-      const { trashedAt, ...restoredNote } = noteToRestore;
-      setTrashedNotes(trashedNotes.filter(note => note.id !== noteId));
-
-      const updatedNotes = [{ ...restoredNote, order: -1 }, ...notes].map((note, index) => ({
-        ...note,
-        order: index
-      }));
-
-      setNotes(updatedNotes);
+  const permanentlyDeleteNote = async (noteId) => {
+    try {
+      await trashAPI.permanentlyDeleteNote(noteId);
+      setTrashedNotes((prev) => prev.filter((note) => note._id !== noteId));
+    } catch (err) {
+      setError(err.message);
+      throw err;
     }
   };
 
-  // Reorder notes - EXACT logic from working oldcode.jsx
-  const reorderNotes = (updatedCurrentNotes, draggedNote, page, hoverIndex) => {
-    const currentFolder = getCurrentFolderFromURL();
-    
-    // Reorder within the current context (folder or main)
-    const reorderedNotes = updatedCurrentNotes.map((note, index) => ({
-      ...note,
-      order: index
-    }));
+  // Restore note from trash
+  const restoreNote = async (noteId) => {
+    try {
+      const response = await trashAPI.restoreNote(noteId);
 
-    // Update the main notes array - EXACT logic from oldcode.jsx
-    if (page === 'folder' && currentFolder) {
-      const otherNotes = notes.filter(note => note.folderId !== currentFolder.id);
-      setNotes([...otherNotes, ...reorderedNotes]);
-    } else if (page === 'notes') {
-      const folderNotes = notes.filter(note => note.folderId !== null);
-      setNotes([...reorderedNotes, ...folderNotes]);
+      const restoredNote = response.data.note;
+      setTrashedNotes((prev) => prev.filter((note) => note._id !== noteId));
+      setNotes((prev) => [restoredNote, ...prev]);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  // Reorder notes
+  const reorderNotes = async (
+    updatedCurrentNotes,
+    draggedNote,
+    page,
+    hoverIndex,
+    saveToBackend = true
+  ) => {
+    try {
+      const currentFolder = getCurrentFolderFromURL();
+      const folderId =
+        page === 'folder' && currentFolder ? currentFolder._id : null;
+
+      // Always update the local state immediately for visual feedback
+      if (page === 'folder' && currentFolder) {
+        const folderNotes = updatedCurrentNotes.map((note, idx) => ({ ...note, order: idx }));
+        const otherNotes = notes.filter((note) => note.folderId !== currentFolder._id);
+        setNotes([...otherNotes, ...folderNotes]);
+      } else if (page === 'notes') {
+        const mainNotes = updatedCurrentNotes.map((note, idx) => ({ ...note, order: idx }));
+        const folderNotes = notes.filter((note) => note.folderId !== null);
+        setNotes([...mainNotes, ...folderNotes]);
+      }
+
+      // Only save to backend if requested (on drag end, not during drag)
+      if (saveToBackend) {
+        const noteOrders = updatedCurrentNotes.map((note, index) => ({
+          noteId: note._id,
+          order: index,
+        }));
+
+        await notesAPI.reorderNotes(noteOrders, folderId);
+      }
+    } catch (err) {
+      setError(err.message);
+      if (saveToBackend) {
+        throw err;
+      }
     }
   };
 
   // Create new folder - RETURN the created folder
-  const createFolder = (folderData) => {
-    const newFolder = {
-      id: Date.now(),
-      name: folderData.name.trim(),
-      color: folderData.color,
-      createdAt: new Date()
-    };
-
-    setFolders([...folders, newFolder]);
-    return newFolder; // Return the created folder
+  const createFolder = async (folderData) => {
+    try {
+      const response = await foldersAPI.createFolder(folderData);
+      const newFolder = response.data.folder;
+      setFolders((prev) => [...prev, newFolder]);
+      return newFolder;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   // Update folder
-  const updateFolder = (folderId, updates) => {
-    setFolders(folders.map(f =>
-      f.id === folderId ? { ...f, ...updates } : f
-    ));
+  const updateFolder = async (folderId, updates) => {
+    try {
+      const response = await foldersAPI.updateFolder(folderId, updates);
+      setFolders((prev) =>
+        prev.map((f) => (f._id === folderId ? response.data.folder : f))
+      );
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   // Delete folder
-  const deleteFolder = (folderId) => {
-    setFolders(folders.filter(f => f.id !== folderId));
+  const deleteFolder = async (folderId) => {
+    try {
+      await foldersAPI.deleteFolder(folderId);
+      setFolders((prev) => prev.filter((f) => f._id !== folderId));
+
+      // Move folder notes to root
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.folderId === folderId ? { ...note, folderId: null } : note
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   return {
@@ -167,6 +249,8 @@ export const useNotesData = () => {
     folders,
     trashedNotes,
     searchTerm,
+    loading,
+    error,
     setSearchTerm,
     
     // Note operations
