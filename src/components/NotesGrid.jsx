@@ -107,12 +107,12 @@ const NotesGrid = ({
 
   return (
     <div 
-      className="grid gap-3 md:gap-5 max-w-6xl mx-auto py-3 md:py-5 w-full px-4 md:px-0"
+      className="grid gap-6 md:gap-8 max-w-6xl mx-auto py-3 md:py-5 w-full px-4 md:px-0"
       style={{
         gridTemplateColumns: isMobile 
           ? '1fr' // Single column on mobile for full width
           : 'repeat(auto-fill, minmax(280px, 1fr))',
-        gridAutoRows: isMobile ? '120px' : '220px' // Increased to accommodate taller small cards
+        gridAutoRows: isMobile ? '120px' : '220px' // Increased to give proper space for notes
       }}
       onDragOver={handleGridDragOver}
       onDrop={handleGridDrop}
@@ -246,7 +246,7 @@ const NotesGrid = ({
                       WebkitBoxOrient: 'vertical',
                       // Adjust line clamp based on card size and device
                       WebkitLineClamp: isMobile 
-                        ? 1 // Only 1 line for mobile cards due to reduced height
+                        ? 4 // Increased from 1 to 4 lines for better mobile preview
                         : (note.size === 'small' ? 3 : note.size === 'medium' ? 6 : 12)
                     }}
                     dangerouslySetInnerHTML={{ __html: (note.content || '').replace(/<img[^>]*>/gi, '') }}
@@ -255,7 +255,7 @@ const NotesGrid = ({
               </div>
               <div className="mt-auto">
                 {Array.isArray(note.keywords) && note.keywords.length > 0 && (
-                  <div className="flex flex-wrap gap-1 items-end">
+                  <div className="flex flex-wrap gap-1 items-end mb-3">
                     {note.keywords.slice(0, isMobile ? 3 : (note.size === 'small' ? 3 : 4)).map((keyword, index) => (
                       <span 
                         key={index} 

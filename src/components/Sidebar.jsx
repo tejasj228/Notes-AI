@@ -48,6 +48,12 @@ const Sidebar = ({
   const maxFolders = 10;
   const canAddFolder = folders.length < maxFolders;
 
+  // Debug folder selection
+  React.useEffect(() => {
+    console.log('Sidebar - currentFolder:', currentFolder);
+    console.log('Sidebar - folders:', folders.map(f => ({ name: f.name, _id: f._id, id: f.id })));
+  }, [currentFolder, folders]);
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -141,7 +147,7 @@ const Sidebar = ({
                 <Folder size={20} />
                 <span className="flex-1">Folders</span>
                 <div className="relative group">
-                  <button
+                  <div
                     className={`border-none bg-transparent p-1 rounded transition-all duration-200 ${
                       canAddFolder 
                         ? 'text-gray-400 hover:text-violet-500 cursor-pointer' 
@@ -153,11 +159,19 @@ const Sidebar = ({
                         onAddFolder();
                       }
                     }}
-                    disabled={!canAddFolder}
+                    role="button"
+                    tabIndex={canAddFolder ? 0 : -1}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && canAddFolder) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onAddFolder();
+                      }
+                    }}
                     title={canAddFolder ? "Add Folder" : `Maximum ${maxFolders} folders allowed`}
                   >
                     <FolderPlus size={16} />
-                  </button>
+                  </div>
                   
                   {/* Tooltip for disabled state */}
                   {!canAddFolder && (
@@ -176,22 +190,32 @@ const Sidebar = ({
           {foldersExpanded && sidebarOpen && (
             <div className="ml-6">
               {folders.map((folder) => (
-                <div key={folder.id} className="relative group">
+                <div key={folder._id || folder.id} className="relative group">
                   <button
                     className={`
                       flex items-center gap-3 py-2 px-4 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left text-sm
-                      ${currentPage === PAGES.FOLDER && currentFolder?.id === folder.id
+                      ${currentPage === PAGES.FOLDER && 
+                        currentFolder && 
+                        ((currentFolder._id || currentFolder.id) === (folder._id || folder.id))
                         ? 'text-violet-500 border-r-3'
                         : 'text-gray-300 hover:text-violet-500'
                       }
                     `}
                     style={{
-                      background: currentPage === PAGES.FOLDER && currentFolder?.id === folder.id ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                      borderRightColor: currentPage === PAGES.FOLDER && currentFolder?.id === folder.id ? '#8b5cf6' : 'transparent'
+                      background: currentPage === PAGES.FOLDER && 
+                                 currentFolder && 
+                                 ((currentFolder._id || currentFolder.id) === (folder._id || folder.id)) 
+                                 ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                      borderRightColor: currentPage === PAGES.FOLDER && 
+                                       currentFolder && 
+                                       ((currentFolder._id || currentFolder.id) === (folder._id || folder.id))
+                                       ? '#8b5cf6' : 'transparent'
                     }}
                     onClick={() => onOpenFolder(folder)}
                   >
-                    {currentPage === PAGES.FOLDER && currentFolder?.id === folder.id ? 
+                    {currentPage === PAGES.FOLDER && 
+                     currentFolder && 
+                     ((currentFolder._id || currentFolder.id) === (folder._id || folder.id)) ? 
                       <FolderOpen size={16} /> : 
                       <Folder size={16} />
                     }
@@ -200,22 +224,33 @@ const Sidebar = ({
                       className="w-2 h-2 rounded-full ml-auto"
                       style={{ background: getFolderColor(folder.color) }}
                     />
-                    {/* 3-dots menu button */}
-                    <button
-                      className="ml-2 border-none bg-transparent text-gray-400 hover:text-violet-500 p-1 rounded transition-colors duration-200 folder-menu-container"
+                    {/* 3-dots menu div */}
+                    <div
+                      className="ml-2 border-none bg-transparent text-gray-400 hover:text-violet-500 p-1 rounded transition-colors duration-200 folder-menu-container cursor-pointer"
                       onClick={e => {
                         e.stopPropagation();
-                        setFolderMenuOpen(folder.id === folderMenuOpen ? null : folder.id);
+                        const folderId = folder._id || folder.id;
+                        setFolderMenuOpen(folderId === folderMenuOpen ? null : folderId);
+                      }}
+                      role="button"
+                      tabIndex="0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const folderId = folder._id || folder.id;
+                          setFolderMenuOpen(folderId === folderMenuOpen ? null : folderId);
+                        }
                       }}
                       title="Folder options"
                     >
                       <MoreVertical size={16} />
-                    </button>
+                    </div>
                   </button>
                   {/* Folder menu */}
-                  {folderMenuOpen === folder.id && (
+                  {folderMenuOpen === (folder._id || folder.id) && (
                     <FolderMenu
-                      folderId={folder.id}
+                      folderId={folder._id || folder.id}
                       onRename={() => onRenameFolder(folder)}
                       onDelete={onDeleteFolder}
                       onClose={() => setFolderMenuOpen(null)}

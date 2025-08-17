@@ -169,7 +169,10 @@ export const NewNoteModal = ({
               background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
               boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
             }}
-            onClick={onSave}
+            onClick={() => {
+              console.log('Save button clicked in modal');
+              onSave();
+            }}
             onMouseEnter={e => {
               e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
             }}

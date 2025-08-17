@@ -55,8 +55,11 @@ export const useNotesData = () => {
   // Get current folder from URL
   const getCurrentFolderFromURL = () => {
     if (folderId) {
-      return folders.find(f => f._id === folderId || 
-                              f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+      return folders.find(f => {
+        const fId = f._id || f.id;
+        return (fId && fId.toString() === folderId) || 
+               (f.name && f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+      });
     }
     return null;
   };
@@ -66,10 +69,33 @@ export const useNotesData = () => {
     const currentPage = getCurrentPageFromURL();
     const currentFolder = getCurrentFolderFromURL();
     
+    console.log('getCurrentNotes - currentPage:', currentPage);
+    console.log('getCurrentNotes - currentFolder:', currentFolder);
+    console.log('getCurrentNotes - all notes:', notes);
+    
     if (currentPage === 'trash') {
       return trashedNotes;
     } else if (currentPage === 'folder' && currentFolder) {
-      return notes.filter(note => note.folderId === currentFolder._id);
+      const targetFolderId = currentFolder._id || currentFolder.id;
+      console.log('getCurrentNotes - targetFolderId:', targetFolderId);
+      
+      const folderNotes = notes.filter(note => {
+        const noteFolderId = note.folderId;
+        console.log('Comparing note folderId:', noteFolderId, 'with target:', targetFolderId);
+        console.log('Types - note folderId:', typeof noteFolderId, 'target:', typeof targetFolderId);
+        
+        // Convert both to strings for comparison
+        const noteIdStr = noteFolderId ? noteFolderId.toString() : null;
+        const targetIdStr = targetFolderId ? targetFolderId.toString() : null;
+        
+        const isMatch = noteIdStr === targetIdStr;
+        console.log('Match result:', isMatch, 'for note:', note.title);
+        return isMatch;
+      });
+      
+      console.log('getCurrentNotes - folder notes found:', folderNotes.length);
+      console.log('getCurrentNotes - folder notes:', folderNotes);
+      return folderNotes;
     } else {
       return notes.filter(note => note.folderId === null);
     }
@@ -80,7 +106,12 @@ export const useNotesData = () => {
     try {
       const currentPage = getCurrentPageFromURL();
       const currentFolder = getCurrentFolderFromURL();
-      const folderId = currentPage === 'folder' && currentFolder ? currentFolder._id : null;
+      const folderId = currentPage === 'folder' && currentFolder ? (currentFolder._id || currentFolder.id) : null;
+      
+      console.log('Creating note - currentPage:', currentPage);
+      console.log('Creating note - currentFolder:', currentFolder);
+      console.log('Creating note - folderId:', folderId);
+      console.log('Creating note - noteData:', noteData);
       
       const response = await notesAPI.createNote({
         ...noteData,
@@ -88,6 +119,7 @@ export const useNotesData = () => {
       });
 
       const newNote = response.data.note;
+      console.log('Created note response:', newNote);
       setNotes((prev) => [newNote, ...prev]);
       return newNote;
     } catch (err) {

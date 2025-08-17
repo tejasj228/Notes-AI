@@ -100,11 +100,11 @@ export const getSizeStyles = (size, isMobile = false) => {
     return { gridRowEnd: 'span 2' }; // Medium size for all notes on mobile
   }
   
-  // On desktop, use custom sizes
+  // On desktop, use custom sizes - extremely compact heights
   const sizeMap = {
-    small: { gridRowEnd: 'span 1', minHeight: '216px' },
-    medium: { gridRowEnd: 'span 2', minHeight: '282px' }, 
-    large: { gridRowEnd: 'span 3', minHeight: '370px' }
+    small: { gridRowEnd: 'span 1', minHeight: '120px' },
+    medium: { gridRowEnd: 'span 2', minHeight: '100px' }, 
+    large: { gridRowEnd: 'span 3', minHeight: '120px' }
   };
   return sizeMap[size] || sizeMap.medium;
 };

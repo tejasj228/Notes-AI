@@ -28,6 +28,7 @@ const NotesApp = ({ user, onLogout }) => {
     createNote,
     updateNote,
     deleteNote,
+    getCurrentNotes,
     permanentlyDeleteNote,
     restoreNote,
     reorderNotes,
@@ -47,23 +48,21 @@ const NotesApp = ({ user, onLogout }) => {
 
   const getCurrentFolderFromURL = () => {
     if (folderId) {
-      return folders.find(f => f.id.toString() === folderId || 
-                              f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+      const foundFolder = folders.find(f => {
+        const fId = f._id || f.id;
+        const matchesId = (fId && fId.toString() === folderId);
+        const matchesSlug = (f.name && f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+        return matchesId || matchesSlug;
+      });
+      
+      console.log('getCurrentFolderFromURL:');
+      console.log('- folderId from URL:', folderId);
+      console.log('- all folders:', folders.map(f => ({ name: f.name, _id: f._id, id: f.id })));
+      console.log('- found folder:', foundFolder);
+      
+      return foundFolder;
     }
     return null;
-  };
-
-  const getCurrentNotesForPage = () => {
-    const currentPage = getCurrentPageFromURL();
-    const currentFolder = getCurrentFolderFromURL();
-    
-    if (currentPage === 'trash') {
-      return trashedNotes;
-    } else if (currentPage === 'folder' && currentFolder) {
-      return notes.filter(note => note.folderId === (currentFolder._id || currentFolder.id));
-    } else {
-      return notes.filter(note => note.folderId === null);
-    }
   };
 
   // Get current note for AI chat or edit modal
@@ -86,7 +85,7 @@ const NotesApp = ({ user, onLogout }) => {
   // Drag and drop functionality
   const currentPage = getCurrentPageFromURL();
   const currentFolder = getCurrentFolderFromURL();
-  const dragHandlers = useDragAndDrop(currentPage, getCurrentNotesForPage, reorderNotes);
+  const dragHandlers = useDragAndDrop(currentPage, getCurrentNotes, reorderNotes);
 
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -191,6 +190,7 @@ const NotesApp = ({ user, onLogout }) => {
 
   // MODAL: Note operations - Don't change URL
   const openNewNotePopup = () => {
+    console.log('openNewNotePopup called');
     setNewNoteDraft({
       title: '',
       content: '',
@@ -201,7 +201,11 @@ const NotesApp = ({ user, onLogout }) => {
     setShowNewNotePopup(true);
   };
 
-  const saveNewNote = () => {
+  const saveNewNote = async () => {
+    console.log('saveNewNote called');
+    console.log('Current page:', getCurrentPageFromURL());
+    console.log('Current folder:', getCurrentFolderFromURL());
+    
     let keywordsArray = [];
     
     if (typeof newNoteDraft.keywords === 'string') {
@@ -214,14 +218,19 @@ const NotesApp = ({ user, onLogout }) => {
       keywordsArray = newNoteDraft.keywords.slice(0, 3);
     }
 
-    const newNote = createNote({
-      title: newNoteDraft.title || 'Untitled Note',
-      content: newNoteDraft.content || '',
-      keywords: keywordsArray,
-      color: newNoteDraft.color || 'purple'
-    });
-    
-    setShowNewNotePopup(false);
+    try {
+      const newNote = await createNote({
+        title: newNoteDraft.title || 'Untitled Note',
+        content: newNoteDraft.content || '',
+        keywords: keywordsArray,
+        color: newNoteDraft.color || 'purple'
+      });
+      
+      console.log('Note created successfully:', newNote);
+      setShowNewNotePopup(false);
+    } catch (error) {
+      console.error('Error creating note:', error);
+    }
     // Don't navigate after creating note, stay on same page
   };
 
@@ -271,9 +280,10 @@ const NotesApp = ({ user, onLogout }) => {
   };
 
   const handleDeleteFolder = (folderId) => {
+    console.log('handleDeleteFolder called with folderId:', folderId);
     deleteFolder(folderId);
     // If we're currently viewing this folder, navigate to notes
-    if (currentFolder && currentFolder.id === folderId) {
+    if (currentFolder && (currentFolder._id === folderId || currentFolder.id === folderId)) {
       navigate('/notes');
     }
   };
@@ -488,7 +498,7 @@ const NotesApp = ({ user, onLogout }) => {
               <NotesGrid
                 currentPage={currentPage}
                 currentFolder={currentFolder}
-                notes={getCurrentNotesForPage()}
+                notes={getCurrentNotes()}
                 searchTerm={searchTerm}
                 onOpenNote={openNote}
                 onAddNote={openNewNotePopup}
@@ -506,7 +516,11 @@ const NotesApp = ({ user, onLogout }) => {
         <button
           className="md:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 z-50"
           style={{ background: '#7c3aed' }}
-          onClick={openNewNotePopup}
+          onClick={() => {
+            console.log('Mobile floating button clicked');
+            console.log('Current page when clicking:', currentPage);
+            openNewNotePopup();
+          }}
           onMouseEnter={e => e.target.style.background = '#6d28d9'}
           onMouseLeave={e => e.target.style.background = '#7c3aed'}
         >
