@@ -55,12 +55,33 @@ export const useNotesData = () => {
   // Get current folder from URL
   const getCurrentFolderFromURL = () => {
     if (folderId) {
-      return folders.find(f => {
+      console.log('🔍 getCurrentFolderFromURL - folderId from URL:', folderId);
+      console.log('🔍 getCurrentFolderFromURL - available folders:', folders.map(f => ({
+        _id: f._id,
+        id: f.id,
+        name: f.name,
+        nameSlug: f.name ? f.name.toLowerCase().replace(/\s+/g, '-') : null
+      })));
+      
+      const foundFolder = folders.find(f => {
         const fId = f._id || f.id;
-        return (fId && fId.toString() === folderId) || 
-               (f.name && f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+        const matchById = (fId && fId.toString() === folderId);
+        const matchBySlug = (f.name && f.name.toLowerCase().replace(/\s+/g, '-') === folderId);
+        
+        console.log(`🔍 Checking folder "${f.name}":`, {
+          fId,
+          matchById,
+          matchBySlug,
+          overall: matchById || matchBySlug
+        });
+        
+        return matchById || matchBySlug;
       });
+      
+      console.log('🔍 getCurrentFolderFromURL - found folder:', foundFolder);
+      return foundFolder;
     }
+    console.log('🔍 getCurrentFolderFromURL - no folderId, returning null');
     return null;
   };
 
@@ -69,35 +90,68 @@ export const useNotesData = () => {
     const currentPage = getCurrentPageFromURL();
     const currentFolder = getCurrentFolderFromURL();
     
-    console.log('getCurrentNotes - currentPage:', currentPage);
-    console.log('getCurrentNotes - currentFolder:', currentFolder);
-    console.log('getCurrentNotes - all notes:', notes);
+    console.log('📋 getCurrentNotes - currentPage:', currentPage);
+    console.log('📋 getCurrentNotes - currentFolder:', currentFolder);
+    console.log('📋 getCurrentNotes - all notes count:', notes.length);
+    console.log('📋 getCurrentNotes - all notes:', notes.map(n => ({
+      _id: n._id,
+      title: n.title,
+      folderId: n.folderId,
+      folderIdType: typeof n.folderId
+    })));
     
     if (currentPage === 'trash') {
+      console.log('📋 getCurrentNotes - returning trash notes:', trashedNotes.length);
       return trashedNotes;
     } else if (currentPage === 'folder' && currentFolder) {
       const targetFolderId = currentFolder._id || currentFolder.id;
-      console.log('getCurrentNotes - targetFolderId:', targetFolderId);
+      console.log('📋 getCurrentNotes - targetFolderId:', targetFolderId, typeof targetFolderId);
       
       const folderNotes = notes.filter(note => {
         const noteFolderId = note.folderId;
-        console.log('Comparing note folderId:', noteFolderId, 'with target:', targetFolderId);
-        console.log('Types - note folderId:', typeof noteFolderId, 'target:', typeof targetFolderId);
+        console.log(`📋 Checking note "${note.title}":`, {
+          noteFolderId,
+          noteFolderIdType: typeof noteFolderId,
+          targetFolderId,
+          targetFolderIdType: typeof targetFolderId
+        });
         
-        // Convert both to strings for comparison
-        const noteIdStr = noteFolderId ? noteFolderId.toString() : null;
+        // Handle different folderId formats from backend
+        let noteIdStr = null;
+        if (noteFolderId) {
+          // If folderId is an object (populated), get the _id
+          if (typeof noteFolderId === 'object' && noteFolderId._id) {
+            noteIdStr = noteFolderId._id.toString();
+          } 
+          // If folderId is already a string
+          else if (typeof noteFolderId === 'string') {
+            noteIdStr = noteFolderId;
+          }
+          // If folderId is just an ObjectId
+          else {
+            noteIdStr = noteFolderId.toString();
+          }
+        }
+        
         const targetIdStr = targetFolderId ? targetFolderId.toString() : null;
         
         const isMatch = noteIdStr === targetIdStr;
-        console.log('Match result:', isMatch, 'for note:', note.title);
+        console.log(`📋 Match comparison:`, {
+          noteIdStr,
+          targetIdStr,
+          isMatch
+        });
+        console.log(`📋 Match result for note "${note.title}":`, isMatch);
         return isMatch;
       });
       
-      console.log('getCurrentNotes - folder notes found:', folderNotes.length);
-      console.log('getCurrentNotes - folder notes:', folderNotes);
+      console.log('📋 getCurrentNotes - folder notes found:', folderNotes.length);
+      console.log('📋 getCurrentNotes - folder notes:', folderNotes.map(n => ({ title: n.title, _id: n._id })));
       return folderNotes;
     } else {
-      return notes.filter(note => note.folderId === null);
+      const rootNotes = notes.filter(note => note.folderId === null);
+      console.log('📋 getCurrentNotes - root notes found:', rootNotes.length);
+      return rootNotes;
     }
   };
 
@@ -108,21 +162,34 @@ export const useNotesData = () => {
       const currentFolder = getCurrentFolderFromURL();
       const folderId = currentPage === 'folder' && currentFolder ? (currentFolder._id || currentFolder.id) : null;
       
-      console.log('Creating note - currentPage:', currentPage);
-      console.log('Creating note - currentFolder:', currentFolder);
-      console.log('Creating note - folderId:', folderId);
-      console.log('Creating note - noteData:', noteData);
+      console.log('🚀 Creating note - currentPage:', currentPage);
+      console.log('🚀 Creating note - currentFolder:', currentFolder);
+      console.log('🚀 Creating note - derived folderId:', folderId);
+      console.log('🚀 Creating note - noteData:', noteData);
       
-      const response = await notesAPI.createNote({
+      const requestPayload = {
         ...noteData,
         folderId,
-      });
+      };
+      
+      console.log('🚀 API request payload:', requestPayload);
+      
+      const response = await notesAPI.createNote(requestPayload);
+      console.log('🚀 API response:', response);
 
       const newNote = response.data.note;
-      console.log('Created note response:', newNote);
-      setNotes((prev) => [newNote, ...prev]);
+      console.log('🚀 Created note from backend:', newNote);
+      
+      setNotes((prev) => {
+        const updatedNotes = [newNote, ...prev];
+        console.log('🚀 Updated notes state:', updatedNotes.length, 'total notes');
+        console.log('🚀 New note in state:', updatedNotes.find(n => n._id === newNote._id));
+        return updatedNotes;
+      });
+      
       return newNote;
     } catch (err) {
+      console.error('❌ Error creating note:', err);
       setError(err.message);
       throw err;
     }

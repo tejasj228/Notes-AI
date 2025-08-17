@@ -163,6 +163,11 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
   try {
+    console.log('🔧 Backend: Update folder request received');
+    console.log('🔧 Backend: Folder ID:', req.params.id);
+    console.log('🔧 Backend: Request body:', req.body);
+    console.log('🔧 Backend: User ID:', req.user._id);
+    
     const allowedUpdates = ['name', 'color', 'order'];
     const updates = {};
     
@@ -176,8 +181,11 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
       }
     });
 
+    console.log('🔧 Backend: Processed updates:', updates);
+
     // If updating name, check for duplicates
     if (updates.name) {
+      console.log('🔧 Backend: Checking for duplicate folder names');
       const existingFolder = await Folder.findOne({
         userId: req.user._id,
         name: updates.name,
@@ -185,6 +193,7 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
       });
 
       if (existingFolder) {
+        console.log('🔧 Backend: Duplicate folder name found');
         return res.status(400).json({
           success: false,
           message: 'Folder with this name already exists'
@@ -192,11 +201,14 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
       }
     }
 
+    console.log('🔧 Backend: Updating folder in database');
     const folder = await Folder.findByIdAndUpdate(
       req.params.id,
       updates,
       { new: true, runValidators: true }
     );
+
+    console.log('🔧 Backend: Folder updated successfully:', folder);
 
     res.json({
       success: true,
@@ -204,7 +216,13 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
       data: { folder }
     });
   } catch (error) {
-    console.error('Update folder error:', error);
+    console.error('❌ Backend: Update folder error:', error);
+    console.error('❌ Backend: Error stack:', error.stack);
+    console.error('❌ Backend: Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({
       success: false,
       message: 'Error updating folder'

@@ -11,17 +11,19 @@ const router = express.Router();
 // @access  Private
 router.get('/', createCacheMiddleware(require('../middleware/cache').notesCache, keyGenerators.notes), async (req, res) => {
   try {
-    console.log('Backend Notes - User ID from token:', req.user._id);
-    console.log('Backend Notes - User object:', req.user);
+    console.log('📚 Backend: Get notes request received');
+    console.log('📚 Backend: User ID from token:', req.user._id);
+    console.log('📚 Backend: Query params:', req.query);
     
     const { folder, pinned, search, limit = 50, skip = 0 } = req.query;
     
     let query = { userId: req.user._id, isTrashed: false };
-    console.log('Backend Notes - Query for notes:', query);
+    console.log('📚 Backend: Base query for notes:', query);
     
     // Filter by folder
     if (folder !== undefined) {
       query.folderId = folder === 'null' || folder === '' ? null : folder;
+      console.log('📚 Backend: Folder filter applied:', query.folderId);
     }
     
     // Filter by pinned status
@@ -39,6 +41,8 @@ router.get('/', createCacheMiddleware(require('../middleware/cache').notesCache,
       ];
     }
     
+    console.log('📚 Backend: Final query:', JSON.stringify(query, null, 2));
+
     // Use lean() for better performance and select only needed fields
     const notes = await Note.find(query, {
       title: 1,
@@ -59,6 +63,14 @@ router.get('/', createCacheMiddleware(require('../middleware/cache').notesCache,
       .limit(parseInt(limit))
       .skip(parseInt(skip))
       .lean();
+
+    console.log('📚 Backend: Found notes count:', notes.length);
+    console.log('📚 Backend: Notes with folder info:', notes.map(n => ({
+      _id: n._id,
+      title: n.title,
+      folderId: n.folderId,
+      folderInfo: n.folderId
+    })));
 
     // Get total count only if needed for pagination
     let totalCount = null;
@@ -115,6 +127,10 @@ router.get('/:id', checkResourceOwnership(Note), async (req, res) => {
 // @access  Private
 router.post('/', async (req, res) => {
   try {
+    console.log('🎯 Backend: Create note request received');
+    console.log('🎯 Backend: Request body:', req.body);
+    console.log('🎯 Backend: User ID:', req.user._id);
+    
     const { 
       title = 'Untitled Note', 
       content = '', 
@@ -124,6 +140,8 @@ router.post('/', async (req, res) => {
       folderId = null,
       isPinned = false 
     } = req.body;
+
+    console.log('🎯 Backend: Extracted folderId:', folderId, typeof folderId);
 
     // Use provided color or generate random one
     const noteColor = color || getRandomColor();
@@ -139,8 +157,10 @@ router.post('/', async (req, res) => {
     }).sort({ order: 1 });
 
     const newOrder = minOrderNote ? minOrderNote.order - 1 : 0;
+    
+    console.log('🎯 Backend: Order for new note:', newOrder);
 
-    const note = await Note.create({
+    const noteToCreate = {
       title: title.trim(),
       content,
       keywords: Array.isArray(keywords) ? keywords.slice(0, 3) : [], // Limit to 3 keywords
@@ -150,10 +170,17 @@ router.post('/', async (req, res) => {
       isPinned,
       userId: req.user._id,
       order: newOrder
-    });
+    };
+    
+    console.log('🎯 Backend: Note object to create:', noteToCreate);
+
+    const note = await Note.create(noteToCreate);
+    console.log('🎯 Backend: Note created with ID:', note._id);
+    console.log('🎯 Backend: Note folderId after creation:', note.folderId);
 
     // Populate folder info
     await note.populate('folderId', 'name color');
+    console.log('🎯 Backend: Note after population:', note);
 
     res.status(201).json({
       success: true,
@@ -161,7 +188,7 @@ router.post('/', async (req, res) => {
       data: { note }
     });
   } catch (error) {
-    console.error('Create note error:', error);
+    console.error('❌ Backend: Create note error:', error);
     res.status(500).json({
       success: false,
       message: 'Error creating note'

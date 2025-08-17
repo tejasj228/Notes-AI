@@ -202,9 +202,11 @@ const NotesApp = ({ user, onLogout }) => {
   };
 
   const saveNewNote = async () => {
-    console.log('saveNewNote called');
-    console.log('Current page:', getCurrentPageFromURL());
-    console.log('Current folder:', getCurrentFolderFromURL());
+    console.log('💾 saveNewNote called');
+    console.log('💾 Current page:', getCurrentPageFromURL());
+    console.log('💾 Current folder:', getCurrentFolderFromURL());
+    console.log('💾 Current URL:', location.pathname);
+    console.log('💾 URL params - folderId:', folderId);
     
     let keywordsArray = [];
     
@@ -218,20 +220,26 @@ const NotesApp = ({ user, onLogout }) => {
       keywordsArray = newNoteDraft.keywords.slice(0, 3);
     }
 
+    const noteDataToCreate = {
+      title: newNoteDraft.title || 'Untitled Note',
+      content: newNoteDraft.content || '',
+      keywords: keywordsArray,
+      color: newNoteDraft.color || 'purple'
+    };
+    
+    console.log('💾 Note data to create:', noteDataToCreate);
+
     try {
-      const newNote = await createNote({
-        title: newNoteDraft.title || 'Untitled Note',
-        content: newNoteDraft.content || '',
-        keywords: keywordsArray,
-        color: newNoteDraft.color || 'purple'
-      });
+      const newNote = await createNote(noteDataToCreate);
       
-      console.log('Note created successfully:', newNote);
+      console.log('💾 Note created successfully:', newNote);
       setShowNewNotePopup(false);
+      
+      // Refresh the current notes view to see the new note
+      console.log('💾 Current notes after creation:', getCurrentNotes());
     } catch (error) {
-      console.error('Error creating note:', error);
+      console.error('❌ Error creating note:', error);
     }
-    // Don't navigate after creating note, stay on same page
   };
 
   const handleDeleteNote = (noteId) => {
