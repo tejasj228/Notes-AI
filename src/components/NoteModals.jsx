@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, ImagePlus } from 'lucide-react';
 import { ColorPicker, KeywordsEditor, ContentEditor } from './UI';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
 
@@ -149,7 +149,7 @@ export const NewNoteModal = ({
         />
         
         {/* Content Editor */}
-        <div className="flex-1 flex flex-col min-h-0 mb-4">
+        <div className="flex-1 flex flex-col min-h-0">
           <ContentEditor
             editorRef={newNoteTextareaRef}
             content={undefined} // Don't pass content prop to avoid resetting innerHTML
@@ -162,10 +162,26 @@ export const NewNoteModal = ({
           />
         </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end flex-shrink-0">
+        {/* Bottom Section - Image Upload Button and Save Button */}
+        <div className="flex justify-between items-center pt-4">
+          {/* Image Upload Button - icon only for mobile */}
           <button
-            className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+            onClick={handleInsertImage}
+            className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:bg-purple-600/20 text-purple-400 hover:text-purple-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Upload image to note"
+            disabled={isLoading}
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              borderColor: 'rgba(139, 92, 246, 0.3)',
+              border: '1px solid'
+            }}
+          >
+            <ImagePlus size={16} />
+          </button>
+
+          {/* Save Button */}
+          <button
+            className="border-none rounded-xl px-4 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
             style={{
               background: isLoading ? 'rgba(139, 92, 246, 0.5)' : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
               boxShadow: '0 0 0 rgba(139, 92, 246, 0)',
@@ -202,7 +218,7 @@ export const NewNoteModal = ({
   );
 };
 
-// Edit Note Modal - FIXED VERSION with Local State for Color
+// Edit Note Modal - FIXED VERSION with Local State for All Fields
 export const EditNoteModal = ({ 
   show, 
   note, 
@@ -215,12 +231,11 @@ export const EditNoteModal = ({
 }) => {
   const textareaRef = useRef(null);
   
-  // Local state for title to handle editing properly
+  // Local state for all fields to handle editing without auto-save
   const [titleValue, setTitleValue] = useState('');
-  // Local state for keywords to handle editing properly
   const [keywordsValue, setKeywordsValue] = useState('');
-  // FIXED: Local state for color to handle editing properly
   const [colorValue, setColorValue] = useState('purple');
+  const [contentValue, setContentValue] = useState('');
 
   // Disable scrolling when modal is open
   useEffect(() => {
@@ -259,7 +274,7 @@ export const EditNoteModal = ({
     }
   }, [show, note]);
 
-  // Initialize title, keywords, and color when note changes
+  // Initialize all local state when note changes
   useEffect(() => {
     if (note) {
       setTitleValue(note.title || '');
@@ -269,12 +284,12 @@ export const EditNoteModal = ({
           ? note.keywords.join(', ')
           : '';
       setKeywordsValue(keywordsString);
-      // FIXED: Initialize color from note
       setColorValue(note.color || 'purple');
+      setContentValue(note.content || '');
     }
   }, [note]);
 
-  // Handle image insertion
+  // Handle image insertion - update local state only
   const handleInsertImage = async () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -285,40 +300,69 @@ export const EditNoteModal = ({
       const resizedDataUrl = await resizeImage(file);
       insertImageAtCaret(textareaRef, resizedDataUrl);
       if (textareaRef.current) {
-        onUpdate(note._id, 'content', textareaRef.current.innerHTML);
+        setContentValue(textareaRef.current.innerHTML);
       }
     };
     input.click();
   };
 
-  // Handle title change - use local state
+  // Handle title change - use local state only
   const handleTitleChange = (e) => {
     setTitleValue(e.target.value);
   };
 
-  // Handle title blur - save to main state
-  const handleTitleBlur = () => {
-    onUpdate(note._id, 'title', titleValue);
-  };
-
-  // Handle keywords change - use local state
+  // Handle keywords change - use local state only
   const handleKeywordsChange = (e) => {
     setKeywordsValue(e.target.value);
   };
 
-  const handleKeywordsBlur = (e) => {
-    const keywords = e.target.value
+  // Handle content change - use local state only
+  const handleContentChange = (e) => {
+    setContentValue(e.currentTarget.innerHTML);
+  };
+
+  // Handle save all changes - only update fields that changed
+  const handleSave = async () => {
+    const updates = [];
+
+    // Only update title if changed
+    if (titleValue !== (note.title || '')) {
+      updates.push(onUpdate(note._id, 'title', titleValue));
+    }
+
+    // Only update keywords if changed
+    const keywords = keywordsValue
       .split(',')
       .map(k => k.trim())
       .filter(Boolean)
       .slice(0, 3);
-    onUpdate(note._id, 'keywords', keywords);
-  };
+    
+    const originalKeywords = Array.isArray(note.keywords) 
+      ? note.keywords 
+      : typeof note.keywords === 'string' 
+        ? note.keywords.split(',').map(k => k.trim()).filter(Boolean)
+        : [];
+    
+    if (JSON.stringify(keywords) !== JSON.stringify(originalKeywords)) {
+      updates.push(onUpdate(note._id, 'keywords', keywords));
+    }
 
-  // FIXED: Handle color change - use local state and update immediately
-  const handleColorChange = (color) => {
-    setColorValue(color);
-    onUpdate(note._id, 'color', color);
+    // Only update color if changed
+    if (colorValue !== (note.color || 'purple')) {
+      updates.push(onUpdate(note._id, 'color', colorValue));
+    }
+
+    // Only update content if changed
+    if (contentValue !== (note.content || '')) {
+      updates.push(onUpdate(note._id, 'content', contentValue));
+    }
+
+    // Only save if there are actual changes
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
+    
+    onClose();
   };
 
   if (!show || !note) return null;
@@ -347,14 +391,13 @@ export const EditNoteModal = ({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header - FIXED: Use local state for title */}
+        {/* Header - Use local state for title only */}
         <div className="flex items-center justify-between mb-5 px-3 sm:px-2">
           <input
             type="text"
             className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4 sm:mr-5 disabled:opacity-50"
             value={titleValue}
             onChange={handleTitleChange}
-            onBlur={handleTitleBlur}
             placeholder="Note title..."
             disabled={isUpdating}
           />
@@ -401,21 +444,20 @@ export const EditNoteModal = ({
           </div>
         </div>
 
-        {/* Color Picker - FIXED: Use local state */}
+        {/* Color Picker - Use local state only */}
         <ColorPicker
           selectedColor={colorValue}
-          onColorChange={handleColorChange}
+          onColorChange={setColorValue}
           disabled={isUpdating}
         />
         
-        {/* Keywords Editor - FIXED: Use local state */}
+        {/* Keywords Editor - Use local state only */}
         <div>
           <input
             type="text"
             className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500 disabled:opacity-50"
             value={keywordsValue}
             onChange={handleKeywordsChange}
-            onBlur={handleKeywordsBlur}
             placeholder="Keywords (comma separated)..."
             disabled={isUpdating}
           />
@@ -424,67 +466,103 @@ export const EditNoteModal = ({
           </div>
         </div>
         
-        {/* Content Editor */}
-        <div className="flex-1 flex flex-col min-h-0 mb-4">
+        {/* Content Editor - Use local state only */}
+        <div className="flex-1 flex flex-col min-h-0">
           <ContentEditor
             editorRef={textareaRef}
-            content={note.content}
-            onChange={e => onUpdate(note._id, 'content', e.currentTarget.innerHTML)}
+            content={contentValue}
+            onChange={handleContentChange}
             onImageInsert={handleInsertImage}
             disabled={isUpdating}
           />
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 flex-shrink-0">
+        {/* Bottom Section - Image Upload Button and Action Buttons */}
+        <div className="flex justify-between items-center pt-4">
+          {/* Image Upload Button - icon only for mobile */}
           <button
-            className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
-            style={{
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
-            }}
-            onClick={() => onOpenWithAI && onOpenWithAI(note)}
-            onMouseEnter={e => {
-              e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
-            }}
-            onMouseLeave={e => {
-              e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e2e8f0' }}>
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              <circle cx="12" cy="8" r="1"/>
-              <circle cx="8" cy="16" r="1"/>
-              <circle cx="16" cy="16" r="1"/>
-            </svg>
-            Open with AI
-          </button>
-          <button
-            className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
-            }}
-            onClick={onClose}
+            onClick={handleInsertImage}
+            className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:bg-purple-600/20 text-purple-400 hover:text-purple-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Upload image to note"
             disabled={isUpdating}
-            onMouseEnter={e => {
-              if (!isUpdating) {
-                e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
-              }
-            }}
-            onMouseLeave={e => {
-              e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              borderColor: 'rgba(139, 92, 246, 0.3)',
+              border: '1px solid'
             }}
           >
-            {isUpdating ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-200"></div>
-                Saving...
-              </>
-            ) : (
-              'Save'
-            )}
+            <ImagePlus size={16} />
           </button>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              className="border-none rounded-xl px-4 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
+              }}
+              onClick={() => onOpenWithAI && onOpenWithAI(note)}
+              onMouseEnter={e => {
+                e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+              }}
+              onMouseLeave={e => {
+                e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e2e8f0' }}>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <circle cx="12" cy="8" r="1"/>
+                <circle cx="8" cy="16" r="1"/>
+                <circle cx="16" cy="16" r="1"/>
+              </svg>
+              Open with AI
+            </button>
+            <button
+              className="border-none rounded-xl px-4 py-2.5 text-gray-400 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 0 0 rgba(255, 255, 255, 0)'
+              }}
+              onClick={onClose}
+              onMouseEnter={e => {
+                e.target.style.boxShadow = '0 5px 15px rgba(255, 255, 255, 0.2)';
+                e.target.style.color = '#ffffff';
+              }}
+              onMouseLeave={e => {
+                e.target.style.boxShadow = '0 0 0 rgba(255, 255, 255, 0)';
+                e.target.style.color = '#9ca3af';
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="border-none rounded-xl px-4 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
+              }}
+              onClick={handleSave}
+              disabled={isUpdating}
+              onMouseEnter={e => {
+                if (!isUpdating) {
+                  e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+                }
+              }}
+              onMouseLeave={e => {
+                e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
+              }}
+            >
+              {isUpdating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-200"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

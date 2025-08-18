@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { DRAG_SETTINGS, PAGES } from '../utils/constants';
 
-export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
+export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes, onNotifyReorder) => {
   const [draggedNote, setDraggedNote] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -121,23 +121,35 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     }
   };
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEnd = async (e) => {
     const wasDragging = isDragging;
     const finalDraggedNote = draggedNote;
     const finalDraggedIndex = draggedIndex;
     const finalDragOverIndex = dragOverIndex;
     
-    // If we were dragging, save the final order to backend
-    if (wasDragging && finalDraggedNote && finalDraggedIndex !== null) {
-      const currentNotes = getCurrentNotes();
-      const finalIndex = finalDragOverIndex !== null ? finalDragOverIndex : finalDraggedIndex;
-      reorderNotes(currentNotes, finalDraggedNote, currentPage, finalIndex, true);
-    }
-    
+    // Clear drag state immediately to prevent UI from getting stuck
     setTouchStartPos(null);
     setDraggedNote(null);
     setDragOverIndex(null);
     setDraggedIndex(null);
+    setIsDragging(false);
+    
+    // If we were dragging, save the final order to backend
+    if (wasDragging && finalDraggedNote && finalDraggedIndex !== null) {
+      const currentNotes = getCurrentNotes();
+      const finalIndex = finalDragOverIndex !== null ? finalDragOverIndex : finalDraggedIndex;
+      
+      try {
+        await reorderNotes(currentNotes, finalDraggedNote, currentPage, finalIndex, true);
+        // Notify about successful reorder
+        if (onNotifyReorder) {
+          onNotifyReorder(finalDraggedNote);
+        }
+      } catch (error) {
+        // Handle error if needed
+        console.error('Failed to reorder notes:', error);
+      }
+    }
     setIsDragging(false);
     draggedElementRef.current = null;
     
@@ -162,12 +174,22 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     e.target.style.opacity = '0.5';
   };
 
-  const handleDragEnd = (e) => {
+  const handleDragEnd = async (e) => {
     // Save final order to backend if we had a valid drag operation
     if (draggedNote && draggedIndex !== null) {
       const currentNotes = getCurrentNotes();
       const finalIndex = dragOverIndex !== null ? dragOverIndex : draggedIndex;
-      reorderNotes(currentNotes, draggedNote, currentPage, finalIndex, true);
+      
+      try {
+        await reorderNotes(currentNotes, draggedNote, currentPage, finalIndex, true);
+        // Notify about successful reorder
+        if (onNotifyReorder) {
+          onNotifyReorder(draggedNote);
+        }
+      } catch (error) {
+        // Handle error if needed
+        console.error('Failed to reorder notes:', error);
+      }
     }
     
     // Reset opacity like in original implementation
@@ -199,20 +221,36 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     }
   };
 
-  const handleDrop = (e, index) => {
+  const handleDrop = async (e, index) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // If we have a valid drag operation, save the final order to backend
-    if (draggedNote && draggedIndex !== null) {
-      const currentNotes = getCurrentNotes();
-      const finalIndex = dragOverIndex !== null ? dragOverIndex : index;
-      reorderNotes(currentNotes, draggedNote, currentPage, finalIndex, true);
-    }
+    const finalDraggedNote = draggedNote;
+    const finalDraggedIndex = draggedIndex;
+    const finalDragOverIndex = dragOverIndex;
     
+    // Clear drag state immediately to prevent UI from getting stuck
     setDraggedNote(null);
     setDragOverIndex(null);
     setDraggedIndex(null);
+    setIsDragging(false);
+    
+    // If we have a valid drag operation, save the final order to backend
+    if (finalDraggedNote && finalDraggedIndex !== null) {
+      const currentNotes = getCurrentNotes();
+      const finalIndex = finalDragOverIndex !== null ? finalDragOverIndex : index;
+      
+      try {
+        await reorderNotes(currentNotes, finalDraggedNote, currentPage, finalIndex, true);
+        // Notify about successful reorder
+        if (onNotifyReorder) {
+          onNotifyReorder(finalDraggedNote);
+        }
+      } catch (error) {
+        // Handle error if needed
+        console.error('Failed to reorder notes:', error);
+      }
+    }
   };
 
   const handleGridDragOver = (e) => {
@@ -220,16 +258,32 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleGridDrop = (e) => {
+  const handleGridDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (draggedNote && (draggedNote._id || draggedNote.id) && dragOverIndex === null) {
-      const currentNotes = getCurrentNotes();
-      reorderNotes(currentNotes, draggedNote, currentPage, currentNotes.length - 1, true);
-    }
+    const finalDraggedNote = draggedNote;
+    const finalDragOverIndex = dragOverIndex;
+    
+    // Clear drag state immediately to prevent UI from getting stuck
     setDraggedNote(null);
     setDragOverIndex(null);
+    setIsDragging(false);
+
+    if (finalDraggedNote && (finalDraggedNote._id || finalDraggedNote.id) && finalDragOverIndex === null) {
+      const currentNotes = getCurrentNotes();
+      
+      try {
+        await reorderNotes(currentNotes, finalDraggedNote, currentPage, currentNotes.length - 1, true);
+        // Notify about successful reorder
+        if (onNotifyReorder) {
+          onNotifyReorder(finalDraggedNote);
+        }
+      } catch (error) {
+        // Handle error if needed
+        console.error('Failed to reorder notes:', error);
+      }
+    }
   };
 
   return {

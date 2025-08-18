@@ -173,7 +173,17 @@ const NotesApp = ({ user, onLogout }) => {
   // Drag and drop functionality
   const currentPage = getCurrentPageFromURL();
   const currentFolder = getCurrentFolderFromURL();
-  const dragHandlers = useDragAndDrop(currentPage, getCurrentNotes, reorderNotes);
+  
+  // Handle reorder notification
+  const handleReorderNotification = (draggedNote) => {
+    addNotification({
+      type: 'success',
+      title: 'Note Rearranged',
+      message: draggedNote.title ? `"${draggedNote.title}" has been moved` : 'Note has been rearranged successfully',
+    });
+  };
+  
+  const dragHandlers = useDragAndDrop(currentPage, getCurrentNotes, reorderNotes, handleReorderNotification);
 
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
