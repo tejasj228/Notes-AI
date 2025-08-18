@@ -17,8 +17,26 @@ export const foldersAPI = {
   },
 
   updateFolder: async (id, updates) => {
-    const response = await api.put(`/folders/${id}`, updates);
-    return response.data;
+    console.log('🚀 Frontend: Starting folder update');
+    console.log('🚀 Frontend: Folder ID:', id);
+    console.log('🚀 Frontend: Updates to send:', updates);
+    
+    try {
+      if (!id) {
+        console.error('❌ Frontend: updateFolder called without a valid id');
+        return Promise.reject({ response: { status: 400, data: { success: false, message: 'Missing folder id on client' } } });
+      }
+      const response = await api.put(`/folders/${id}`, updates);
+      console.log('✅ Frontend: Folder update successful');
+      console.log('✅ Frontend: Response data:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Frontend: Folder update failed');
+      console.error('❌ Frontend: Error details:', error);
+      console.error('❌ Frontend: Error response:', error.response?.data);
+      console.error('❌ Frontend: Error status:', error.response?.status);
+      throw error;
+    }
   },
 
   deleteFolder: async (id) => {

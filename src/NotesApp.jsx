@@ -264,8 +264,9 @@ const NotesApp = ({ user, onLogout }) => {
   };
 
   const handleRenameFolder = (folder) => {
+    const resolvedId = folder._id || folder.id;
     setRenameFolderDraft({ 
-      id: folder.id, 
+      id: resolvedId, 
       name: folder.name, 
       color: folder.color 
     });
@@ -281,7 +282,10 @@ const NotesApp = ({ user, onLogout }) => {
     setShowRenameFolder(false);
     
     // Update URL if we're currently in this folder
-    if (currentFolder && currentFolder.id === renameFolderDraft.id) {
+    if (
+      currentFolder &&
+      ((currentFolder._id || currentFolder.id)?.toString() === (renameFolderDraft.id || '').toString())
+    ) {
       const newFolderSlug = renameFolderDraft.name.toLowerCase().replace(/\s+/g, '-');
       navigate(`/folder/${newFolderSlug}`);
     }

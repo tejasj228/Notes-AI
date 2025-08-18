@@ -316,7 +316,10 @@ export const useNotesData = () => {
     try {
       const response = await foldersAPI.updateFolder(folderId, updates);
       setFolders((prev) =>
-        prev.map((f) => (f._id === folderId ? response.data.folder : f))
+        prev.map((f) => {
+          const fid = f._id || f.id;
+          return (fid && fid.toString() === (folderId || '').toString()) ? response.data.folder : f;
+        })
       );
     } catch (err) {
       setError(err.message);

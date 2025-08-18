@@ -2,6 +2,7 @@ const express = require('express');
 const Folder = require('../models/Folder');
 const Note = require('../models/Note');
 const { checkResourceOwnership } = require('../middleware/auth');
+const { invalidateUserCache } = require('../middleware/cache');
 
 const router = express.Router();
 
@@ -167,37 +168,50 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
   try {
+    console.log('🔧 Backend: ============ FOLDER UPDATE START ============');
     console.log('🔧 Backend: Update folder request received');
     console.log('🔧 Backend: Folder ID:', req.params.id);
-    console.log('🔧 Backend: Request body:', req.body);
+    console.log('🔧 Backend: Request body:', JSON.stringify(req.body, null, 2));
     console.log('🔧 Backend: User ID:', req.user._id);
+    console.log('🔧 Backend: Request headers:', req.headers);
     
     const allowedUpdates = ['name', 'color', 'order'];
     const updates = {};
     
+    console.log('🔧 Backend: Processing request body...');
     Object.keys(req.body).forEach(key => {
+      console.log(`🔧 Backend: Processing key "${key}" with value:`, req.body[key]);
       if (allowedUpdates.includes(key)) {
         if (key === 'name' && req.body[key]) {
           updates[key] = req.body[key].trim();
+          console.log(`🔧 Backend: Added trimmed name: "${updates[key]}"`);
         } else {
           updates[key] = req.body[key];
+          console.log(`🔧 Backend: Added ${key}:`, updates[key]);
         }
+      } else {
+        console.log(`🔧 Backend: Skipped key "${key}" (not allowed)`);
       }
     });
 
-    console.log('🔧 Backend: Processed updates:', updates);
+    console.log('🔧 Backend: Final processed updates:', JSON.stringify(updates, null, 2));
 
     // If updating name, check for duplicates
     if (updates.name) {
-      console.log('🔧 Backend: Checking for duplicate folder names');
+      console.log('🔧 Backend: Checking for duplicate folder names...');
+      console.log('🔧 Backend: Searching for existing folder with name:', updates.name);
+      console.log('🔧 Backend: Excluding folder with ID:', req.params.id);
+      
       const existingFolder = await Folder.findOne({
         userId: req.user._id,
         name: updates.name,
         _id: { $ne: req.params.id }
       });
 
+      console.log('🔧 Backend: Duplicate check result:', existingFolder ? 'FOUND DUPLICATE' : 'NO DUPLICATE');
+      
       if (existingFolder) {
-        console.log('🔧 Backend: Duplicate folder name found');
+        console.log('🔧 Backend: Duplicate folder found:', existingFolder);
         return res.status(400).json({
           success: false,
           message: 'Folder with this name already exists'
@@ -205,25 +219,41 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
       }
     }
 
-    console.log('🔧 Backend: Updating folder in database');
+    console.log('🔧 Backend: Starting database update...');
+    console.log('🔧 Backend: Finding folder with ID:', req.params.id);
+    console.log('🔧 Backend: Applying updates:', updates);
+    
     const folder = await Folder.findByIdAndUpdate(
       req.params.id,
       updates,
       { new: true, runValidators: true }
     );
 
-    console.log('🔧 Backend: Folder updated successfully:', folder);
+    if (!folder) {
+      console.log('❌ Backend: Folder not found after update');
+      return res.status(404).json({
+        success: false,
+        message: 'Folder not found'
+      });
+    }
+
+    console.log('✅ Backend: Folder updated successfully');
+    console.log('✅ Backend: Updated folder data:', JSON.stringify(folder, null, 2));
 
     // Invalidate user's cache to ensure fresh data on next request
+    console.log('🗑️ Backend: Invalidating cache for user:', req.user._id);
     invalidateUserCache(req.user._id);
-    console.log('🗑️ Cache invalidated for user after folder update:', req.user._id);
+    console.log('🗑️ Backend: Cache invalidated successfully');
 
+    console.log('🔧 Backend: Sending success response...');
     res.json({
       success: true,
       message: 'Folder updated successfully',
       data: { folder }
     });
+    console.log('🔧 Backend: ============ FOLDER UPDATE END ============');
   } catch (error) {
+    console.error('❌ Backend: ============ FOLDER UPDATE ERROR ============');
     console.error('❌ Backend: Update folder error:', error);
     console.error('❌ Backend: Error stack:', error.stack);
     console.error('❌ Backend: Error details:', {
@@ -231,6 +261,10 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
       name: error.name,
       code: error.code
     });
+    console.error('❌ Backend: Request params:', req.params);
+    console.error('❌ Backend: Request body:', req.body);
+    console.error('❌ Backend: User ID:', req.user?._id);
+    console.error('❌ Backend: ============ FOLDER UPDATE ERROR END ============');
     res.status(500).json({
       success: false,
       message: 'Error updating folder'

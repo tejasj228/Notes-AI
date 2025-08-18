@@ -64,27 +64,46 @@ const authenticateToken = async (req, res, next) => {
 // Middleware to check if user owns the resource
 const checkResourceOwnership = (Model, paramName = 'id') => {
   return async (req, res, next) => {
+    console.log('🚨 CHECKRESOURCEOWNERSHIP CALLED!');
+    console.log('🚨 Model:', Model);
+    console.log('🚨 Model.modelName:', Model?.modelName);
+    console.log('🚨 paramName:', paramName);
+    console.log('🚨 req.params:', req.params);
+    console.log('🚨 req.user:', req.user);
+    
     try {
       const resourceId = req.params[paramName];
+      console.log('🔍 checkResourceOwnership - Model:', Model.modelName);
+      console.log('🔍 checkResourceOwnership - resourceId:', resourceId);
+      console.log('🔍 checkResourceOwnership - userId:', req.user?._id);
+      
       const resource = await Model.findById(resourceId);
-
+      console.log('🔍 checkResourceOwnership - resource found:', !!resource);
+      
       if (!resource) {
+        console.log('❌ Resource not found');
         return res.status(404).json({
           success: false,
           message: 'Resource not found'
         });
       }
 
+      console.log('🔍 checkResourceOwnership - resource.userId:', resource.userId);
+      console.log('🔍 checkResourceOwnership - req.user._id:', req.user._id);
+      
       if (resource.userId.toString() !== req.user._id.toString()) {
+        console.log('❌ Ownership check failed');
         return res.status(403).json({
           success: false,
           message: 'Access denied: You do not own this resource'
         });
       }
 
+      console.log('✅ Ownership check passed');
       req.resource = resource;
       next();
     } catch (error) {
+      console.error('❌ Error in checkResourceOwnership:', error);
       return res.status(500).json({
         success: false,
         message: 'Error checking resource ownership'
