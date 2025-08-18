@@ -75,7 +75,7 @@ const ChatSidebar = ({
       {/* Mobile Overlay */}
       {isMobile && sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-55 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -83,7 +83,7 @@ const ChatSidebar = ({
       <div 
         className={`
           ${isMobile 
-            ? `fixed left-0 top-0 z-50 transition-transform duration-300 ${
+            ? `fixed left-0 top-0 z-60 transition-transform duration-300 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               }`
             : 'relative'

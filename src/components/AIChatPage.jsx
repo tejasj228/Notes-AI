@@ -83,7 +83,7 @@ const chatInputStyles = `
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    z-index: 50 !important;
+    z-index: 40 !important;
   }
 `;
 
@@ -908,13 +908,6 @@ const AIChatPage = ({
         height: '100vh',
         height: '100dvh' // Dynamic viewport height as primary
       }}>
-      {/* Mobile Overlay for Sidebar */}
-      {sidebarOpen && isMobile && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
 
       {/* ChatSidebar with responsive behavior */}
       <ChatSidebar
@@ -1388,7 +1381,7 @@ const AIChatPage = ({
       {/* Image Popup */}
       {imagePopup.open && (
         <div 
-          className="fixed inset-0 flex items-center justify-center z-50 p-5"
+          className="fixed inset-0 flex items-center justify-center z-45 p-5"
           style={{ 
             background: 'rgba(0, 0, 0, 0.8)',
             backdropFilter: 'blur(10px)' 
