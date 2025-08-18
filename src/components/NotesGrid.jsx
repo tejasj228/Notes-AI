@@ -218,11 +218,11 @@ const NotesGrid = ({
                       disabled={loadingStates.restoringNote}
                     >
                       {loadingStates.restoringNote ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-400"></div>
                       ) : (
                         <RotateCcw size={isMobile ? 14 : 16} />
                       )}
-                      Restore
+                      {loadingStates.restoringNote ? 'Restoring...' : 'Restore'}
                     </button>
                     <button 
                       className={`bg-transparent border-none w-full text-red-400 cursor-pointer flex items-center justify-start gap-2 transition-colors duration-200 menu-container ${
@@ -252,7 +252,7 @@ const NotesGrid = ({
                       ) : (
                         <Trash2 size={isMobile ? 14 : 16} />
                       )}
-                      {isMobile ? 'Remove' : 'Remove from trash'}
+                      {loadingStates.permanentDeletingNote ? 'Deleting...' : (isMobile ? 'Remove' : 'Remove from trash')}
                     </button>
                   </div>
                 )}
@@ -306,8 +306,8 @@ const NotesGrid = ({
                   return (
                     <div className="mt-2 mb-3">
                       {images.length === 1 && (
-                        <div className="w-full mb-2">
-                          <div className="overflow-hidden rounded-md md:rounded-lg bg-gray-800 aspect-video">
+                        <div className="flex mb-2" style={{ maxWidth: isMobile ? '78px' : '155px' }}>
+                          <div className="flex-1 overflow-hidden rounded-md md:rounded-lg bg-gray-800 aspect-square">
                             <img 
                               src={images[0]} 
                               alt="note" 

@@ -351,11 +351,12 @@ export const EditNoteModal = ({
         <div className="flex items-center justify-between mb-5 px-3 sm:px-2">
           <input
             type="text"
-            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4 sm:mr-5"
+            className="bg-transparent border-none text-xl font-semibold text-gray-200 outline-none flex-1 mr-4 sm:mr-5 disabled:opacity-50"
             value={titleValue}
             onChange={handleTitleChange}
             onBlur={handleTitleBlur}
             placeholder="Note title..."
+            disabled={isUpdating}
           />
           <div className="flex gap-2 sm:gap-3 flex-shrink-0">
             <button 
@@ -404,17 +405,19 @@ export const EditNoteModal = ({
         <ColorPicker
           selectedColor={colorValue}
           onColorChange={handleColorChange}
+          disabled={isUpdating}
         />
         
         {/* Keywords Editor - FIXED: Use local state */}
         <div>
           <input
             type="text"
-            className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500"
+            className="bg-transparent border-none text-sm text-gray-300 outline-none mb-3 w-full font-normal p-0 placeholder-gray-500 disabled:opacity-50"
             value={keywordsValue}
             onChange={handleKeywordsChange}
             onBlur={handleKeywordsBlur}
             placeholder="Keywords (comma separated)..."
+            disabled={isUpdating}
           />
           <div className="text-xs text-gray-400 mb-2 text-right">
             {keywordsValue.split(',').map(k => k.trim()).filter(Boolean).length}/3 keywords
@@ -428,6 +431,7 @@ export const EditNoteModal = ({
             content={note.content}
             onChange={e => onUpdate(note._id, 'content', e.currentTarget.innerHTML)}
             onImageInsert={handleInsertImage}
+            disabled={isUpdating}
           />
         </div>
 
@@ -456,20 +460,30 @@ export const EditNoteModal = ({
             Open with AI
           </button>
           <button
-            className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+            className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
               boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
             }}
             onClick={onClose}
+            disabled={isUpdating}
             onMouseEnter={e => {
-              e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+              if (!isUpdating) {
+                e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+              }
             }}
             onMouseLeave={e => {
               e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
             }}
           >
-            Save
+            {isUpdating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-200"></div>
+                Saving...
+              </>
+            ) : (
+              'Save'
+            )}
           </button>
         </div>
       </div>

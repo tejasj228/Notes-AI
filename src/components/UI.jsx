@@ -234,9 +234,9 @@ export const FormattingToolbar = ({ editorRef }) => {
 };
 
 // Color Picker Component
-export const ColorPicker = ({ selectedColor, onColorChange, label = "Color:" }) => {
+export const ColorPicker = ({ selectedColor, onColorChange, label = "Color:", disabled = false }) => {
   return (
-    <div className="flex gap-2 items-center mb-4 flex-wrap">
+    <div className={`flex gap-2 items-center mb-4 flex-wrap ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <span className="text-sm text-gray-300 mr-2 font-medium">{label}</span>
       {COLORS.map((color) => (
         <div
@@ -247,10 +247,11 @@ export const ColorPicker = ({ selectedColor, onColorChange, label = "Color:" }) 
             height: '32px',
             background: getColorPickerBackground(color),
             borderColor: selectedColor === color ? '#ffffff' : 'transparent',
-            transform: selectedColor === color ? 'scale(1.15)' : 'scale(1)'
+            transform: selectedColor === color ? 'scale(1.15)' : 'scale(1)',
+            cursor: disabled ? 'not-allowed' : 'pointer'
           }}
-          onClick={() => onColorChange(color)}
-          title={color.charAt(0).toUpperCase() + color.slice(1)}
+          onClick={() => !disabled && onColorChange(color)}
+          title={disabled ? 'Saving in progress...' : color.charAt(0).toUpperCase() + color.slice(1)}
         >
           {selectedColor === color && (
             <span 
@@ -375,7 +376,8 @@ export const ContentEditor = ({
   onChange, 
   onImageInsert, 
   placeholder = "Start writing your note here...",
-  className = ""
+  className = "",
+  disabled = false
 }) => {
   // Set initial content when component mounts or content changes
   useEffect(() => {
@@ -408,12 +410,12 @@ export const ContentEditor = ({
     <div className="flex-1 flex flex-col min-h-0">
       <div
         ref={editorRef}
-        className={`note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1 ${className}`}
-        contentEditable={true}
+        className={`note-content-editable w-full border rounded-xl p-4 text-sm leading-relaxed font-inherit mb-4 overflow-y-auto transition-colors duration-200 outline-none relative flex-1 ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        contentEditable={!disabled}
         suppressContentEditableWarning={true}
-        onInput={handleInput}
-        onPaste={handlePaste}
-        data-placeholder={placeholder}
+        onInput={disabled ? undefined : handleInput}
+        onPaste={disabled ? undefined : handlePaste}
+        data-placeholder={disabled ? "Saving..." : placeholder}
         style={{
           background: 'rgba(255, 255, 255, 0.05)',
           borderColor: 'rgba(255, 255, 255, 0.1)',

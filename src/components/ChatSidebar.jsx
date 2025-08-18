@@ -75,40 +75,56 @@ const ChatSidebar = ({
       {/* Mobile Overlay */}
       {isMobile && sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-55 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 lg:hidden"
+          style={{ touchAction: 'none', zIndex: 999 }}
           onClick={() => setSidebarOpen(false)}
+          onTouchStart={() => setSidebarOpen(false)}
         />
       )}
       
       <div 
         className={`
           ${isMobile 
-            ? `fixed left-0 top-0 z-60 transition-transform duration-300 ${
+            ? `fixed left-0 top-0 transition-transform duration-300 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-              }`
+              } w-64`
             : 'relative'
           }
-          ${sidebarOpen ? 'w-64' : 'w-18'}
+          ${!isMobile ? (sidebarOpen ? 'w-64' : 'w-18') : ''}
           border-r transition-all duration-300 flex flex-col
         `}
         style={{ 
-          background: 'rgba(30, 30, 30, 0.95)', 
+          background: isMobile ? 'rgba(26, 26, 26, 0.98)' : 'rgba(30, 30, 30, 0.98)', 
           backdropFilter: 'blur(20px)',
           borderColor: 'rgba(255, 255, 255, 0.1)',
           height: '100vh',
-          height: '100dvh' // Dynamic viewport height for mobile browsers
+          height: '100dvh', // Dynamic viewport height for mobile browsers
+          zIndex: isMobile ? 1000 : 'auto',
+          ...(isMobile && {
+            maxWidth: '280px',
+            minWidth: '256px',
+            boxShadow: '4px 0 24px rgba(0, 0, 0, 0.5)'
+          })
         }}
       >
         {/* Header */}
         <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
           {sidebarOpen && (
-            <button 
-              onClick={onBackToNotes}
-              className="flex items-center gap-3 text-lg font-semibold bg-transparent border-none cursor-pointer transition-colors hover:opacity-80"
-              style={{ color: '#8b5cf6' }}
-            >
-              Notes AI
-            </button>
+            <>
+              {isMobile ? (
+                <span className="text-lg font-semibold" style={{ color: '#8b5cf6' }}>
+                  Notes AI
+                </span>
+              ) : (
+                <button 
+                  onClick={onBackToNotes}
+                  className="flex items-center gap-3 text-lg font-semibold bg-transparent border-none cursor-pointer transition-colors hover:opacity-80"
+                  style={{ color: '#8b5cf6' }}
+                >
+                  Notes AI
+                </button>
+              )}
+            </>
           )}
           <button 
             className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
@@ -122,7 +138,7 @@ const ChatSidebar = ({
         
         {/* All content below - Only show when sidebar is open */}
         {sidebarOpen && (
-          <>
+          <div className="flex-1 flex flex-col" style={{ overflow: 'visible' }}>
             {/* Current Note Banner */}
             {selectedNote && (
               <div 
@@ -267,7 +283,7 @@ const ChatSidebar = ({
                 Sign Out
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </>

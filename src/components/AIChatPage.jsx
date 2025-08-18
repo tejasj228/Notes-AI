@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Send, User, Bot, GripVertical, Menu, ImagePlus } from 'lucide-react';
+import { Send, User, Bot, GripVertical, Menu, ImagePlus, ArrowLeft } from 'lucide-react';
 import { resizeImage, insertImageAtCaret } from '../utils/helpers';
 import { aiAPI } from '../api/ai';
 import ChatSidebar from './ChatSidebar';
@@ -406,6 +406,53 @@ const AIChatPage = ({
         debouncedSave(selectedNote._id, newContent);
       }
     }
+  };
+
+  // Handle image upload for note editor
+  const handleNoteImageUpload = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      try {
+        const resizedDataUrl = await resizeImage(file);
+        
+        if (noteEditorRef.current) {
+          // Check if cursor is inside the note editor
+          const selection = window.getSelection();
+          let insertAtCursor = false;
+          
+          // Check if the current selection is within the note editor
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            insertAtCursor = noteEditorRef.current.contains(range.commonAncestorContainer);
+          }
+          
+          if (insertAtCursor) {
+            // Insert at cursor position
+            insertImageAtCaret(noteEditorRef, resizedDataUrl);
+          } else {
+            // Insert at the end of the note
+            const img = document.createElement('img');
+            img.src = resizedDataUrl;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.margin = '8px 0';
+            noteEditorRef.current.appendChild(img);
+          }
+          
+          // Update note content
+          const newContent = noteEditorRef.current.innerHTML;
+          handleNoteContentChange(newContent);
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
+    };
+    input.click();
   };
 
   // Add mobile detection and viewport height tracking
@@ -932,7 +979,8 @@ const AIChatPage = ({
           height: '100vh',
           height: '100dvh', // Dynamic viewport height for mobile browsers
           left: isMobile ? '0px' : (sidebarOpen ? '256px' : '72px'),
-          width: isMobile ? '100%' : `calc(100% - ${sidebarOpen ? '256px' : '72px'})`
+          width: isMobile ? '100%' : `calc(100% - ${sidebarOpen ? '256px' : '72px'})`,
+          zIndex: isMobile ? 1 : 'auto'
         }}
       >
         {/* Mobile Header with Hamburger */}
@@ -973,13 +1021,42 @@ const AIChatPage = ({
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-gray-500 text-sm">Notes (Collapsed)</div>
               </div>
+            ) : isMobile && panelWidth < 30 ? (
+              // Show minimal mobile view with image upload button
+              <div className="flex-1 flex flex-col items-center justify-between p-2">
+                <div className="text-gray-400 text-xs text-center mt-2">
+                  {selectedNote?.title ? selectedNote.title.substring(0, 20) + '...' : 'Notes'}
+                </div>
+                <button
+                  onClick={handleNoteImageUpload}
+                  className="mb-2 flex flex-col items-center gap-1 p-2 rounded-lg transition-all duration-200 hover:bg-purple-600/20 text-purple-400 hover:text-purple-300"
+                  title="Upload image to note"
+                  style={{
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                    border: '1px solid'
+                  }}
+                >
+                  <ImagePlus size={16} />
+                  <span className="text-xs">Image</span>
+                </button>
+              </div>
             ) : (
               <>
                 {/* Note Header */}
                 <div className="p-4 md:p-6 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                  <h1 className="text-lg md:text-xl font-semibold text-gray-200 mb-2">
-                    {selectedNote?.title || 'No Note Selected'}
-                  </h1>
+                  <div className="flex items-center gap-3 mb-2">
+                    <button
+                      onClick={onBackToNotes}
+                      className="flex items-center justify-center p-2 rounded-lg transition-colors duration-200 hover:bg-white/10"
+                      title="Back to notes"
+                    >
+                      <ArrowLeft size={20} className="text-gray-300" />
+                    </button>
+                    <h1 className="text-lg md:text-xl font-semibold text-gray-200 flex-1">
+                      {selectedNote?.title || 'No Note Selected'}
+                    </h1>
+                  </div>
                   {selectedNote?.keywords && selectedNote.keywords.length > 0 && (
                     <div className="flex gap-2 flex-wrap">
                       {selectedNote.keywords.map((keyword, index) => (
@@ -999,7 +1076,7 @@ const AIChatPage = ({
             </div>
 
             {/* Note Content Editor */}
-            <div className="flex-1 flex flex-col min-h-0 p-4 md:p-6 pb-0">
+            <div className="flex-1 flex flex-col min-h-0 p-4 md:p-6 pb-2">
               <div
                 ref={noteEditorRef}
                 className="note-content-editable flex-1 border rounded-xl p-3 md:p-4 text-sm leading-relaxed overflow-y-auto outline-none"
@@ -1022,6 +1099,23 @@ const AIChatPage = ({
                   e.target.style.background = 'rgba(255, 255, 255, 0.05)';
                 }}
               />
+              
+              {/* Image Upload Button */}
+              <div className="flex justify-end pt-3 pb-2">
+                <button
+                  onClick={handleNoteImageUpload}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-purple-600/20 text-purple-400 hover:text-purple-300 hover:scale-105"
+                  title="Upload image to note"
+                  style={{
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                    border: '1px solid'
+                  }}
+                >
+                  <ImagePlus size={18} />
+                  <span className="text-sm">Add Image</span>
+                </button>
+              </div>
             </div>
               </>
             )}
@@ -1202,13 +1296,17 @@ const AIChatPage = ({
                           <div>
                             {/* Display images if present */}
                             {message.images && message.images.length > 0 && (
-                              <div className="mb-2 space-y-2">
+                              <div className={`mb-2 ${message.images.length > 1 ? 'grid grid-cols-2 gap-2' : 'space-y-2'}`}>
                                 {message.images.map((image, index) => (
                                   <img
                                     key={index}
                                     src={image.dataUrl}
                                     alt={image.name || 'Uploaded image'}
-                                    className="max-w-full max-h-48 rounded-lg cursor-pointer"
+                                    className={`rounded-lg cursor-pointer ${
+                                      message.images.length === 1 
+                                        ? (isMobile ? 'max-w-48 max-h-32' : 'max-w-full max-h-48')
+                                        : 'w-full h-24 object-cover'
+                                    }`}
                                     onClick={() => setImagePopup({ open: true, src: image.dataUrl })}
                                   />
                                 ))}
@@ -1271,13 +1369,17 @@ const AIChatPage = ({
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
-                  <div className="flex flex-wrap gap-2">
+                  <div className={`flex flex-wrap gap-2 ${selectedImages.length > 3 ? 'grid grid-cols-4' : ''}`}>
                     {selectedImages.map((image, index) => (
                       <div key={index} className="relative">
                         <img
                           src={image.dataUrl}
                           alt={image.name}
-                          className="w-16 h-16 object-cover rounded-lg"
+                          className={`object-cover rounded-lg ${
+                            selectedImages.length === 1 
+                              ? (isMobile ? 'w-12 h-12' : 'w-16 h-16')
+                              : 'w-12 h-12'
+                          }`}
                         />
                         <button
                           onClick={() => removeSelectedImage(index)}
@@ -1333,14 +1435,14 @@ const AIChatPage = ({
                 {/* Image Upload Button */}
                 <button
                   onClick={handleImageUpload}
-                  className="absolute left-3 p-2 rounded-xl transition-all duration-300 hover:bg-white/20"
+                  className="absolute left-3 p-2 rounded-xl transition-all duration-300 hover:bg-purple-600/20"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: 'none'
+                    background: 'rgba(139, 92, 246, 0.15)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)'
                   }}
                   title="Upload image"
                 >
-                  <ImagePlus size={16} className="text-gray-300" />
+                  <ImagePlus size={16} className="text-purple-400" />
                 </button>
                 
                 {/* Send Button */}
