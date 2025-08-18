@@ -308,9 +308,16 @@ export const TrashMenu = ({ noteId, onRestore, onPermanentDelete, onClose }) => 
 // Folder Menu Component
 export const FolderMenu = ({ folderId, onRename, onDelete, onClose }) => {
   return (
-    <div className="absolute right-0 top-10 z-30 bg-[#232323] border rounded-lg shadow-lg py-2 min-w-36 folder-menu-container">
+    <div 
+      className="absolute right-0 top-10 z-30 border rounded-lg py-2 min-w-36 folder-menu-container"
+      style={{
+        background: '#2a2a2a',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+      }}
+    >
       <button
-        className="w-full text-left px-4 py-2 text-gray-200 hover:bg-white/10 text-sm folder-menu-container"
+        className="w-full text-left px-4 py-2 text-gray-200 hover:bg-white/10 text-sm folder-menu-container transition-colors duration-200"
         onClick={() => {
           onRename();
           onClose();
@@ -319,7 +326,7 @@ export const FolderMenu = ({ folderId, onRename, onDelete, onClose }) => {
         Edit Folder
       </button>
       <button
-        className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-900/20 text-sm folder-menu-container"
+        className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-900/20 text-sm folder-menu-container transition-colors duration-200"
         onClick={() => {
           onDelete(folderId);
           onClose();
