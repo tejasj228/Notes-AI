@@ -3,7 +3,7 @@ import { CheckCircle, X, AlertCircle, Info, Trash2 } from 'lucide-react';
 
 const NotificationSystem = ({ notifications, removeNotification }) => {
   return (
-    <div className="fixed top-4 right-4 z-[9999] space-y-3 max-w-sm">
+    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[9999] space-y-3 max-w-xs sm:max-w-sm">
       {notifications.map((notification) => (
         <NotificationItem
           key={notification.id}

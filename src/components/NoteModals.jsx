@@ -181,7 +181,7 @@ export const NewNoteModal = ({
 
           {/* Save Button */}
           <button
-            className="border-none rounded-xl px-4 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+            className="border-none rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-gray-200 text-xs sm:text-sm font-medium cursor-pointer flex items-center gap-1 sm:gap-2 transition-all duration-300 hover:-translate-y-0.5"
             style={{
               background: isLoading ? 'rgba(139, 92, 246, 0.5)' : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
               boxShadow: '0 0 0 rgba(139, 92, 246, 0)',
@@ -497,7 +497,7 @@ export const EditNoteModal = ({
           {/* Action Buttons */}
           <div className="flex gap-2">
             <button
-              className="border-none rounded-xl px-4 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+              className="border-none rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-gray-200 text-xs sm:text-sm font-medium cursor-pointer flex items-center gap-1 sm:gap-2 transition-all duration-300 hover:-translate-y-0.5"
               style={{
                 background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                 boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
@@ -510,16 +510,17 @@ export const EditNoteModal = ({
                 e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e2e8f0' }}>
+              <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e2e8f0' }}>
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 <circle cx="12" cy="8" r="1"/>
                 <circle cx="8" cy="16" r="1"/>
                 <circle cx="16" cy="16" r="1"/>
               </svg>
-              Open with AI
+              <span className="hidden sm:inline">Open with AI</span>
+              <span className="sm:hidden">AI</span>
             </button>
             <button
-              className="border-none rounded-xl px-4 py-2.5 text-gray-400 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
+              className="border-none rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-gray-400 text-xs sm:text-sm font-medium cursor-pointer flex items-center gap-1 sm:gap-2 transition-all duration-300 hover:-translate-y-0.5"
               style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 0 0 rgba(255, 255, 255, 0)'
@@ -537,7 +538,7 @@ export const EditNoteModal = ({
               Cancel
             </button>
             <button
-              className="border-none rounded-xl px-4 py-2.5 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border-none rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-gray-200 text-xs sm:text-sm font-medium cursor-pointer flex items-center gap-1 sm:gap-2 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                 boxShadow: '0 0 0 rgba(139, 92, 246, 0)'

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { DRAG_SETTINGS, PAGES } from '../utils/constants';
 
-export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes, onNotifyReorder) => {
+export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
   const [draggedNote, setDraggedNote] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -141,10 +141,6 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes, onNot
       
       try {
         await reorderNotes(currentNotes, finalDraggedNote, currentPage, finalIndex, true);
-        // Notify about successful reorder
-        if (onNotifyReorder) {
-          onNotifyReorder(finalDraggedNote);
-        }
       } catch (error) {
         // Handle error if needed
         console.error('Failed to reorder notes:', error);
@@ -182,10 +178,6 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes, onNot
       
       try {
         await reorderNotes(currentNotes, draggedNote, currentPage, finalIndex, true);
-        // Notify about successful reorder
-        if (onNotifyReorder) {
-          onNotifyReorder(draggedNote);
-        }
       } catch (error) {
         // Handle error if needed
         console.error('Failed to reorder notes:', error);
@@ -242,10 +234,6 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes, onNot
       
       try {
         await reorderNotes(currentNotes, finalDraggedNote, currentPage, finalIndex, true);
-        // Notify about successful reorder
-        if (onNotifyReorder) {
-          onNotifyReorder(finalDraggedNote);
-        }
       } catch (error) {
         // Handle error if needed
         console.error('Failed to reorder notes:', error);
@@ -275,10 +263,6 @@ export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes, onNot
       
       try {
         await reorderNotes(currentNotes, finalDraggedNote, currentPage, currentNotes.length - 1, true);
-        // Notify about successful reorder
-        if (onNotifyReorder) {
-          onNotifyReorder(finalDraggedNote);
-        }
       } catch (error) {
         // Handle error if needed
         console.error('Failed to reorder notes:', error);

@@ -1021,26 +1021,6 @@ const AIChatPage = ({
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-gray-500 text-sm">Notes (Collapsed)</div>
               </div>
-            ) : isMobile && panelWidth < 30 ? (
-              // Show minimal mobile view with image upload button
-              <div className="flex-1 flex flex-col items-center justify-between p-2">
-                <div className="text-gray-400 text-xs text-center mt-2">
-                  {selectedNote?.title ? selectedNote.title.substring(0, 20) + '...' : 'Notes'}
-                </div>
-                <button
-                  onClick={handleNoteImageUpload}
-                  className="mb-2 flex flex-col items-center gap-1 p-2 rounded-lg transition-all duration-200 hover:bg-purple-600/20 text-purple-400 hover:text-purple-300"
-                  title="Upload image to note"
-                  style={{
-                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                    borderColor: 'rgba(139, 92, 246, 0.3)',
-                    border: '1px solid'
-                  }}
-                >
-                  <ImagePlus size={16} />
-                  <span className="text-xs">Image</span>
-                </button>
-              </div>
             ) : (
               <>
                 {/* Note Header */}
