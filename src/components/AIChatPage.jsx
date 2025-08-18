@@ -43,6 +43,11 @@ const chatInputStyles = `
       height: 100dvh !important;
       min-height: 100dvh !important;
     }
+    
+    .chat-container-mobile {
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+    }
   }
   
   /* Support for older browsers */
@@ -51,13 +56,34 @@ const chatInputStyles = `
       height: 100vh !important;
       min-height: 100vh !important;
     }
+    
+    .chat-container-mobile {
+      height: 100vh !important;
+      max-height: 100vh !important;
+    }
   }
   
-  /* Mobile safe area handling - simplified */
+  /* Mobile safe area handling with proper viewport consideration */
   @supports (padding: env(safe-area-inset-bottom)) {
     .mobile-input-safe {
-      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
     }
+  }
+  
+  /* Fallback for browsers without safe-area support */
+  @supports not (padding: env(safe-area-inset-bottom)) {
+    .mobile-input-safe {
+      padding-bottom: 16px !important;
+    }
+  }
+  
+  /* Ensure input is always visible on mobile */
+  .mobile-chat-input {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 50 !important;
   }
 `;
 
@@ -1104,7 +1130,7 @@ const AIChatPage = ({
                   ref={chatContainerRef}
                   className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
                   style={{ 
-                    paddingBottom: '80px' // Reduced padding for better mobile experience
+                    paddingBottom: isMobile ? '140px' : '80px' // Extra padding on mobile for fixed input
                   }}
                 >
                   {isChatLoading ? (
@@ -1220,10 +1246,15 @@ const AIChatPage = ({
 
             {/* Floating Message Input - Better Mobile Positioning */}
             <div 
-              className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6" 
-              style={{
-                paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : '0px'
-              }}
+              className={isMobile 
+                ? "mobile-chat-input p-4 mobile-input-safe" 
+                : "absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6"
+              }
+              style={isMobile ? {
+                background: 'rgba(26, 26, 26, 0.95)',
+                backdropFilter: 'blur(20px)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+              } : {}}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}

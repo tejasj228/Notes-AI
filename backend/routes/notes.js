@@ -289,6 +289,10 @@ router.delete('/:id', checkResourceOwnership(Note), async (req, res) => {
   try {
     await req.resource.moveToTrash();
 
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after delete:', req.user._id);
+
     res.json({
       success: true,
       message: 'Note moved to trash'

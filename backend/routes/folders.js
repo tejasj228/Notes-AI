@@ -135,6 +135,10 @@ router.post('/', async (req, res) => {
       order: newOrder
     });
 
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after folder create:', req.user._id);
+
     res.status(201).json({
       success: true,
       message: 'Folder created successfully',
@@ -210,6 +214,10 @@ router.put('/:id', checkResourceOwnership(Folder), async (req, res) => {
 
     console.log('🔧 Backend: Folder updated successfully:', folder);
 
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after folder update:', req.user._id);
+
     res.json({
       success: true,
       message: 'Folder updated successfully',
@@ -277,6 +285,10 @@ router.delete('/:id', checkResourceOwnership(Folder), async (req, res) => {
     
     // Delete folder and move notes to root
     await folder.deleteWithNotesHandling();
+
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after folder delete:', req.user._id);
 
     res.json({
       success: true,

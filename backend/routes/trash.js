@@ -1,6 +1,7 @@
 const express = require('express');
 const Note = require('../models/Note');
 const { checkResourceOwnership } = require('../middleware/auth');
+const { invalidateUserCache } = require('../middleware/cache');
 
 const router = express.Router();
 
@@ -83,6 +84,10 @@ router.patch('/:id/restore', async (req, res) => {
     // Populate folder info
     await note.populate('folderId', 'name color');
 
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after restore:', req.user._id);
+
     res.json({
       success: true,
       message: 'Note restored successfully',
@@ -117,6 +122,10 @@ router.delete('/:id', async (req, res) => {
 
     await note.permanentDelete();
 
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after permanent delete:', req.user._id);
+
     res.json({
       success: true,
       message: 'Note permanently deleted'
@@ -139,6 +148,10 @@ router.delete('/empty', async (req, res) => {
       userId: req.user._id,
       isTrashed: true
     });
+
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after empty trash:', req.user._id);
 
     res.json({
       success: true,
@@ -192,6 +205,10 @@ router.patch('/restore-all', async (req, res) => {
     });
 
     await Promise.all(restorePromises);
+
+    // Invalidate user's cache to ensure fresh data on next request
+    invalidateUserCache(req.user._id);
+    console.log('🗑️ Cache invalidated for user after restore all:', req.user._id);
 
     res.json({
       success: true,
