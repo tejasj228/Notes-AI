@@ -12,7 +12,8 @@ const NotesGrid = ({
   onAddNote,
   onRestoreNote,
   onPermanentDeleteNote,
-  dragHandlers
+  dragHandlers,
+  loadingStates = {}
 }) => {
   const [showTrashMenu, setShowTrashMenu] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -206,29 +207,51 @@ const NotesGrid = ({
                     <button 
                       className={`bg-transparent border-none w-full text-gray-200 cursor-pointer flex items-center justify-start gap-2 transition-colors duration-200 hover:bg-white/10 menu-container ${
                         isMobile ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'
-                      }`}
+                      } ${loadingStates.restoringNote ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onRestoreNote(note._id || note.id);
-                        setShowTrashMenu(null);
+                        if (!loadingStates.restoringNote) {
+                          onRestoreNote(note._id || note.id);
+                          setShowTrashMenu(null);
+                        }
                       }}
+                      disabled={loadingStates.restoringNote}
                     >
-                      <RotateCcw size={isMobile ? 14 : 16} />
+                      {loadingStates.restoringNote ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+                      ) : (
+                        <RotateCcw size={isMobile ? 14 : 16} />
+                      )}
                       Restore
                     </button>
                     <button 
                       className={`bg-transparent border-none w-full text-red-400 cursor-pointer flex items-center justify-start gap-2 transition-colors duration-200 menu-container ${
                         isMobile ? 'py-2 px-3 text-xs' : 'py-3 px-4 text-sm'
-                      }`}
+                      } ${loadingStates.permanentDeletingNote ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onPermanentDeleteNote(note._id || note.id);
-                        setShowTrashMenu(null);
+                        if (!loadingStates.permanentDeletingNote) {
+                          onPermanentDeleteNote(note._id || note.id);
+                          setShowTrashMenu(null);
+                        }
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      disabled={loadingStates.permanentDeletingNote}
+                      onMouseEnter={e => {
+                        if (!loadingStates.permanentDeletingNote) {
+                          e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!loadingStates.permanentDeletingNote) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <Trash2 size={isMobile ? 14 : 16} />
+                      {loadingStates.permanentDeletingNote ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
+                      ) : (
+                        <Trash2 size={isMobile ? 14 : 16} />
+                      )}
                       {isMobile ? 'Remove' : 'Remove from trash'}
                     </button>
                   </div>

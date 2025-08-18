@@ -17,11 +17,13 @@ const Sidebar = ({
   onAddFolder,
   onRenameFolder,
   onDeleteFolder,
-  onLogout
+  onLogout,
+  onDragNoteToTrash // Add this new prop
 }) => {
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [folderMenuOpen, setFolderMenuOpen] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [dragOverTrash, setDragOverTrash] = useState(false);
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -53,6 +55,37 @@ const Sidebar = ({
     console.log('Sidebar - currentFolder:', currentFolder);
     console.log('Sidebar - folders:', folders.map(f => ({ name: f.name, _id: f._id, id: f.id })));
   }, [currentFolder, folders]);
+
+  // Handle drag and drop for notes to trash (desktop only)
+  const handleTrashDragOver = (e) => {
+    if (isMobile) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverTrash(true);
+  };
+
+  const handleTrashDragLeave = (e) => {
+    if (isMobile) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverTrash(false);
+  };
+
+  const handleTrashDrop = (e) => {
+    if (isMobile) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverTrash(false);
+    
+    try {
+      const noteId = e.dataTransfer.getData('text/plain');
+      if (noteId && onDragNoteToTrash) {
+        onDragNoteToTrash(noteId);
+      }
+    } catch (error) {
+      console.error('Error handling trash drop:', error);
+    }
+  };
 
   return (
     <>
@@ -275,25 +308,42 @@ const Sidebar = ({
             currentPage === PAGES.TRASH 
               ? 'text-violet-500 border-r-3' 
               : 'text-gray-300 hover:text-violet-500'
-          }`}
+          } ${dragOverTrash ? 'bg-red-500/20 border-red-500/50' : ''}`}
           style={{
-            background: currentPage === PAGES.TRASH ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-            borderRightColor: currentPage === PAGES.TRASH ? '#8b5cf6' : 'transparent'
+            background: currentPage === PAGES.TRASH 
+              ? 'rgba(139, 92, 246, 0.2)' 
+              : dragOverTrash 
+                ? 'rgba(239, 68, 68, 0.15)' 
+                : 'transparent',
+            borderRightColor: currentPage === PAGES.TRASH ? '#8b5cf6' : 'transparent',
+            borderLeft: dragOverTrash ? '3px solid rgba(239, 68, 68, 0.6)' : '3px solid transparent'
           }}
           onClick={onSwitchToTrash}
+          onDragOver={handleTrashDragOver}
+          onDragLeave={handleTrashDragLeave}
+          onDrop={handleTrashDrop}
           onMouseEnter={e => {
-            if (currentPage !== PAGES.TRASH) {
+            if (currentPage !== PAGES.TRASH && !dragOverTrash) {
               e.target.style.background = 'rgba(139, 92, 246, 0.1)';
             }
           }}
           onMouseLeave={e => {
-            if (currentPage !== PAGES.TRASH) {
+            if (currentPage !== PAGES.TRASH && !dragOverTrash) {
               e.target.style.background = 'transparent';
             }
           }}
         >
           <Trash2 size={20} />
-          {sidebarOpen && 'Trash'}
+          {sidebarOpen && (
+            <>
+              Trash
+              {dragOverTrash && !isMobile && (
+                <span className="ml-auto text-xs text-red-400 animate-pulse">
+                  Drop to delete
+                </span>
+              )}
+            </>
+          )}
         </button>
       </div>
 

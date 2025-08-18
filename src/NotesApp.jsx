@@ -5,6 +5,7 @@ import TopNavigation from './components/TopNavigation';
 import Sidebar from './components/Sidebar';
 import NotesGrid from './components/NotesGrid';
 import AIChatPage from './components/AIChatPage';
+import NotificationSystem from './components/NotificationSystem';
 import { NewNoteModal, EditNoteModal, ImagePopup } from './components/NoteModals';
 import { NewFolderModal, RenameFolderModal } from './components/FolderModals';
 import { useNotesData } from './hooks/useNotesData';
@@ -82,6 +83,93 @@ const NotesApp = ({ user, onLogout }) => {
     return null;
   };
 
+  // Enhanced updateNote with notifications
+  const handleUpdateNote = async (noteId, field, value) => {
+    setLoading('updatingNote', true);
+    
+    // Find the note being updated for notification
+    const noteToUpdate = notes.find(note => (note._id || note.id) === noteId);
+    
+    try {
+      await updateNote(noteId, field, value);
+      
+      addNotification({
+        type: 'success',
+        title: 'Note Updated',
+        message: noteToUpdate ? `"${noteToUpdate.title}" has been updated` : 'Note has been updated successfully',
+        duration: 2500
+      });
+    } catch (error) {
+      console.error('❌ Error updating note:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Update Note',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('updatingNote', false);
+    }
+  };
+
+  // Enhanced restoreNote with notifications
+  const handleRestoreNote = async (noteId) => {
+    setLoading('restoringNote', true);
+    
+    // Find the note being restored for notification
+    const noteToRestore = trashedNotes.find(note => (note._id || note.id) === noteId);
+    
+    try {
+      await restoreNote(noteId);
+      
+      addNotification({
+        type: 'success',
+        title: 'Note Restored',
+        message: noteToRestore ? `"${noteToRestore.title}" has been restored` : 'Note has been restored successfully',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('❌ Error restoring note:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Restore Note',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('restoringNote', false);
+    }
+  };
+
+  // Enhanced permanentlyDeleteNote with notifications
+  const handlePermanentDeleteNote = async (noteId) => {
+    setLoading('permanentDeletingNote', true);
+    
+    // Find the note being permanently deleted for notification
+    const noteToDelete = trashedNotes.find(note => (note._id || note.id) === noteId);
+    
+    try {
+      await permanentlyDeleteNote(noteId);
+      
+      addNotification({
+        type: 'delete',
+        title: 'Note Permanently Deleted',
+        message: noteToDelete ? `"${noteToDelete.title}" has been permanently deleted` : 'Note has been permanently deleted',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('❌ Error permanently deleting note:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Delete Note',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('permanentDeletingNote', false);
+    }
+  };
+
   // Drag and drop functionality
   const currentPage = getCurrentPageFromURL();
   const currentFolder = getCurrentFolderFromURL();
@@ -89,6 +177,21 @@ const NotesApp = ({ user, onLogout }) => {
 
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Loading states
+  const [loadingStates, setLoadingStates] = useState({
+    creatingNote: false,
+    updatingNote: false,
+    deletingNote: false,
+    restoringNote: false,
+    permanentDeletingNote: false,
+    creatingFolder: false,
+    updatingFolder: false,
+    deletingFolder: false
+  });
+  
+  // Notifications
+  const [notifications, setNotifications] = useState([]);
   
   // MODAL STATE - These don't affect URL
   const [showNewNotePopup, setShowNewNotePopup] = useState(false);
@@ -118,6 +221,20 @@ const NotesApp = ({ user, onLogout }) => {
     name: '',
     color: ''
   });
+
+  // Notification helpers
+  const addNotification = (notification) => {
+    const id = Date.now() + Math.random();
+    setNotifications(prev => [...prev, { id, ...notification }]);
+  };
+
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const setLoading = (key, value) => {
+    setLoadingStates(prev => ({ ...prev, [key]: value }));
+  };
 
   // Handle image clicks in content editors
   useEffect(() => {
@@ -229,22 +346,91 @@ const NotesApp = ({ user, onLogout }) => {
     
     console.log('💾 Note data to create:', noteDataToCreate);
 
+    setLoading('creatingNote', true);
     try {
       const newNote = await createNote(noteDataToCreate);
       
       console.log('💾 Note created successfully:', newNote);
       setShowNewNotePopup(false);
       
+      addNotification({
+        type: 'success',
+        title: 'Note Created',
+        message: `"${newNote.title}" has been created successfully`,
+        duration: 3000
+      });
+      
       // Refresh the current notes view to see the new note
       console.log('💾 Current notes after creation:', getCurrentNotes());
     } catch (error) {
       console.error('❌ Error creating note:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Create Note',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('creatingNote', false);
     }
   };
 
   const handleDeleteNote = (noteId) => {
-    deleteNote(noteId);
-    setSelectedNote(null); // Just close modal
+    setLoading('deletingNote', true);
+    
+    // Find the note being deleted for notification
+    const noteToDelete = notes.find(note => (note._id || note.id) === noteId);
+    
+    deleteNote(noteId)
+      .then(() => {
+        addNotification({
+          type: 'delete',
+          title: 'Note Moved to Trash',
+          message: noteToDelete ? `"${noteToDelete.title}" has been moved to trash` : 'Note has been moved to trash',
+          duration: 3000
+        });
+        setSelectedNote(null); // Just close modal
+      })
+      .catch((error) => {
+        console.error('❌ Error deleting note:', error);
+        addNotification({
+          type: 'error',
+          title: 'Failed to Delete Note',
+          message: 'Please try again',
+          duration: 4000
+        });
+      })
+      .finally(() => {
+        setLoading('deletingNote', false);
+      });
+  };
+
+  // Handle drag note to trash from sidebar
+  const handleDragNoteToTrash = async (noteId) => {
+    setLoading('deletingNote', true);
+    
+    // Find the note being deleted for notification
+    const noteToDelete = notes.find(note => (note._id || note.id) === noteId);
+    
+    try {
+      await deleteNote(noteId);
+      addNotification({
+        type: 'delete',
+        title: 'Note Moved to Trash',
+        message: noteToDelete ? `"${noteToDelete.title}" has been moved to trash` : 'Note has been moved to trash',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('❌ Error deleting note:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Delete Note',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('deletingNote', false);
+    }
   };
 
   // MODAL: Folder operations - Don't change URL unless specified
@@ -256,11 +442,31 @@ const NotesApp = ({ user, onLogout }) => {
     setShowNewFolderPopup(true);
   };
 
-  const saveNewFolder = () => {
+  const saveNewFolder = async () => {
     if (!newFolderDraft.name || !newFolderDraft.name.trim()) return;
-    const newFolder = createFolder(newFolderDraft);
-    setShowNewFolderPopup(false);
-    // Don't auto-navigate to new folder, let user decide
+    
+    setLoading('creatingFolder', true);
+    try {
+      const newFolder = await createFolder(newFolderDraft);
+      setShowNewFolderPopup(false);
+      
+      addNotification({
+        type: 'success',
+        title: 'Folder Created',
+        message: `"${newFolder.name}" has been created successfully`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('❌ Error creating folder:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Create Folder',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('creatingFolder', false);
+    }
   };
 
   const handleRenameFolder = (folder) => {
@@ -273,30 +479,77 @@ const NotesApp = ({ user, onLogout }) => {
     setShowRenameFolder(true);
   };
 
-  const saveRenameFolder = () => {
+  const saveRenameFolder = async () => {
     if (!renameFolderDraft.name || !renameFolderDraft.name.trim()) return;
-    updateFolder(renameFolderDraft.id, {
-      name: renameFolderDraft.name,
-      color: renameFolderDraft.color
-    });
-    setShowRenameFolder(false);
     
-    // Update URL if we're currently in this folder
-    if (
-      currentFolder &&
-      ((currentFolder._id || currentFolder.id)?.toString() === (renameFolderDraft.id || '').toString())
-    ) {
-      const newFolderSlug = renameFolderDraft.name.toLowerCase().replace(/\s+/g, '-');
-      navigate(`/folder/${newFolderSlug}`);
+    setLoading('updatingFolder', true);
+    try {
+      await updateFolder(renameFolderDraft.id, {
+        name: renameFolderDraft.name,
+        color: renameFolderDraft.color
+      });
+      setShowRenameFolder(false);
+      
+      addNotification({
+        type: 'success',
+        title: 'Folder Updated',
+        message: `Folder has been updated successfully`,
+        duration: 3000
+      });
+      
+      // Update URL if we're currently in this folder
+      if (
+        currentFolder &&
+        ((currentFolder._id || currentFolder.id)?.toString() === (renameFolderDraft.id || '').toString())
+      ) {
+        const newFolderSlug = renameFolderDraft.name.toLowerCase().replace(/\s+/g, '-');
+        navigate(`/folder/${newFolderSlug}`);
+      }
+    } catch (error) {
+      console.error('❌ Error updating folder:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Update Folder',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('updatingFolder', false);
     }
   };
 
-  const handleDeleteFolder = (folderId) => {
+  const handleDeleteFolder = async (folderId) => {
     console.log('handleDeleteFolder called with folderId:', folderId);
-    deleteFolder(folderId);
-    // If we're currently viewing this folder, navigate to notes
-    if (currentFolder && (currentFolder._id === folderId || currentFolder.id === folderId)) {
-      navigate('/notes');
+    
+    setLoading('deletingFolder', true);
+    
+    // Find the folder being deleted for notification
+    const folderToDelete = folders.find(folder => (folder._id || folder.id) === folderId);
+    
+    try {
+      await deleteFolder(folderId);
+      
+      addNotification({
+        type: 'delete',
+        title: 'Folder Deleted',
+        message: folderToDelete ? `"${folderToDelete.name}" has been deleted` : 'Folder has been deleted',
+        duration: 3000
+      });
+      
+      // If we're currently viewing this folder, navigate to notes
+      if (currentFolder && (currentFolder._id === folderId || currentFolder.id === folderId)) {
+        navigate('/notes');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting folder:', error);
+      addNotification({
+        type: 'error',
+        title: 'Failed to Delete Folder',
+        message: 'Please try again',
+        duration: 4000
+      });
+    } finally {
+      setLoading('deletingFolder', false);
     }
   };
 
@@ -456,23 +709,22 @@ const NotesApp = ({ user, onLogout }) => {
             </div>
           </div>
 
-          <Sidebar
-            sidebarOpen={sidebarOpen}
-            setSidebarOpen={setSidebarOpen}
-            currentPage={currentPage}
-            currentFolder={currentFolder}
-            folders={folders}
-            user={user}
-            onSwitchToNotes={switchToNotes}
-            onSwitchToTrash={switchToTrash}
-            onOpenFolder={openFolder}
-            onAddFolder={openNewFolderPopup}
-            onRenameFolder={handleRenameFolder}
-            onDeleteFolder={handleDeleteFolder}
-            onLogout={onLogout}
-          />
-
-          <div 
+            <Sidebar
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+              currentPage={currentPage}
+              currentFolder={currentFolder}
+              folders={folders}
+              user={user}
+              onSwitchToNotes={switchToNotes}
+              onSwitchToTrash={switchToTrash}
+              onOpenFolder={openFolder}
+              onAddFolder={openNewFolderPopup}
+              onRenameFolder={handleRenameFolder}
+              onDeleteFolder={handleDeleteFolder}
+              onLogout={onLogout}
+              onDragNoteToTrash={handleDragNoteToTrash}
+            />          <div 
             className={`transition-all duration-300 px-4 md:px-10 pb-10 ${
               sidebarOpen ? 'md:ml-64' : 'md:ml-18'
             } ml-0`}
@@ -514,9 +766,10 @@ const NotesApp = ({ user, onLogout }) => {
                 searchTerm={searchTerm}
                 onOpenNote={openNote}
                 onAddNote={openNewNotePopup}
-                onRestoreNote={restoreNote}
-                onPermanentDeleteNote={permanentlyDeleteNote}
+                onRestoreNote={handleRestoreNote}
+                onPermanentDeleteNote={handlePermanentDeleteNote}
                 dragHandlers={dragHandlers}
+                loadingStates={loadingStates}
               />
             )}
           </div>
@@ -551,6 +804,7 @@ const NotesApp = ({ user, onLogout }) => {
               setNoteDraft={setNewNoteDraft}
               onSave={saveNewNote}
               onClose={() => setShowNewNotePopup(false)}
+              isLoading={loadingStates.creatingNote}
             />
           )}
 
@@ -559,10 +813,12 @@ const NotesApp = ({ user, onLogout }) => {
             <EditNoteModal
               show={!!selectedNote}
               note={selectedNote}
-              onUpdate={updateNote}
+              onUpdate={handleUpdateNote}
               onDelete={handleDeleteNote}
               onOpenWithAI={handleOpenWithAI}
               onClose={closeNotePopup}
+              isDeleting={loadingStates.deletingNote}
+              isUpdating={loadingStates.updatingNote}
             />
           )}
 
@@ -574,6 +830,8 @@ const NotesApp = ({ user, onLogout }) => {
               setFolderDraft={setNewFolderDraft}
               onSave={saveNewFolder}
               onClose={() => setShowNewFolderPopup(false)}
+              existingFoldersCount={folders.length}
+              isLoading={loadingStates.creatingFolder}
             />
           )}
 
@@ -584,6 +842,7 @@ const NotesApp = ({ user, onLogout }) => {
               setFolderDraft={setRenameFolderDraft}
               onSave={saveRenameFolder}
               onClose={() => setShowRenameFolder(false)}
+              isLoading={loadingStates.updatingFolder}
             />
           )}
 
@@ -597,6 +856,12 @@ const NotesApp = ({ user, onLogout }) => {
           )}
         </>
       )}
+
+      {/* Notification System */}
+      <NotificationSystem
+        notifications={notifications}
+        removeNotification={removeNotification}
+      />
     </div>
   );
 };

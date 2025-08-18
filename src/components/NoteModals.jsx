@@ -9,7 +9,8 @@ export const NewNoteModal = ({
   noteDraft, 
   setNoteDraft, 
   onSave, 
-  onClose 
+  onClose,
+  isLoading = false
 }) => {
   const newNoteTextareaRef = useRef(null);
 
@@ -166,21 +167,34 @@ export const NewNoteModal = ({
           <button
             className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
             style={{
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
+              background: isLoading ? 'rgba(139, 92, 246, 0.5)' : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              boxShadow: '0 0 0 rgba(139, 92, 246, 0)',
+              cursor: isLoading ? 'not-allowed' : 'pointer'
             }}
             onClick={() => {
-              console.log('Save button clicked in modal');
-              onSave();
+              if (!isLoading) {
+                console.log('Save button clicked in modal');
+                onSave();
+              }
             }}
+            disabled={isLoading}
             onMouseEnter={e => {
-              e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+              if (!isLoading) {
+                e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
+              }
             }}
             onMouseLeave={e => {
               e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
             }}
           >
-            Save
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Creating...
+              </>
+            ) : (
+              'Save'
+            )}
           </button>
         </div>
       </div>
@@ -195,7 +209,9 @@ export const EditNoteModal = ({
   onUpdate, 
   onDelete, 
   onOpenWithAI, 
-  onClose 
+  onClose,
+  isDeleting = false,
+  isUpdating = false
 }) => {
   const textareaRef = useRef(null);
   
@@ -344,19 +360,32 @@ export const EditNoteModal = ({
           <div className="flex gap-2 sm:gap-3 flex-shrink-0">
             <button 
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"
-              onClick={() => onDelete(note._id || note.id)}
+              onClick={() => !isDeleting && onDelete(note._id || note.id)}
               title="Delete note"
-              style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+              disabled={isDeleting}
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.1)',
+                cursor: isDeleting ? 'not-allowed' : 'pointer',
+                opacity: isDeleting ? 0.5 : 1
+              }}
               onMouseEnter={e => {
-                e.target.style.background = 'rgba(220, 38, 38, 0.3)';
-                e.target.style.color = '#ff6b6b';
+                if (!isDeleting) {
+                  e.target.style.background = 'rgba(220, 38, 38, 0.3)';
+                  e.target.style.color = '#ff6b6b';
+                }
               }}
               onMouseLeave={e => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.color = '#ffffff';
+                if (!isDeleting) {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.color = '#ffffff';
+                }
               }}
             >
-              <Trash2 size={16} />
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+              ) : (
+                <Trash2 size={16} />
+              )}
             </button>
             <button 
               className="border-none rounded-lg p-2 text-gray-200 cursor-pointer transition-all duration-300"

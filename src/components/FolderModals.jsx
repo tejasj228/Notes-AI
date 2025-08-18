@@ -9,7 +9,8 @@ export const NewFolderModal = ({
   setFolderDraft, 
   onSave, 
   onClose,
-  existingFoldersCount = 0 // Add this prop to check current folder count
+  existingFoldersCount = 0, // Add this prop to check current folder count
+  isLoading = false
 }) => {
   const maxFolders = 10;
   const maxNameLength = 10;
@@ -55,7 +56,7 @@ export const NewFolderModal = ({
   };
 
   const handleSave = () => {
-    if (canCreateFolder && folderDraft.name.trim()) {
+    if (canCreateFolder && folderDraft.name.trim() && !isLoading) {
       onSave();
     }
   };
@@ -174,17 +175,17 @@ export const NewFolderModal = ({
           <button
             className="border-none rounded-xl px-6 py-3 text-sm font-medium cursor-pointer transition-all duration-300 hover:-translate-y-0.5"
             style={{
-              background: (canCreateFolder && folderDraft.name.trim()) 
+              background: (canCreateFolder && folderDraft.name.trim() && !isLoading) 
                 ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
                 : 'rgba(255, 255, 255, 0.1)',
-              color: (canCreateFolder && folderDraft.name.trim()) ? '#ffffff' : '#888888',
+              color: (canCreateFolder && folderDraft.name.trim() && !isLoading) ? '#ffffff' : '#888888',
               boxShadow: '0 0 0 rgba(139, 92, 246, 0)',
-              cursor: (canCreateFolder && folderDraft.name.trim()) ? 'pointer' : 'not-allowed'
+              cursor: (canCreateFolder && folderDraft.name.trim() && !isLoading) ? 'pointer' : 'not-allowed'
             }}
             onClick={handleSave}
-            disabled={!canCreateFolder || !folderDraft.name.trim()}
+            disabled={!canCreateFolder || !folderDraft.name.trim() || isLoading}
             onMouseEnter={e => {
-              if (canCreateFolder && folderDraft.name.trim()) {
+              if (canCreateFolder && folderDraft.name.trim() && !isLoading) {
                 e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
               }
             }}
@@ -192,8 +193,17 @@ export const NewFolderModal = ({
               e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
             }}
           >
-            <Folder size={18} className="inline mr-2" />
-            Create Folder
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline mr-2"></div>
+                Creating...
+              </>
+            ) : (
+              <>
+                <Folder size={18} className="inline mr-2" />
+                Create Folder
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -207,7 +217,8 @@ export const RenameFolderModal = ({
   folderDraft, 
   setFolderDraft, 
   onSave, 
-  onClose 
+  onClose,
+  isLoading = false
 }) => {
   const maxNameLength = 10;
 
@@ -343,15 +354,16 @@ export const RenameFolderModal = ({
           <button
             className="border-none rounded-xl px-6 py-3 text-gray-200 text-sm font-medium cursor-pointer transition-all duration-300 hover:-translate-y-0.5"
             style={{
-              background: folderDraft.name.trim() 
+              background: (folderDraft.name.trim() && !isLoading) 
                 ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
                 : 'rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 0 0 rgba(139, 92, 246, 0)'
+              boxShadow: '0 0 0 rgba(139, 92, 246, 0)',
+              cursor: (folderDraft.name.trim() && !isLoading) ? 'pointer' : 'not-allowed'
             }}
-            onClick={onSave}
-            disabled={!folderDraft.name.trim()}
+            onClick={() => !isLoading && onSave()}
+            disabled={!folderDraft.name.trim() || isLoading}
             onMouseEnter={e => {
-              if (folderDraft.name.trim()) {
+              if (folderDraft.name.trim() && !isLoading) {
                 e.target.style.boxShadow = '0 5px 15px rgba(139, 92, 246, 0.4)';
               }
             }}
@@ -359,7 +371,14 @@ export const RenameFolderModal = ({
               e.target.style.boxShadow = '0 0 0 rgba(139, 92, 246, 0)';
             }}
           >
-            Save Changes
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline mr-2"></div>
+                Updating...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </div>
