@@ -107,7 +107,7 @@ const NotesGrid = ({
 
   return (
     <div 
-      className="grid gap-6 md:gap-8 max-w-6xl mx-auto py-3 md:py-5 w-full px-4 md:px-0"
+      className="grid gap-6 md:gap-8 max-w-6xl mx-auto py-3 md:py-5 w-full px-0 md:px-0"
       style={{
         gridTemplateColumns: isMobile 
           ? '1fr' // Single column on mobile for full width
@@ -278,24 +278,46 @@ const NotesGrid = ({
                   </div>
                 )}
                 {(() => {
-                  const images = extractImageSrcs(note.content, 2);
+                  const images = extractImageSrcs(note.content, 2); // Only show 2 images max
                   if (images.length === 0) return null;
                   return (
-                    <div className="flex gap-1 md:gap-1.5 w-full justify-start items-center">
-                      {images.slice(0, 2).map((src, idx) => (
-                        <img 
-                          key={idx} 
-                          src={src} 
-                          alt="note" 
-                          className={`rounded-md md:rounded-lg object-cover shadow-sm ${
-                            images.length === 1 ? 'w-full h-14 md:h-20' : 'w-1/2 h-10 md:h-16'
-                          }`}
-                          style={{
-                            background: '#181818',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
-                          }}
-                        />
-                      ))}
+                    <div className="mt-2 mb-3">
+                      {images.length === 1 && (
+                        <div className="w-full mb-2">
+                          <div className="overflow-hidden rounded-md md:rounded-lg bg-gray-800 aspect-video">
+                            <img 
+                              src={images[0]} 
+                              alt="note" 
+                              className="w-full h-full object-cover"
+                              style={{
+                                background: '#181818',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {images.length === 2 && (
+                        <div className="flex gap-3 mb-2" style={{ maxWidth: isMobile ? '160px' : 'none' }}>
+                          {images.map((src, idx) => (
+                            <div 
+                              key={idx}
+                              className="flex-1 overflow-hidden rounded-md md:rounded-lg bg-gray-800 aspect-square"
+                            >
+                              <img 
+                                src={src} 
+                                alt="note" 
+                                className="w-full h-full object-cover"
+                                style={{
+                                  background: '#181818',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
