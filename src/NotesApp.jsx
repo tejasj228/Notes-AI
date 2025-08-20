@@ -406,13 +406,11 @@ const NotesApp = ({ user, onLogout }) => {
       });
   };
 
-  // Handle drag note to trash from sidebar
+  // Handle drag note to trash from sidebar with loader
   const handleDragNoteToTrash = async (noteId) => {
     setLoading('deletingNote', true);
-    
     // Find the note being deleted for notification
     const noteToDelete = notes.find(note => (note._id || note.id) === noteId);
-    
     try {
       await deleteNote(noteId);
       addNotification({

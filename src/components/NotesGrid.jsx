@@ -65,8 +65,20 @@ const NotesGrid = ({
   } = dragHandlers;
 
   // Filter and sort notes
-  const filteredNotes = filterNotes(notes, searchTerm)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  let filteredNotes = filterNotes(notes, searchTerm);
+  // If in trash, sort by most recently deleted (descending by deletedAt)
+  if (currentPage === PAGES.TRASH) {
+    filteredNotes = filteredNotes.sort((a, b) => {
+      if (a.deletedAt && b.deletedAt) {
+        return new Date(b.deletedAt) - new Date(a.deletedAt); // b first, then a
+      }
+      if (a.deletedAt) return -1;
+      if (b.deletedAt) return 1;
+      return 0;
+    });
+  } else {
+    filteredNotes = filteredNotes.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
 
   // Debug: Log note sizes
   useEffect(() => {
@@ -108,12 +120,12 @@ const NotesGrid = ({
 
   return (
     <div 
-      className="grid gap-6 md:gap-8 max-w-6xl mx-auto py-3 md:py-5 w-full px-0 md:px-0"
+      className="grid gap-4 md:gap-6 max-w-7xl mx-auto py-3 md:py-5 w-full px-0 md:px-0"
       style={{
         gridTemplateColumns: isMobile 
           ? '1fr' // Single column on mobile for full width
-          : 'repeat(auto-fill, minmax(280px, 1fr))',
-        gridAutoRows: isMobile ? '120px' : '220px' // Increased to give proper space for notes
+          : 'repeat(4, 1fr)', // Force 4 columns on desktop
+        gridAutoRows: isMobile ? '120px' : '200px' // Slightly reduced for 4 columns
       }}
       onDragOver={handleGridDragOver}
       onDrop={handleGridDrop}
@@ -168,6 +180,24 @@ const NotesGrid = ({
               }
             }}
           >
+            {/* Loader for deleting note (drag to trash or normal) */}
+            {loadingStates.deletingNote && draggedNote && (draggedNote._id || draggedNote.id) === (note._id || note.id) && (
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+              </div>
+            )}
+            {/* Loader for restoring note */}
+            {loadingStates.restoringNote && showTrashMenu === (note._id || note.id) && (
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
+              </div>
+            )}
+            {/* Loader for deleting note (drag to trash or normal) */}
+            {loadingStates.deletingNote && draggedNote && (draggedNote._id || draggedNote.id) === (note._id || note.id) && (
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+              </div>
+            )}
             {currentPage === PAGES.TRASH && (
               <div className="absolute top-4 right-4 z-10 menu-container">
                 <button 
