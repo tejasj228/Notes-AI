@@ -9,8 +9,8 @@ async function listModels() {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
         // List all models
-        const models = await genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); // Try with a known working model first
-        console.log('✅ API connection successful with gemini-1.5-flash');
+        const models = await genAI.getGenerativeModel({ model: 'gemini-2.0-flash' }); // Try with a known working model first
+        console.log('✅ API connection successful with gemini-2.0-flash');
         
     } catch (error) {
         console.log('❌ Error:', error.message);
