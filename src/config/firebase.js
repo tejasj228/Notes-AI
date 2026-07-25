@@ -24,8 +24,10 @@ try {
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
 
-// Configure auth settings for localhost
-auth.useDeviceLanguage();
+// Configure auth settings for localhost (browser-only APIs)
+if (typeof window !== 'undefined') {
+  auth.useDeviceLanguage();
+}
 
 // Initialize Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();

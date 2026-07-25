@@ -2,7 +2,8 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
+  // Same-origin Next.js API routes by default; override only for an external API.
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
   timeout: 30000, // Increased base timeout to 30 seconds
   headers: {
     "Content-Type": "application/json",
@@ -12,7 +13,8 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("authToken");
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,7 +29,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
       // Handle unauthorized access
       localStorage.removeItem("authToken");
       localStorage.removeItem("user");

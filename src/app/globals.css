@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================= */
+/*  NOTES-AI · Neo-Brutalist design system                        */
+/* ============================================================= */
+
+:root {
+  --paper: #efe9da;
+  --paper-2: #e6dec9;
+  --ink: #141210;
+  --brand: #7c5cff;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Warm dotted-grid paper texture behind everything */
+body {
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(20, 18, 16, 0.09) 1.4px, transparent 1.4px);
+  background-size: 22px 22px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ------------------- Scrollbars ------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border: 2px solid var(--paper);
+  border-radius: 0;
+}
+
+/* ------------------- Brutalist primitives ------------------- */
+@layer components {
+  .brutal {
+    @apply border-3 border-ink bg-white shadow-brutal;
+  }
+  .brutal-sm {
+    @apply border-3 border-ink shadow-brutal-sm;
+  }
+  /* Pressable button: shadow collapses + block shifts on click */
+  .brutal-btn {
+    @apply inline-flex items-center justify-center gap-2 border-3 border-ink font-mono font-bold uppercase tracking-wide
+           shadow-brutal transition-all duration-100 select-none cursor-pointer;
+  }
+  .brutal-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 0 var(--ink);
+  }
+  .brutal-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 0 var(--ink);
+  }
+  .brutal-btn:disabled {
+    transform: none;
+    box-shadow: 3px 3px 0 0 rgba(20, 18, 16, 0.35);
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  /* Interactive card that lifts on hover */
+  .brutal-card {
+    @apply border-3 border-ink shadow-brutal transition-all duration-150;
+  }
+  .brutal-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0 0 var(--ink);
+  }
+  /* Eyebrow / label chip */
+  .brutal-eyebrow {
+    @apply inline-block font-mono text-xs font-bold uppercase tracking-[0.2em];
+  }
+  .brutal-input {
+    @apply border-3 border-ink bg-white font-sans text-ink placeholder:text-ink/45 outline-none;
+  }
+  .brutal-input:focus {
+    @apply shadow-brutal-sm border-brand;
+  }
+}
+
+/* Utility: hide scrollbar on chat input */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ------------------- contentEditable note styling ------------------- */
+.note-content-editable:empty:before {
+  content: attr(data-placeholder);
+  color: rgba(20, 18, 16, 0.4);
+  pointer-events: none;
+  position: absolute;
+  font-style: italic;
+}
+.note-content-editable ul,
+.note-content-editable ol {
+  margin-left: 0;
+  padding-left: 2.2em;
+  list-style-position: outside;
+}
+.note-content-editable li {
+  margin-bottom: 0.4em;
+  line-height: 1.7;
+}
+.note-content-editable img {
+  max-width: 100% !important;
+  max-height: 320px !important;
+  display: block;
+  margin: 14px 0;
+  border: 3px solid var(--ink);
+  cursor: pointer;
+}
+.note-content-editable a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+/* Line clamp helper */
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Markdown output inside AI chat bubbles */
+.md-body p {
+  margin: 0 0 0.5em;
+}
+.md-body ul,
+.md-body ol {
+  margin: 0.25em 0 0.5em;
+  padding-left: 1.3em;
+}
+.md-body code {
+  font-family: var(--font-mono), monospace;
+  background: rgba(20, 18, 16, 0.1);
+  padding: 1px 5px;
+  border: 1px solid var(--ink);
+}
+.md-body pre {
+  background: var(--ink);
+  color: #f5f5f5;
+  padding: 12px;
+  overflow-x: auto;
+  border: 3px solid var(--ink);
+  margin: 8px 0;
+}
+.md-body pre code {
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

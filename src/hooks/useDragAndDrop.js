@@ -1,5 +1,7 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
-import { DRAG_SETTINGS, PAGES } from '../utils/constants';
+import { DRAG_SETTINGS, PAGES } from '@/utils/constants';
 
 export const useDragAndDrop = (currentPage, getCurrentNotes, reorderNotes) => {
   const [draggedNote, setDraggedNote] = useState(null);

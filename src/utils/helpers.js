@@ -29,69 +29,27 @@ export const getRandomSize = () => {
   return choice;
 };
 
-// Note background gradients
-export const getNoteBackground = (color) => {
-  const backgrounds = {
-    teal: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #0f766e 100%)',
-    brown: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #a16207 100%)',
-    yellow: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #d97706 100%)',
-    blue: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #1e40af 100%)',
-    purple: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #7c3aed 100%)',
-    green: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #059669 100%)',
-    orange: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #ea580c 100%)',
-    red: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #dc2626 100%)',
-    indigo: 'linear-gradient(45deg, #242424 0%, #242424 60%, #2a2a2a 80%, #4f46e5 100%)'
-  };
-  return backgrounds[color] || backgrounds.purple;
+// Solid neo-brutalist block colors — vivid, readable with black ink on top
+export const NOTE_COLORS = {
+  purple: '#B7A2FF',
+  teal: '#5EEAD4',
+  blue: '#7CA0FF',
+  green: '#8FE388',
+  orange: '#FF9F45',
+  red: '#FF7A7A',
+  yellow: '#FFD23F',
+  brown: '#D9A874',
+  indigo: '#9B9CFF',
 };
 
-// Note hover background gradients
-export const getNoteHoverBackground = (color) => {
-  const backgrounds = {
-    teal: 'linear-gradient(45deg, #0f766e 0%, #0f766e 60%, #134e4a 80%, #242424 100%)',
-    brown: 'linear-gradient(45deg, #a16207 0%, #a16207 60%, #b45309 80%, #242424 100%)',
-    yellow: 'linear-gradient(45deg, #d97706 0%, #d97706 60%, #ea580c 80%, #242424 100%)',
-    blue: 'linear-gradient(45deg, #1e40af 0%, #1e40af 60%, #1e3a8a 80%, #242424 100%)',
-    purple: 'linear-gradient(45deg, #7c3aed 0%, #7c3aed 60%, #6b21a8 80%, #242424 100%)',
-    green: 'linear-gradient(45deg, #059669 0%, #059669 60%, #047857 80%, #242424 100%)',
-    orange: 'linear-gradient(45deg, #ea580c 0%, #ea580c 60%, #c2410c 80%, #242424 100%)',
-    red: 'linear-gradient(45deg, #dc2626 0%, #dc2626 60%, #b91c1c 80%, #242424 100%)',
-    indigo: 'linear-gradient(45deg, #4f46e5 0%, #4f46e5 60%, #4338ca 80%, #242424 100%)'
-  };
-  return backgrounds[color] || backgrounds.purple;
-};
+// Single source of truth for a note/folder color (solid, no gradient)
+export const getNoteColor = (color) => NOTE_COLORS[color] || NOTE_COLORS.purple;
 
-// Color picker backgrounds
-export const getColorPickerBackground = (color) => {
-  const backgrounds = {
-    teal: 'linear-gradient(45deg, #0f766e, #14b8a6)',
-    brown: 'linear-gradient(45deg, #a16207, #d97706)',
-    yellow: 'linear-gradient(45deg, #d97706, #f59e0b)',
-    blue: 'linear-gradient(45deg, #1e40af, #3b82f6)',
-    purple: 'linear-gradient(45deg, #8b5cf6, #7c3aed)',
-    green: 'linear-gradient(45deg, #059669, #10b981)',
-    orange: 'linear-gradient(45deg, #ea580c, #f97316)',
-    red: 'linear-gradient(45deg, #dc2626, #ef4444)',
-    indigo: 'linear-gradient(45deg, #4f46e5, #6366f1)'
-  };
-  return backgrounds[color] || backgrounds.purple;
-};
-
-// Folder colors
-export const getFolderColor = (color) => {
-  const colors = {
-    teal: '#14b8a6',
-    brown: '#d97706',
-    yellow: '#f59e0b',
-    blue: '#3b82f6',
-    purple: '#8b5cf6',
-    green: '#10b981',
-    orange: '#f97316',
-    red: '#ef4444',
-    indigo: '#6366f1'
-  };
-  return colors[color] || colors.purple;
-};
+// Kept for backwards compatibility — now returns a flat colour block
+export const getNoteBackground = (color) => getNoteColor(color);
+export const getNoteHoverBackground = (color) => getNoteColor(color);
+export const getColorPickerBackground = (color) => getNoteColor(color);
+export const getFolderColor = (color) => getNoteColor(color);
 
 // Note size styles for CSS Grid
 export const getSizeStyles = (size, isMobile = false) => {
@@ -119,14 +77,25 @@ export const getSizeClasses = (size) => {
   return sizeMap[size] || sizeMap.medium;
 };
 
-// Extract image sources from HTML content
+// Extract image sources from HTML content (regex — safe on server & client)
 export const extractImageSrcs = (html, max = 2) => {
   if (!html) return [];
-  const div = document.createElement('div');
-  div.innerHTML = html || '';
-  const imgs = Array.from(div.querySelectorAll('img'));
-  return imgs.slice(0, max).map(img => img.src);
+  const srcs = [];
+  const re = /<img[^>]+src=["']([^"']+)["']/gi;
+  let match;
+  while ((match = re.exec(html)) && srcs.length < max) {
+    srcs.push(match[1]);
+  }
+  return srcs;
 };
+
+// Strip HTML tags to plain text (regex — safe on server & client)
+export const stripHtml = (html) =>
+  (html || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 // Resize image before inserting
 export const resizeImage = (file, maxWidth = 800, maxHeight = 600, quality = 0.7) => {
@@ -159,9 +128,8 @@ export const insertImageAtCaret = (editorRef, imageUrl) => {
   img.style.maxWidth = '96%';
   img.style.maxHeight = '220px';
   img.style.display = 'block';
-  img.style.margin = '16px auto';
-  img.style.borderRadius = '10px';
-  img.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+  img.style.margin = '16px 0';
+  img.style.border = '3px solid #141210';
   
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
@@ -207,16 +175,7 @@ export const filterNotes = (notes, searchTerm) => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
     ) ||
-    (note.content && 
-      (
-        (() => {
-          const div = document.createElement('div');
-          div.innerHTML = note.content || '';
-          return (div.textContent || div.innerText || '');
-        })()
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-      )
-    )
+    (note.content &&
+      stripHtml(note.content).toLowerCase().includes(searchTerm.toLowerCase()))
   );
 };

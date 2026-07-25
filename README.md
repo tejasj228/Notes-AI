@@ -3,7 +3,7 @@
 <div align="center">
   
   [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-8b5cf6?style=for-the-badge)](https://ainotesai.vercel.app/)
-  [![Made with React](https://img.shields.io/badge/Made_with-React-61dafb?style=for-the-badge&logo=react)](https://reactjs.org/)
+  [![Made with Next.js](https://img.shields.io/badge/Made_with-Next.js-000000?style=for-the-badge&logo=next.js)](https://nextjs.org/)
   [![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com/)
   [![AI Powered](https://img.shields.io/badge/AI_Powered-Gemini-4285f4?style=for-the-badge)](https://ai.google.dev/)
 </div>
@@ -39,10 +39,10 @@
 - **Powered by Google Gemini** for intelligent responses
 
 ### 🎨 **Beautiful Design**
-- **Dark Theme** with purple accents for comfortable viewing
+- **Neo-Brutalist theme** — warm paper canvas, thick ink borders, hard shadows
+- **Landing page** for signed-out visitors
 - **Responsive Layout** - Works perfectly on all devices
-- **Smooth Animations** and transitions throughout
-- **Glassmorphism UI** elements for a modern look
+- **Bento grid** of vivid colour blocks
 
 ### 🗃️ **Note Management**
 - **Trash System** - Safely delete and restore notes
@@ -58,13 +58,20 @@
 
 | Technology | Purpose | Version |
 |------------|---------|---------|
-| ⚛️ **React** | Frontend Framework | 18.x |
+| ▲ **Next.js** | Full-stack framework (App Router + API routes) | 15.x |
+| ⚛️ **React** | UI Library | 19.x |
 | 🎨 **Tailwind CSS** | Styling & Design | 3.x |
+| 🧱 **Neo-Brutalism** | Design language | — |
+| 🍃 **MongoDB + Mongoose** | Database | Atlas |
+| 🔐 **JWT** | Auth tokens | — |
 | 🤖 **Google Gemini AI** | AI Assistant | Latest |
-| ⚡ **Vercel** | Deployment Platform | - |
-| 🌐 **JavaScript ES6+** | Core Language | Latest |
+| ⚡ **Vercel** | Single deployment (UI + API) | - |
 
 </div>
+
+> **Architecture:** The app was migrated from Create React App to **Next.js (App Router)** and redesigned in a **light neo-brutalist** theme (warm paper canvas, thick ink borders, hard offset shadows) while keeping the signature bento grid. The original Express backend was ported into **Next.js API routes** (`src/app/api/*`) with serverless-safe MongoDB — so the whole thing is **one Vercel deployment**. Routes: `/`, `/auth`, `/notes`, `/trash`, `/folder/[folderId]`, `/ai-chat/[noteId]`, plus `/api/*`. A landing page is served at `/` for signed-out visitors. (The standalone `backend/` folder is now legacy.)
+>
+> **▶ To deploy from scratch, see [DEPLOYMENT.md](DEPLOYMENT.md).**
 
 ---
 
@@ -100,31 +107,41 @@
 Want to run this project locally? Here's how:
 
 ### Prerequisites
-- Node.js (16.x or higher)
-- npm or yarn
-- Google Gemini API key
+- Node.js (18.x or higher)
+- A MongoDB connection string (MongoDB Atlas free tier works great)
+- A Google Gemini API key (for AI chat)
 
-### Installation
+### Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai-notes-app.git
-
-# Navigate to project directory
-cd ai-notes-app
-
 # Install dependencies
 npm install
 
-# Create environment file
-cp .env.example .env
+# Create your env file and fill in the values
+cp .env.example .env.local
+```
 
-# Add your Gemini API key to .env
-REACT_APP_GEMINI_API_KEY=your_api_key_here
+`.env.local` needs:
 
-# Start development server
+```bash
+MONGODB_URI=mongodb+srv://...      # your MongoDB connection string
+JWT_SECRET=<long-random-string>    # node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+JWT_EXPIRE=30d
+GEMINI_API_KEY=...                 # from https://aistudio.google.com/apikey
+```
+
+```bash
+# Start the dev server (UI + API together) → http://localhost:3000
+npm run dev
+
+# Production build + start
+npm run build
 npm start
 ```
+
+There is **no separate backend to run** — the API is served from `src/app/api/*`.
+For a full step-by-step deploy (MongoDB Atlas → Gemini → Vercel), see
+**[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ### 🌐 Deployment
 
@@ -166,10 +183,12 @@ vercel --prod
 
 ## 🎨 Design Philosophy
 
-### **Dark Theme First**
-- Designed for extended use with reduced eye strain
-- Purple accent colors for a modern, professional look
-- Glassmorphism effects for depth and elegance
+### **Neo-Brutalism**
+- Warm paper canvas (`#EFE9DA`) with a dotted-grid texture
+- Thick ink borders (`3px`) and hard offset drop-shadows on every block
+- Vivid solid note colours as flat blocks with black text
+- Bricolage Grotesque display type + JetBrains Mono labels
+- Pressable buttons that shift and collapse their shadow on click
 
 ### **User Experience Focus**
 - Intuitive navigation and interactions

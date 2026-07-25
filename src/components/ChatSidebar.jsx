@@ -1,43 +1,10 @@
-import React, { useState } from 'react';
-import { Menu, MessageSquare, LogOut, Trash2, Plus } from 'lucide-react';
+'use client';
 
-// Add custom CSS for line clamping and mobile viewport
-const chatSidebarStyles = `
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  .chat-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .chat-scroll::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 2px;
-  }
-  
-  .chat-scroll::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
-    border-radius: 2px;
-  }
-  
-  .chat-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.5);
-  }
-  
-  /* Mobile safe area handling - simplified */
-  @supports (padding: env(safe-area-inset-bottom)) {
-    .mobile-chat-safe {
-      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-  }
-`;
+import React, { useState, useEffect } from 'react';
+import { Menu, MessageSquare, LogOut, Trash2, Plus, ArrowLeft } from 'lucide-react';
 
-const ChatSidebar = ({ 
-  sidebarOpen, 
+const ChatSidebar = ({
+  sidebarOpen,
   setSidebarOpen,
   user,
   onLogout,
@@ -48,239 +15,132 @@ const ChatSidebar = ({
   onDeleteChat,
   selectedNote,
   onBackToNotes,
-  isChatLoading = false
+  isChatLoading = false,
 }) => {
-  const [hoveredChat, setHoveredChat] = useState(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Get actual chat history for the selected note
-  const displayHistory = chatHistory.length > 0 
-    ? chatHistory.filter(chat => chat.noteId === selectedNote?.id || chat.noteId === selectedNote?._id) 
-    : [];
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const displayHistory =
+    chatHistory.length > 0
+      ? chatHistory.filter((chat) => chat.noteId === selectedNote?.id || chat.noteId === selectedNote?._id)
+      : [];
+
   return (
     <>
-      {/* Inject custom styles */}
-      <style>{chatSidebarStyles}</style>
-      
-      {/* Mobile Overlay */}
       {isMobile && sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 lg:hidden"
-          style={{ touchAction: 'none', zIndex: 999 }}
-          onClick={() => setSidebarOpen(false)}
-          onTouchStart={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-ink/40 z-[999]" onClick={() => setSidebarOpen(false)} />
       )}
-      
-      <div 
-        className={`
-          ${isMobile 
-            ? `fixed left-0 top-0 transition-transform duration-300 ${
+
+      <div
+        className={`${
+          isMobile
+            ? `fixed left-0 top-0 z-[1000] transition-transform duration-200 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               } w-64`
             : 'relative'
-          }
-          ${!isMobile ? (sidebarOpen ? 'w-64' : 'w-18') : ''}
-          border-r transition-all duration-300 flex flex-col
-        `}
-        style={{ 
-          background: isMobile ? 'rgba(26, 26, 26, 0.98)' : 'rgba(30, 30, 30, 0.98)', 
-          backdropFilter: 'blur(20px)',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          height: '100vh',
-          height: '100dvh', // Dynamic viewport height for mobile browsers
-          zIndex: isMobile ? 1000 : 'auto',
-          ...(isMobile && {
-            maxWidth: '280px',
-            minWidth: '256px',
-            boxShadow: '4px 0 24px rgba(0, 0, 0, 0.5)'
-          })
-        }}
+        } ${!isMobile ? (sidebarOpen ? 'w-64' : 'w-16') : ''} h-[100dvh] bg-paper border-r-3 border-ink flex flex-col flex-shrink-0`}
       >
         {/* Header */}
-        <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+        <div className="flex items-center justify-between p-4 border-b-3 border-ink">
           {sidebarOpen && (
-            <>
-              {isMobile ? (
-                <span className="text-lg font-semibold" style={{ color: '#8b5cf6' }}>
-                  Notes AI
-                </span>
-              ) : (
-                <button 
-                  onClick={onBackToNotes}
-                  className="flex items-center gap-3 text-lg font-semibold bg-transparent border-none cursor-pointer transition-colors hover:opacity-80"
-                  style={{ color: '#8b5cf6' }}
-                >
-                  Notes AI
-                </button>
-              )}
-            </>
+            <button
+              onClick={onBackToNotes}
+              className="flex items-center gap-2 font-display font-extrabold text-lg leading-none hover:text-brand transition-colors"
+            >
+              <ArrowLeft size={18} strokeWidth={2.75} /> NOTES·AI
+            </button>
           )}
-          <button 
-            className="bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
+          <button
+            className="text-ink p-1.5 border-3 border-ink bg-white shadow-brutal-sm hover:bg-note-yellow transition-colors"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
-            onMouseLeave={e => e.target.style.background = 'transparent'}
+            aria-label="Toggle sidebar"
           >
-            <Menu size={20} />
+            <Menu size={18} strokeWidth={2.75} />
           </button>
         </div>
-        
-        {/* All content below - Only show when sidebar is open */}
+
         {sidebarOpen && (
-          <div className="flex-1 flex flex-col" style={{ overflow: 'visible' }}>
-            {/* Current Note Banner */}
+          <div className="flex-1 flex flex-col min-h-0">
             {selectedNote && (
-              <div 
-                className="mx-4 my-2 p-3 rounded-lg border"
-                style={{ 
-                  background: 'rgba(139, 92, 246, 0.1)',
-                  borderColor: 'rgba(139, 92, 246, 0.2)'
-                }}
-              >
-                <div className="text-xs text-violet-400 font-medium uppercase tracking-wide mb-1">
-                  Current Note
-                </div>
-                <div className="text-white text-sm font-medium">
-                  {selectedNote.title || 'Untitled Note'}
+              <div className="m-3 border-3 border-ink bg-brand text-white shadow-brutal-sm p-3">
+                <div className="brutal-eyebrow text-white/80 mb-0.5">Current note</div>
+                <div className="font-display font-extrabold leading-tight truncate">
+                  {selectedNote.title || 'Untitled note'}
                 </div>
               </div>
             )}
 
-            {/* New Chat Button */}
-            <div className="px-4 mb-4">
-              <button
-                onClick={onNewChat}
-                className="w-full py-3 px-4 bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-medium transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New Chat
+            <div className="px-3 mb-3">
+              <button onClick={onNewChat} className="brutal-btn w-full bg-note-green text-ink py-2.5 text-xs">
+                <Plus size={16} strokeWidth={2.75} /> New chat
               </button>
             </div>
 
-            {/* Chat History Section */}
-            <div className="flex-1 overflow-hidden flex flex-col" style={{ paddingBottom: '160px' }}>
-              <div className="px-4 pb-1">
-                <h3 className="text-sm font-medium text-gray-400 mb-2">
-                  Chat History
-                </h3>
-              </div>
-              
-              <div 
-                className="flex-1 overflow-y-auto chat-scroll" 
-                style={{ 
-                  paddingTop: '12px',
-                  paddingBottom: '12px',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: '8px',
-                  margin: '4px 16px 24px 16px'
-                }}
-              >
-                <div className="space-y-1">
-                  {isChatLoading ? (
-                    // Loading state
-                    <div className="text-center py-8 text-gray-500">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-3"></div>
-                      <p className="text-sm">Loading chat history...</p>
-                      <p className="text-xs mt-1">Please wait...</p>
-                    </div>
-                  ) : displayHistory.length === 0 ? (
-                    // Empty state
-                    <div className="text-center py-8 text-gray-500">
-                      <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No chat history for this note yet.</p>
-                      <p className="text-xs mt-1">Start a conversation to see it here!</p>
-                    </div>
-                  ) : (
-                    // Chat history list
-                    displayHistory.map((chat) => (
-                      <div
-                        key={chat.id}
-                        className={`group relative mx-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          currentChatId === chat.id 
-                            ? 'bg-violet-600/20 border-violet-500/30' 
-                            : 'hover:bg-gray-700/50'
-                        }`}
-                        onClick={() => onSelectChat?.(chat)}
-                        onMouseEnter={() => setHoveredChat(chat.id)}
-                        onMouseLeave={() => setHoveredChat(null)}
-                        style={{
-                          border: currentChatId === chat.id ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent'
-                        }}
-                      >
-                        <div className="p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <h4 className={`text-sm font-medium mb-1 truncate ${
-                                currentChatId === chat.id ? 'text-violet-300' : 'text-gray-200'
-                              }`}>
-                                {chat.title}
-                              </h4>
-                              <p className="text-xs text-gray-400 mb-2 line-clamp-2">
-                                {chat.preview}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">{chat.timestamp}</span>
-                              </div>
-                            </div>
-                            
-                            {/* Delete button - show on hover */}
-                            {hoveredChat === chat.id && onDeleteChat && (
-                              <button
-                                className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all duration-200 hover:bg-red-500/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDeleteChat(chat.id);
-                                }}
-                                title="Delete chat"
-                              >
-                                <Trash2 size={14} className="text-gray-400 hover:text-red-400" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
+            <div className="px-4 brutal-eyebrow text-ink/60 mb-2">Chat history</div>
+
+            <div className="flex-1 overflow-y-auto px-3 pb-40 space-y-2">
+              {isChatLoading ? (
+                <div className="text-center py-8">
+                  <div className="inline-block w-6 h-6 border-3 border-ink border-t-transparent rounded-full animate-spin mb-2" />
+                  <p className="text-xs font-mono">Loading…</p>
                 </div>
-              </div>
+              ) : displayHistory.length === 0 ? (
+                <div className="text-center py-8 text-ink/60">
+                  <MessageSquare size={28} strokeWidth={2} className="mx-auto mb-2" />
+                  <p className="text-xs font-semibold">No chats yet.</p>
+                  <p className="text-[11px] mt-1">Ask something to start.</p>
+                </div>
+              ) : (
+                displayHistory.map((chat) => {
+                  const active = currentChatId === chat.id;
+                  return (
+                    <div
+                      key={chat.id}
+                      className={`group relative border-3 border-ink p-2.5 cursor-pointer transition-all ${
+                        active ? 'bg-note-yellow shadow-brutal-sm' : 'bg-white hover:-translate-y-0.5'
+                      }`}
+                      onClick={() => onSelectChat?.(chat)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold mb-0.5 truncate">{chat.title}</h4>
+                          <p className="text-[11px] text-ink/70 clamp" style={{ WebkitLineClamp: 2 }}>
+                            {chat.preview}
+                          </p>
+                          <span className="brutal-eyebrow text-ink/50 mt-1 block">{chat.timestamp}</span>
+                        </div>
+                        {onDeleteChat && (
+                          <button
+                            className="opacity-0 group-hover:opacity-100 p-1 border-2 border-ink bg-note-red hover:bg-ink hover:text-white transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteChat(chat.id);
+                            }}
+                            title="Delete chat"
+                          >
+                            <Trash2 size={13} strokeWidth={2.5} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
-            {/* User Info & Logout - Always at bottom when open */}
-            <div 
-              className="absolute bottom-5 left-5 right-5 p-5 rounded-xl border"
-              style={{ 
-                background: 'rgba(40, 40, 40, 0.5)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom, 0px))' : '20px'
-              }}
-            >
-              <div className="text-sm text-gray-400 mb-3 leading-5">
-                Signed in as:<br />
+            <div className="absolute bottom-3 left-3 right-3 border-3 border-ink bg-white shadow-brutal p-3">
+              <div className="brutal-eyebrow text-ink/60 mb-1">Signed in</div>
+              <div className="text-xs font-semibold break-words mb-3 leading-tight">
                 {user ? user.email : 'user@example.com'}
               </div>
-              <button 
-                className="border rounded-lg py-3 px-4 text-red-400 text-sm cursor-pointer w-full transition-all duration-300 flex items-center justify-center gap-2 font-medium"
-                style={{
-                  background: 'rgba(220, 38, 38, 0.2)',
-                  borderColor: 'rgba(220, 38, 38, 0.3)'
-                }}
-                onClick={onLogout}
-                onMouseEnter={e => e.target.style.background = 'rgba(220, 38, 38, 0.3)'}
-                onMouseLeave={e => e.target.style.background = 'rgba(220, 38, 38, 0.2)'}
-              >
-                <LogOut size={16} />
-                Sign Out
+              <button className="brutal-btn w-full bg-note-red text-ink py-2 text-xs" onClick={onLogout}>
+                <LogOut size={15} strokeWidth={2.75} /> Sign out
               </button>
             </div>
           </div>

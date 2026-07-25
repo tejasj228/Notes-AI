@@ -1,35 +1,31 @@
 {
   "name": "notes-ai-app",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.11.0",
+    "bcryptjs": "^2.4.3",
     "firebase": "^12.1.0",
     "framer-motion": "^12.23.12",
-    "lodash.debounce": "^4.0.8",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.523.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.3",
-    "react-scripts": "5.0.1",
-    "react-window": "^1.8.11",
-    "web-vitals": "^2.1.4"
+    "mongoose": "^8.9.5",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "validator": "^13.11.0"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
   },
   "browserslist": {
     "production": [
@@ -42,10 +38,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
   }
 }

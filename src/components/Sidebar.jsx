@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
-import { Menu, StickyNote, Folder, FolderOpen, ChevronDown, ChevronRight, FolderPlus, Trash2, LogOut, MoreVertical } from 'lucide-react';
-import { PAGES } from '../utils/constants';
-import { getFolderColor } from '../utils/helpers';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import {
+  Menu,
+  StickyNote,
+  Folder,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight,
+  FolderPlus,
+  Trash2,
+  LogOut,
+  MoreVertical,
+} from 'lucide-react';
+import { PAGES } from '@/utils/constants';
+import { getFolderColor } from '@/utils/helpers';
 import { FolderMenu } from './UI';
 
-const Sidebar = ({ 
-  sidebarOpen, 
+const Sidebar = ({
+  sidebarOpen,
   setSidebarOpen,
-  currentPage, 
+  currentPage,
   currentFolder,
   folders,
   user,
@@ -18,31 +31,25 @@ const Sidebar = ({
   onRenameFolder,
   onDeleteFolder,
   onLogout,
-  onDragNoteToTrash // Add this new prop
+  onDragNoteToTrash,
 }) => {
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [folderMenuOpen, setFolderMenuOpen] = useState(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(false);
   const [dragOverTrash, setDragOverTrash] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Close folder menu when clicking outside
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if click is outside any menu or 3-dot button
-      const isClickInsideMenu = event.target.closest('.folder-menu-container');
-      const isClickOn3Dot = event.target.closest('button') && event.target.closest('button').querySelector('svg');
-      
-      if (!isClickInsideMenu && !isClickOn3Dot) {
-        setFolderMenuOpen(null);
-      }
+      const insideMenu = event.target.closest('.folder-menu-container');
+      if (!insideMenu) setFolderMenuOpen(null);
     };
-
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
@@ -50,332 +57,191 @@ const Sidebar = ({
   const maxFolders = 10;
   const canAddFolder = folders.length < maxFolders;
 
-  // Debug folder selection
-  React.useEffect(() => {
-    console.log('Sidebar - currentFolder:', currentFolder);
-    console.log('Sidebar - folders:', folders.map(f => ({ name: f.name, _id: f._id, id: f.id })));
-  }, [currentFolder, folders]);
-
-  // Handle drag and drop for notes to trash (desktop only)
-  const handleTrashDragOver = (e) => {
-    if (isMobile) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverTrash(true);
-  };
-
-  const handleTrashDragLeave = (e) => {
-    if (isMobile) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverTrash(false);
-  };
-
   const handleTrashDrop = (e) => {
     if (isMobile) return;
     e.preventDefault();
     e.stopPropagation();
     setDragOverTrash(false);
-    
     try {
       const noteId = e.dataTransfer.getData('text/plain');
-      if (noteId && onDragNoteToTrash) {
-        onDragNoteToTrash(noteId);
-      }
-    } catch (error) {
-      console.error('Error handling trash drop:', error);
-    }
+      if (noteId && onDragNoteToTrash) onDragNoteToTrash(noteId);
+    } catch (_) {}
   };
+
+  const isFolderActive = (folder) =>
+    currentPage === PAGES.FOLDER &&
+    currentFolder &&
+    (currentFolder._id || currentFolder.id) === (folder._id || folder.id);
+
+  const navItem = (active) =>
+    `flex items-center gap-3 py-2.5 px-4 cursor-pointer w-full text-left font-mono text-sm font-bold uppercase tracking-wide transition-colors border-l-4 ${
+      active
+        ? 'bg-brand text-white border-ink'
+        : 'text-ink border-transparent hover:bg-paper-2'
+    }`;
 
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+        <div
+          className="md:hidden fixed inset-0 bg-ink/40 z-30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <div 
-        className={`fixed left-0 top-0 border-r transition-all duration-300 z-40 ${
-          sidebarOpen ? 'w-64' : 'w-18'
+      <div
+        className={`fixed left-0 top-0 z-40 h-[100dvh] bg-paper border-r-3 border-ink transition-all duration-200 ${
+          sidebarOpen ? 'w-64' : 'w-16'
         } ${sidebarOpen ? 'block' : 'hidden md:block'}`}
-        style={{ 
-          background: 'rgba(30, 30, 30, 0.95)', 
-          backdropFilter: 'blur(20px)',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          height: '100vh',
-          height: '100dvh' // Dynamic viewport height for mobile browsers
-        }}
       >
-      {/* Header */}
-      <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-        {sidebarOpen && (
-          <div className="flex items-center gap-3 text-lg font-semibold" style={{ color: '#8b5cf6' }}>
-            NOTES AI
-          </div>
-        )}
-        {/* Hamburger button - show on mobile when sidebar is open */}
-        <button 
-          className="md:hidden bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
-          onMouseLeave={e => e.target.style.background = 'transparent'}
-        >
-          <Menu size={20} />
-        </button>
-        {/* Desktop hamburger button */}
-        <button 
-          className="hidden md:block bg-transparent border-none text-gray-400 cursor-pointer p-2 rounded-lg transition-all duration-300 hover:text-white"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
-          onMouseLeave={e => e.target.style.background = 'transparent'}
-        >
-          <Menu size={20} />
-        </button>
-      </div>
-      
-      {/* Navigation */}
-      <div className="py-5">
-        {/* Notes */}
-        <button 
-          className={`flex items-center gap-3 py-3 px-5 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left ${
-            currentPage === PAGES.NOTES 
-              ? 'text-violet-500 border-r-3' 
-              : 'text-gray-300 hover:text-violet-500'
-          }`}
-          style={{
-            background: currentPage === PAGES.NOTES ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-            borderRightColor: currentPage === PAGES.NOTES ? '#8b5cf6' : 'transparent'
-          }}
-          onClick={onSwitchToNotes}
-          onMouseEnter={e => {
-            if (currentPage !== PAGES.NOTES) {
-              e.target.style.background = 'rgba(139, 92, 246, 0.1)';
-            }
-          }}
-          onMouseLeave={e => {
-            if (currentPage !== PAGES.NOTES) {
-              e.target.style.background = 'transparent';
-            }
-          }}
-        >
-          <StickyNote size={20} />
-          {sidebarOpen && 'Notes'}
-        </button>
-        
-        {/* Folders Section */}
-        <div>
-          <button 
-            className="flex items-center gap-3 py-3 px-5 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left text-gray-300 hover:text-violet-500"
-            onClick={() => setFoldersExpanded(!foldersExpanded)}
-            onMouseEnter={e => e.target.style.background = 'rgba(139, 92, 246, 0.1)'}
-            onMouseLeave={e => e.target.style.background = 'transparent'}
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b-3 border-ink">
+          {sidebarOpen && (
+            <div className="flex items-center gap-2">
+              <span className="inline-block bg-brand text-white border-3 border-ink px-2 py-0.5 font-display font-extrabold leading-none shadow-brutal-sm">
+                N
+              </span>
+              <span className="font-display font-extrabold text-lg leading-none">NOTES·AI</span>
+            </div>
+          )}
+          <button
+            className="text-ink p-1.5 border-3 border-ink bg-white shadow-brutal-sm hover:bg-note-yellow transition-colors"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle sidebar"
           >
-            {foldersExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-            {sidebarOpen && (
-              <>
-                <Folder size={20} />
-                <span className="flex-1">Folders</span>
-                <div className="relative group">
-                  <div
-                    className={`border-none bg-transparent p-1 rounded transition-all duration-200 ${
-                      canAddFolder 
-                        ? 'text-gray-400 hover:text-violet-500 cursor-pointer' 
-                        : 'text-gray-600 cursor-not-allowed'
+            <Menu size={18} strokeWidth={2.75} />
+          </button>
+        </div>
+
+        {/* Nav */}
+        <div className="py-4">
+          <button className={navItem(currentPage === PAGES.NOTES)} onClick={onSwitchToNotes}>
+            <StickyNote size={20} strokeWidth={2.5} />
+            {sidebarOpen && 'Notes'}
+          </button>
+
+          {/* Folders */}
+          <div>
+            <button
+              className="flex items-center gap-3 py-2.5 px-4 w-full text-left font-mono text-sm font-bold uppercase tracking-wide text-ink hover:bg-paper-2 transition-colors border-l-4 border-transparent"
+              onClick={() => setFoldersExpanded(!foldersExpanded)}
+            >
+              {foldersExpanded ? <ChevronDown size={18} strokeWidth={2.75} /> : <ChevronRight size={18} strokeWidth={2.75} />}
+              {sidebarOpen && (
+                <>
+                  <span className="flex-1">Folders</span>
+                  <span
+                    role="button"
+                    tabIndex={canAddFolder ? 0 : -1}
+                    className={`p-1 border-2 border-ink ${
+                      canAddFolder ? 'bg-white hover:bg-note-green cursor-pointer' : 'bg-paper-2 opacity-40 cursor-not-allowed'
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (canAddFolder) {
-                        onAddFolder();
-                      }
+                      if (canAddFolder) onAddFolder();
                     }}
-                    role="button"
-                    tabIndex={canAddFolder ? 0 : -1}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && canAddFolder) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onAddFolder();
-                      }
-                    }}
-                    title={canAddFolder ? "Add Folder" : `Maximum ${maxFolders} folders allowed`}
+                    title={canAddFolder ? 'Add folder' : `Max ${maxFolders} folders`}
                   >
-                    <FolderPlus size={16} />
+                    <FolderPlus size={14} strokeWidth={2.75} />
+                  </span>
+                </>
+              )}
+            </button>
+
+            {foldersExpanded && sidebarOpen && (
+              <div className="pl-2 pr-2 pt-1 space-y-1">
+                {folders.map((folder) => (
+                  <div key={folder._id || folder.id} className="relative">
+                    <button
+                      className={`flex items-center gap-2 py-2 px-2 w-full text-left text-sm font-semibold transition-colors border-2 ${
+                        isFolderActive(folder)
+                          ? 'border-ink shadow-brutal-sm'
+                          : 'border-transparent hover:border-ink'
+                      }`}
+                      style={isFolderActive(folder) ? { background: getFolderColor(folder.color) } : {}}
+                      onClick={() => onOpenFolder(folder)}
+                    >
+                      {isFolderActive(folder) ? (
+                        <FolderOpen size={16} strokeWidth={2.5} />
+                      ) : (
+                        <Folder size={16} strokeWidth={2.5} />
+                      )}
+                      <span className="truncate flex-1" title={folder.name}>
+                        {folder.name}
+                      </span>
+                      <span
+                        className="w-3 h-3 border-2 border-ink flex-shrink-0"
+                        style={{ background: getFolderColor(folder.color) }}
+                      />
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="ml-0.5 p-0.5 hover:bg-ink hover:text-paper folder-menu-container transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const id = folder._id || folder.id;
+                          setFolderMenuOpen(id === folderMenuOpen ? null : id);
+                        }}
+                        title="Folder options"
+                      >
+                        <MoreVertical size={15} strokeWidth={2.5} />
+                      </span>
+                    </button>
+                    {folderMenuOpen === (folder._id || folder.id) && (
+                      <FolderMenu
+                        folderId={folder._id || folder.id}
+                        onRename={() => onRenameFolder(folder)}
+                        onDelete={onDeleteFolder}
+                        onClose={() => setFolderMenuOpen(null)}
+                      />
+                    )}
                   </div>
-                  
-                  {/* Tooltip for disabled state */}
-                  {!canAddFolder && (
-                    <div className="absolute right-0 top-8 hidden group-hover:block z-50">
-                      <div className="bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap border border-gray-600">
-                        Max {maxFolders} folders reached
-                      </div>
-                    </div>
-                  )}
+                ))}
+                <div className="brutal-eyebrow px-2 py-1 text-ink/50">
+                  {folders.length}/{maxFolders} folders
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Trash — drop target */}
+          <button
+            className={`${navItem(currentPage === PAGES.TRASH)} mt-1 ${
+              dragOverTrash ? 'bg-note-red text-ink border-ink' : ''
+            }`}
+            onClick={onSwitchToTrash}
+            onDragOver={(e) => {
+              if (isMobile) return;
+              e.preventDefault();
+              setDragOverTrash(true);
+            }}
+            onDragLeave={() => setDragOverTrash(false)}
+            onDrop={handleTrashDrop}
+          >
+            <Trash2 size={20} strokeWidth={2.5} />
+            {sidebarOpen && (
+              <>
+                Trash
+                {dragOverTrash && <span className="ml-auto text-[10px] animate-blink">DROP!</span>}
               </>
             )}
           </button>
-          
-          {/* Folder List */}
-          {foldersExpanded && sidebarOpen && (
-            <div className="ml-6">
-              {folders.map((folder) => (
-                <div key={folder._id || folder.id} className="relative group">
-                  <button
-                    className={`
-                      flex items-center gap-3 py-2 px-4 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left text-sm
-                      ${currentPage === PAGES.FOLDER && 
-                        currentFolder && 
-                        ((currentFolder._id || currentFolder.id) === (folder._id || folder.id))
-                        ? 'text-violet-500 border-r-3'
-                        : 'text-gray-300 hover:text-violet-500'
-                      }
-                    `}
-                    style={{
-                      background: currentPage === PAGES.FOLDER && 
-                                 currentFolder && 
-                                 ((currentFolder._id || currentFolder.id) === (folder._id || folder.id)) 
-                                 ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                      borderRightColor: currentPage === PAGES.FOLDER && 
-                                       currentFolder && 
-                                       ((currentFolder._id || currentFolder.id) === (folder._id || folder.id))
-                                       ? '#8b5cf6' : 'transparent'
-                    }}
-                    onClick={() => onOpenFolder(folder)}
-                  >
-                    {currentPage === PAGES.FOLDER && 
-                     currentFolder && 
-                     ((currentFolder._id || currentFolder.id) === (folder._id || folder.id)) ? 
-                      <FolderOpen size={16} /> : 
-                      <Folder size={16} />
-                    }
-                    <span className="truncate" title={folder.name}>{folder.name}</span>
-                    <span 
-                      className="w-2 h-2 rounded-full ml-auto"
-                      style={{ background: getFolderColor(folder.color) }}
-                    />
-                    {/* 3-dots menu div */}
-                    <div
-                      className="ml-2 border-none bg-transparent text-gray-400 hover:text-violet-500 p-1 rounded transition-colors duration-200 folder-menu-container cursor-pointer"
-                      onClick={e => {
-                        e.stopPropagation();
-                        const folderId = folder._id || folder.id;
-                        setFolderMenuOpen(folderId === folderMenuOpen ? null : folderId);
-                      }}
-                      role="button"
-                      tabIndex="0"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const folderId = folder._id || folder.id;
-                          setFolderMenuOpen(folderId === folderMenuOpen ? null : folderId);
-                        }
-                      }}
-                      title="Folder options"
-                    >
-                      <MoreVertical size={16} />
-                    </div>
-                  </button>
-                  {/* Folder menu */}
-                  {folderMenuOpen === (folder._id || folder.id) && (
-                    <FolderMenu
-                      folderId={folder._id || folder.id}
-                      onRename={() => onRenameFolder(folder)}
-                      onDelete={onDeleteFolder}
-                      onClose={() => setFolderMenuOpen(null)}
-                    />
-                  )}
-                </div>
-              ))}
-              
-              {/* Folder count indicator */}
-              {sidebarOpen && (
-                <div className="px-4 py-2 text-xs text-gray-500">
-                  {folders.length}/{maxFolders} folders
-                </div>
-              )}
-            </div>
-          )}
         </div>
-        
-        {/* Trash */}
-        <button 
-          className={`flex items-center gap-3 py-3 px-5 cursor-pointer transition-all duration-300 border-none bg-transparent w-full text-left ${
-            currentPage === PAGES.TRASH 
-              ? 'text-violet-500 border-r-3' 
-              : 'text-gray-300 hover:text-violet-500'
-          } ${dragOverTrash ? 'bg-red-500/20 border-red-500/50' : ''}`}
-          style={{
-            background: currentPage === PAGES.TRASH 
-              ? 'rgba(139, 92, 246, 0.2)' 
-              : dragOverTrash 
-                ? 'rgba(239, 68, 68, 0.15)' 
-                : 'transparent',
-            borderRightColor: currentPage === PAGES.TRASH ? '#8b5cf6' : 'transparent',
-            borderLeft: dragOverTrash ? '3px solid rgba(239, 68, 68, 0.6)' : '3px solid transparent'
-          }}
-          onClick={onSwitchToTrash}
-          onDragOver={handleTrashDragOver}
-          onDragLeave={handleTrashDragLeave}
-          onDrop={handleTrashDrop}
-          onMouseEnter={e => {
-            if (currentPage !== PAGES.TRASH && !dragOverTrash) {
-              e.target.style.background = 'rgba(139, 92, 246, 0.1)';
-            }
-          }}
-          onMouseLeave={e => {
-            if (currentPage !== PAGES.TRASH && !dragOverTrash) {
-              e.target.style.background = 'transparent';
-            }
-          }}
-        >
-          <Trash2 size={20} />
-          {sidebarOpen && (
-            <>
-              Trash
-              {dragOverTrash && !isMobile && (
-                <span className="ml-auto text-xs text-red-400 animate-pulse">
-                  Drop to delete
-                </span>
-              )}
-            </>
-          )}
-        </button>
-      </div>
 
-      {/* User Info & Logout */}
-      {sidebarOpen && (
-        <div 
-          className="absolute bottom-5 left-5 right-5 p-5 rounded-xl border"
-          style={{ 
-            background: 'rgba(40, 40, 40, 0.5)',
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom, 0px))' : '20px'
-          }}
-        >
-          <div className="text-sm text-gray-400 mb-3 leading-5">
-            Signed in as:<br />
-            {user ? user.email : 'user@example.com'}
+        {/* User / logout */}
+        {sidebarOpen && (
+          <div className="absolute bottom-4 left-3 right-3 border-3 border-ink bg-white shadow-brutal p-3">
+            <div className="brutal-eyebrow text-ink/60 mb-1">Signed in</div>
+            <div className="text-xs font-semibold text-ink break-words mb-3 leading-tight">
+              {user ? user.email : 'user@example.com'}
+            </div>
+            <button className="brutal-btn w-full bg-note-red text-ink py-2 text-xs" onClick={onLogout}>
+              <LogOut size={15} strokeWidth={2.75} />
+              Sign out
+            </button>
           </div>
-          <button 
-            className="border rounded-lg py-3 px-4 text-red-400 text-sm cursor-pointer w-full transition-all duration-300 flex items-center justify-center gap-2 font-medium"
-            style={{
-              background: 'rgba(220, 38, 38, 0.2)',
-              borderColor: 'rgba(220, 38, 38, 0.3)'
-            }}
-            onClick={onLogout}
-            onMouseEnter={e => e.target.style.background = 'rgba(220, 38, 38, 0.3)'}
-            onMouseLeave={e => e.target.style.background = 'rgba(220, 38, 38, 0.2)'}
-          >
-            <LogOut size={16} />
-            Sign Out
-          </button>
-        </div>
-      )}
+        )}
       </div>
     </>
   );
