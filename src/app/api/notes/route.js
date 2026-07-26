@@ -40,7 +40,7 @@ export async function GET(request) {
     return ok({ data: { notes, pagination: { limit, skip, hasMore: notes.length === limit } } });
   } catch (error) {
     console.error('Get notes error:', error);
-    return fail('Error fetching notes');
+    return fail(`Error fetching notes: ${error.message}`);
   }
 }
 

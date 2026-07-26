@@ -9,12 +9,19 @@ if (!cached) {
 }
 
 export async function connectDB() {
-  if (cached.conn) return cached.conn;
+  // Reuse only a live connection; a frozen/thawed serverless instance can hold a
+  // dead one (readyState !== 1), in which case we reconnect.
+  if (cached.conn && mongoose.connection.readyState === 1) return cached.conn;
 
   if (!MONGODB_URI) {
     throw new Error(
       'MONGODB_URI is not set. Add it to .env.local (dev) or your Vercel project env vars (prod).'
     );
+  }
+
+  // Drop a stale cached connection/promise before retrying.
+  if (mongoose.connection.readyState === 0) {
+    cached.conn = null;
   }
 
   if (!cached.promise) {

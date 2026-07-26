@@ -33,6 +33,6 @@ export async function PATCH(request, { params }) {
     return ok({ message: 'Note restored successfully', data: { note } });
   } catch (error) {
     console.error('Restore note error:', error);
-    return fail('Error restoring note');
+    return fail(`Error restoring note: ${error.message}`);
   }
 }

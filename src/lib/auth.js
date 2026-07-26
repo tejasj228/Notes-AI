@@ -16,15 +16,23 @@ export async function getAuthUser(request) {
   if (!token) return { error: 'Access token is missing or invalid', status: 401 };
   if (!process.env.JWT_SECRET) return { error: 'JWT_SECRET is not configured', status: 500 };
 
+  // 1) Verify the token (auth failures are 401, not 500).
+  let decoded;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') return { error: 'Token expired', status: 401 };
+    return { error: 'Invalid token', status: 401 };
+  }
+
+  // 2) Hit the database (connection/query failures surface the real reason).
+  try {
     await connectDB();
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) return { error: 'User not found', status: 401 };
     return { user };
   } catch (error) {
-    if (error.name === 'TokenExpiredError') return { error: 'Token expired', status: 401 };
-    if (error.name === 'JsonWebTokenError') return { error: 'Invalid token', status: 401 };
-    return { error: 'Token verification failed', status: 500 };
+    console.error('getAuthUser DB error:', error);
+    return { error: `Database error: ${error.message}`, status: 503 };
   }
 }
