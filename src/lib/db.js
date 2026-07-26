@@ -1,5 +1,13 @@
 import mongoose from 'mongoose';
 
+// Register ALL models on import so that .populate('folderId') and other cross-model
+// refs resolve in every serverless instance (otherwise Mongoose throws
+// "Schema hasn't been registered for model 'Folder'" on cold lambdas).
+import './models/User';
+import './models/Folder';
+import './models/Note';
+import './models/ChatMessage';
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Reuse the connection across hot-reloads (dev) and warm serverless invocations (prod)
