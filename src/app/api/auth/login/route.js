@@ -42,6 +42,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Login error:', error);
-    return fail('Error logging in');
+    return fail(`Error logging in: ${error.message}`);
   }
 }

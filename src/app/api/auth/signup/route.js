@@ -45,6 +45,6 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error('Signup error:', error);
-    return fail('Error creating user');
+    return fail(`Error creating user: ${error.message}`);
   }
 }
