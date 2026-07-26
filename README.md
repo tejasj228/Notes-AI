@@ -2,7 +2,7 @@
 
 <div align="center">
   
-  [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-8b5cf6?style=for-the-badge)](https://ainotesai.vercel.app/)
+  [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-8b5cf6?style=for-the-badge)](https://notes-ai-gules.vercel.app/)
   [![Made with Next.js](https://img.shields.io/badge/Made_with-Next.js-000000?style=for-the-badge&logo=next.js)](https://nextjs.org/)
   [![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com/)
   [![AI Powered](https://img.shields.io/badge/AI_Powered-Gemini-4285f4?style=for-the-badge)](https://ai.google.dev/)
@@ -14,7 +14,7 @@
 
 **AI Notes** is a revolutionary note-taking application that combines beautiful design with artificial intelligence to transform how you capture, organize, and interact with your thoughts. Built with modern web technologies, it offers an intuitive interface powered by Google's Gemini AI.
 
-### 🚀 [**Try it Live →**](https://ainotesai.vercel.app/)
+### 🚀 [**Try it Live →**](https://notes-ai-gules.vercel.app/)
 
 ---
 
@@ -78,12 +78,12 @@
 ## 🎯 How to Use AI Notes
 
 ### 1. **Getting Started**
-1. Visit [ainotesai.vercel.app](https://ainotesai.vercel.app/)
+1. Visit [notes-ai-gules.vercel.app](https://notes-ai-gules.vercel.app/)
 2. Sign up with your email or use Google authentication
 3. Start creating your first note!
 
 ### 2. **Creating Notes**
-- Click the **"Add a note..."** button
+- Click the **"New note"** button
 - Choose a color and add keywords
 - Write your content with rich formatting
 - Add images by dragging, dropping, or pasting
@@ -157,25 +157,24 @@ vercel --prod
 
 ---
 
-## 📱 Screenshots & Features
+## 📱 Screenshots
 
 <div align="center">
 
-### 🏠 **Main Notes Dashboard**
-<img src="./assets/Home.png" alt="Main Notes Dashboard - Beautiful Bento Grid Layout" />
-*Your central hub with all notes in a beautiful bento-style grid layout*
+### 🏠 Landing Page
+<img src="./assets/landing.png" alt="Notes AI landing page — neo-brutalist hero with a bento collage of colourful note cards" />
 
-### 📁 **Folder Organization System**
-<img src="./assets/Folder.png" alt="Folder Organization - Dedicated Folder View" />
-*Dedicated folder view showing only folder-specific notes for better organization*
+*Signed-out visitors get a bold neo-brutalist landing page — big type, a bento collage of colour blocks, and clear calls to action.*
 
-### 🤖 **AI Chat Interface**
-<img src="./assets/AIChat.png" alt="AI Chat Interface" />
-*Side by side split Notes and AI chatbot interface where you can chat with your notes and edit at the same time*
+### 🗂️ Notes Dashboard (Bento Grid)
+<img src="./assets/notes.png" alt="Notes dashboard — bento grid of solid colour cards with thick ink borders and hard shadows" />
 
-### 🎯 **Drag & Drop Magic**
-<img src="./assets/DragDrop.gif" alt="Drag and Drop Reordering - Smooth Animations" />
-*Effortlessly reorganize your notes with smooth drag & drop while maintaining the beautiful grid*
+*The signature wall of notes: small / medium / large blocks in solid colours with thick ink borders, hard offset shadows, keyword tags, folders in the sidebar, and drag-to-reorder / drag-to-trash.*
+
+### 🔐 Sign In / Sign Up
+<img src="./assets/auth.png" alt="Auth page — brutalist sign-in card with floating sticker accents" />
+
+*Email/password and Google sign-in on a clean brutalist card, with playful floating sticker accents.*
 
 </div>
 
@@ -249,7 +248,7 @@ We welcome contributions! Here's how you can help:
 
 ### 📧 Contact
 - **Email**: tejas22538@iiitd.ac.in
-- **Demo Website**: [ainotesai.vercel.app](https://ainotesai.vercel.app/)
+- **Demo Website**: [notes-ai-gules.vercel.app](https://notes-ai-gules.vercel.app/)
 
 
 ---
@@ -264,7 +263,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ### 🌟 **Ready to Transform Your Note-Taking?**
 
-[![🚀 Get Started Now](https://img.shields.io/badge/🚀_Get_Started-Now-8b5cf6?style=for-the-badge&logo=rocket)](https://ainotesai.vercel.app/)
+[![🚀 Get Started Now](https://img.shields.io/badge/🚀_Get_Started-Now-8b5cf6?style=for-the-badge&logo=rocket)](https://notes-ai-gules.vercel.app/)
 
 ---
 
