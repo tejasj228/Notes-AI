@@ -20,11 +20,14 @@ export async function connectDB() {
   if (!cached.promise) {
     cached.promise = mongoose
       .connect(MONGODB_URI, {
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 10000,
+        // Smaller pool: serverless instances are single-request, big pools waste Atlas connections
+        maxPoolSize: 5,
+        serverSelectionTimeoutMS: 15000,
         socketTimeoutMS: 45000,
         family: 4,
-        bufferCommands: false,
+        // Keep command buffering ON so queries wait for the connection instead of
+        // throwing when concurrent cold-start requests race each other.
+        bufferCommands: true,
       })
       .then((m) => m);
   }

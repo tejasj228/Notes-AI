@@ -6,6 +6,15 @@ import { authAPI } from '@/api/auth';
 import googleAuthService from '@/services/googleAuth';
 import { auth, googleProvider } from '@/config/firebase';
 
+// Defined at module scope so it isn't recreated on every render (which would
+// remount the input and drop focus after one keystroke).
+const IconField = ({ icon: Icon, ...props }) => (
+  <div className="relative">
+    <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-ink" size={18} strokeWidth={2.5} />
+    <input {...props} className="brutal-input w-full pl-10 pr-3 py-3 text-sm" />
+  </div>
+);
+
 const AuthPage = ({ onAuthSuccess, onBackHome }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
@@ -84,17 +93,6 @@ const AuthPage = ({ onAuthSuccess, onBackHome }) => {
     }
   };
 
-  const Field = ({ icon: Icon, ...props }) => (
-    <div className="relative">
-      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-ink" size={18} strokeWidth={2.5} />
-      <input
-        {...props}
-        className="brutal-input w-full pl-10 pr-3 py-3 text-sm"
-        onChange={handleInputChange}
-      />
-    </div>
-  );
-
   return (
     <div className="min-h-[100dvh] flex items-center justify-center p-4">
       {/* Decorative floating stickers */}
@@ -129,9 +127,25 @@ const AuthPage = ({ onAuthSuccess, onBackHome }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <Field icon={User} type="text" name="name" value={formData.name} placeholder="Full name" required={!isLogin} />
+              <IconField
+                icon={User}
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Full name"
+                required={!isLogin}
+              />
             )}
-            <Field icon={Mail} type="email" name="email" value={formData.email} placeholder="Email address" required />
+            <IconField
+              icon={Mail}
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="Email address"
+              required
+            />
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink" size={18} strokeWidth={2.5} />
               <input

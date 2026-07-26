@@ -116,9 +116,14 @@ export async function POST(request, { params }) {
     });
   } catch (error) {
     console.error('AI chat error:', error);
-    if (error.message && error.message.includes('API_KEY')) {
-      return fail('AI service configuration error', 503);
+    const msg = error?.message || 'Error processing AI request';
+    // Surface the real reason so it's diagnosable from the chat bubble.
+    if (/quota|rate limit|429/i.test(msg)) {
+      return fail('AI quota exceeded — check your Gemini plan/billing at ai.dev/rate-limit.', 429);
     }
-    return fail('Error processing AI request');
+    if (/api[_ ]?key|permission|401|403|invalid/i.test(msg)) {
+      return fail(`AI key error: ${msg}`, 503);
+    }
+    return fail(`AI error: ${msg}`, 500);
   }
 }

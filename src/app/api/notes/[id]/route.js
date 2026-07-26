@@ -5,6 +5,7 @@ import { ok, fail } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const ALLOWED_UPDATES = ['title', 'content', 'keywords', 'color', 'size', 'folderId', 'isPinned', 'order'];
 

@@ -24,22 +24,29 @@ export const useNotesData = () => {
 
   const loadInitialData = async () => {
     setLoading(true);
-    try {
-      const [notesRes, foldersRes, trashRes] = await Promise.all([
-        notesAPI.getAllNotes(),
-        foldersAPI.getAllFolders({ includeNotesCount: true }),
-        trashAPI.getTrash(),
-      ]);
+    setError(null);
+    // Load independently so a single slow/cold request (e.g. trash) doesn't
+    // blank the whole app. Only the notes fetch is treated as fatal.
+    const [notesRes, foldersRes, trashRes] = await Promise.allSettled([
+      notesAPI.getAllNotes(),
+      foldersAPI.getAllFolders({ includeNotesCount: true }),
+      trashAPI.getTrash(),
+    ]);
 
-      setNotes(notesRes.data.notes);
-      setFolders(foldersRes.data.folders);
-      setTrashedNotes(trashRes.data.notes);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
+    if (notesRes.status === 'fulfilled') {
+      setNotes(notesRes.value.data.notes);
+    } else {
+      console.error('Error loading notes:', notesRes.reason);
+      setError(notesRes.reason?.message || 'Failed to load notes');
     }
+
+    if (foldersRes.status === 'fulfilled') setFolders(foldersRes.value.data.folders);
+    else console.error('Error loading folders:', foldersRes.reason);
+
+    if (trashRes.status === 'fulfilled') setTrashedNotes(trashRes.value.data.notes);
+    else console.error('Error loading trash:', trashRes.reason);
+
+    setLoading(false);
   };
 
   const getCurrentPageFromURL = () => {
@@ -131,12 +138,13 @@ export const useNotesData = () => {
   const deleteNote = async (noteId) => {
     try {
       await notesAPI.deleteNote(noteId);
-      const noteToDelete = notes.find((note) => note._id === noteId);
+      const idStr = (noteId || '').toString();
+      const noteToDelete = notes.find((note) => (note._id || note.id)?.toString() === idStr);
+      setNotes((prev) => prev.filter((note) => (note._id || note.id)?.toString() !== idStr));
       if (noteToDelete) {
-        setNotes((prev) => prev.filter((note) => note._id !== noteId));
         setTrashedNotes((prev) => [
-          ...prev,
           { ...noteToDelete, trashedAt: new Date(), deletedAt: new Date() },
+          ...prev,
         ]);
       }
     } catch (err) {

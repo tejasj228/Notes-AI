@@ -6,6 +6,7 @@ import { ok, fail } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 // GET /api/folders — optionally with note counts
 export async function GET(request) {

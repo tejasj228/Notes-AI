@@ -96,6 +96,7 @@ const NotesShell = ({ page }) => {
   };
 
   const saveNewNote = async () => {
+    if (loadingStates.creatingNote) return; // guard against double-submit
     let keywordsArray = [];
     if (typeof newNoteDraft.keywords === 'string') {
       keywordsArray = newNoteDraft.keywords.split(',').map((k) => k.trim()).filter(Boolean).slice(0, 3);

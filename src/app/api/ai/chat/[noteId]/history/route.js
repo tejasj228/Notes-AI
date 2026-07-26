@@ -7,6 +7,7 @@ import { ok, fail } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 async function assertOwnsNote(noteId, userId) {
   const note = await Note.findById(noteId).select('_id userId');
