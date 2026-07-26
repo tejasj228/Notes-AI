@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { connectDB } from '@/lib/db';
 import Note from '@/lib/models/Note';
 import ChatMessage from '@/lib/models/ChatMessage';
@@ -9,9 +8,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-
-const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+// New-style Gemini keys (AQ.*) require the X-goog-api-key header, so we call the
+// REST API directly instead of the SDK (which sends the key as a ?key= param).
+const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
 const createAIPrompt = (userMessage, ctx, hasImages) => {
   const noteBlock = `Note Context (for reference):
@@ -37,6 +36,36 @@ User Question: ${userMessage}
 Please provide a helpful response. If the question is general knowledge, answer it directly. If it relates to the note, incorporate that context. Be concise and helpful.`;
 };
 
+async function callGemini(parts) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-goog-api-key': process.env.GEMINI_API_KEY,
+    },
+    body: JSON.stringify({ contents: [{ parts }] }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const message = data?.error?.message || `Gemini HTTP ${res.status}`;
+    const err = new Error(message);
+    err.status = res.status;
+    throw err;
+  }
+
+  const blockReason = data?.promptFeedback?.blockReason;
+  if (blockReason) {
+    return `The request was blocked by the AI safety filter (${blockReason}).`;
+  }
+
+  const textParts = data?.candidates?.[0]?.content?.parts || [];
+  const text = textParts.map((p) => p.text).filter(Boolean).join('').trim();
+  return text || 'The AI returned an empty response. Try rephrasing.';
+}
+
 export async function POST(request, { params }) {
   const auth = await getAuthUser(request);
   if (auth.error) return fail(auth.error, auth.status);
@@ -56,7 +85,7 @@ export async function POST(request, { params }) {
       return fail('Message or images are required', 400);
     }
     if (!sessionId) return fail('Session ID is required', 400);
-    if (!genAI) return fail('AI service is not configured. Please set GEMINI_API_KEY.', 503);
+    if (!process.env.GEMINI_API_KEY) return fail('AI service is not configured. Set GEMINI_API_KEY.', 503);
 
     const startTime = Date.now();
     const messageContent =
@@ -73,23 +102,17 @@ export async function POST(request, { params }) {
     userMessage.addContext(note);
     await userMessage.save();
 
-    const model = genAI.getGenerativeModel({ model: MODEL });
+    // Build Gemini request parts (text prompt + any images)
     const hasImages = images && images.length > 0;
-    const content = [];
-
-    if (message && message.trim()) {
-      content.push(createAIPrompt(message, { title: note.title, content: note.content, keywords: note.keywords }, hasImages));
-    } else if (hasImages) {
-      content.push(createAIPrompt('Analyze the uploaded image(s).', { title: note.title, content: note.content, keywords: note.keywords }, hasImages));
-    }
+    const parts = [];
+    const promptText = message && message.trim() ? message : 'Analyze the uploaded image(s).';
+    parts.push({ text: createAIPrompt(promptText, { title: note.title, content: note.content, keywords: note.keywords }, hasImages) });
     if (hasImages) {
-      images.forEach((image) => content.push({ inlineData: { data: image.base64, mimeType: image.mimeType } }));
+      images.forEach((image) => parts.push({ inlineData: { data: image.base64, mimeType: image.mimeType } }));
     }
 
-    const result = await model.generateContent(content);
-    const aiResponseText = result.response.text();
+    const aiResponseText = await callGemini(parts);
     const responseTime = Date.now() - startTime;
-    const inputLength = content.filter((c) => typeof c === 'string').join(' ').length;
 
     const aiMessage = await ChatMessage.create({
       noteId: note._id,
@@ -97,7 +120,7 @@ export async function POST(request, { params }) {
       sessionId,
       type: 'ai',
       content: aiResponseText,
-      metadata: { model: MODEL, responseTime, tokens: { input: inputLength, output: aiResponseText.length } },
+      metadata: { model: MODEL, responseTime },
     });
     aiMessage.addContext(note);
     await aiMessage.save();
@@ -117,11 +140,10 @@ export async function POST(request, { params }) {
   } catch (error) {
     console.error('AI chat error:', error);
     const msg = error?.message || 'Error processing AI request';
-    // Surface the real reason so it's diagnosable from the chat bubble.
-    if (/quota|rate limit|429/i.test(msg)) {
-      return fail('AI quota exceeded — check your Gemini plan/billing at ai.dev/rate-limit.', 429);
+    if (error.status === 429 || /quota|rate limit/i.test(msg)) {
+      return fail('AI quota exceeded — check your Gemini plan at ai.dev/rate-limit.', 429);
     }
-    if (/api[_ ]?key|permission|401|403|invalid/i.test(msg)) {
+    if (error.status === 400 || error.status === 403 || /api key|permission|invalid/i.test(msg)) {
       return fail(`AI key error: ${msg}`, 503);
     }
     return fail(`AI error: ${msg}`, 500);
