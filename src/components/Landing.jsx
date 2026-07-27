@@ -32,7 +32,7 @@ const NoteSticker = ({ note, className = '' }) => (
     <p className="text-[11px] text-ink/80 leading-snug mb-2">{note.text}</p>
     <div className="flex gap-1 flex-wrap">
       {note.tags.map((t) => (
-        <span key={t} className="border-2 border-ink bg-white/70 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
+        <span key={t} className="border-2 border-ink bg-card/70 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
           {t}
         </span>
       ))}
@@ -56,7 +56,7 @@ const Landing = () => {
             <span className="font-display font-extrabold text-lg">NOTES·AI</span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="brutal-btn bg-white text-ink px-3 md:px-4 py-2 text-xs" onClick={start}>
+            <button className="brutal-btn bg-card text-ink px-3 md:px-4 py-2 text-xs" onClick={start}>
               Sign in
             </button>
             <button className="brutal-btn bg-brand text-white px-3 md:px-4 py-2 text-xs" onClick={start}>
@@ -86,13 +86,13 @@ const Landing = () => {
               <button className="brutal-btn bg-brand text-white px-6 py-3 text-sm" onClick={start}>
                 Start writing <ArrowRight size={16} strokeWidth={2.75} />
               </button>
-              <button className="brutal-btn bg-white text-ink px-6 py-3 text-sm" onClick={start}>
+              <button className="brutal-btn bg-card text-ink px-6 py-3 text-sm" onClick={start}>
                 Sign in
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-8">
               {['Free to try', 'Drag & drop', 'AI built in'].map((chip) => (
-                <span key={chip} className="border-3 border-ink bg-white px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wide shadow-brutal-sm">
+                <span key={chip} className="border-3 border-ink bg-card px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wide shadow-brutal-sm">
                   {chip}
                 </span>
               ))}
@@ -136,7 +136,7 @@ const Landing = () => {
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map(({ icon: Icon, color, title, body }) => (
-            <div key={title} className="brutal-card bg-white p-5">
+            <div key={title} className="brutal-card bg-card p-5">
               <div className="w-11 h-11 border-3 border-ink flex items-center justify-center mb-4" style={{ background: color }}>
                 <Icon size={20} strokeWidth={2.5} />
               </div>
@@ -156,7 +156,7 @@ const Landing = () => {
           <p className="text-white/85 mt-3 max-w-lg mx-auto">
             Sign up in seconds and start a wall of colourful notes with an AI that actually reads them.
           </p>
-          <button className="brutal-btn bg-note-yellow text-ink px-8 py-3.5 text-sm mt-7" onClick={start}>
+          <button className="brutal-btn bg-note-yellow text-ink-fixed px-8 py-3.5 text-sm mt-7" onClick={start}>
             Get started free <ArrowRight size={16} strokeWidth={2.75} />
           </button>
         </div>

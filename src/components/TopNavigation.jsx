@@ -21,7 +21,7 @@ const TopNavigation = ({
       <div className="flex items-center gap-3 bg-paper border-3 border-ink shadow-brutal px-3 py-2.5">
         {currentPage === PAGES.FOLDER && currentFolder && (
           <button
-            className="brutal-btn bg-white px-2.5 py-2 text-ink"
+            className="brutal-btn bg-card px-2.5 py-2 text-ink"
             onClick={onGoBack}
             title="Back to notes"
           >

@@ -1,13 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Warm paper canvas + warm ink — the neo-brutalist base
-        paper: "#EFE9DA",
-        "paper-2": "#E6DEC9",
-        ink: "#141210",
+        // Themeable neo-brutalist base (driven by CSS vars → light/dark)
+        paper: "rgb(var(--paper-rgb) / <alpha-value>)",
+        "paper-2": "rgb(var(--paper2-rgb) / <alpha-value>)",
+        ink: "rgb(var(--ink-rgb) / <alpha-value>)",
+        card: "rgb(var(--card-rgb) / <alpha-value>)",
+        // Always-dark ink for text sitting on bright accent blocks (note colours,
+        // brand hovers) — these blocks stay bright in both themes.
+        "ink-fixed": "#141210",
         "ink-soft": "#3a352e",
         // Brand accent (kept violet for continuity, punched up)
         brand: "#7C5CFF",
@@ -31,10 +36,10 @@ module.exports = {
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        brutal: "5px 5px 0 0 #141210",
-        "brutal-sm": "3px 3px 0 0 #141210",
-        "brutal-lg": "8px 8px 0 0 #141210",
-        "brutal-xl": "12px 12px 0 0 #141210",
+        brutal: "5px 5px 0 0 rgb(var(--ink-rgb))",
+        "brutal-sm": "3px 3px 0 0 rgb(var(--ink-rgb))",
+        "brutal-lg": "8px 8px 0 0 rgb(var(--ink-rgb))",
+        "brutal-xl": "12px 12px 0 0 rgb(var(--ink-rgb))",
         "brutal-brand": "5px 5px 0 0 #7C5CFF",
       },
       borderWidth: {

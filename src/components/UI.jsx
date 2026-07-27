@@ -120,7 +120,7 @@ export const ContentEditor = ({
 // ------------------------------------------------------------------
 export const FolderMenu = ({ folderId, onRename, onDelete, onClose }) => {
   return (
-    <div className="absolute right-0 top-9 z-30 border-3 border-ink bg-white shadow-brutal min-w-36 folder-menu-container animate-pop-in">
+    <div className="absolute right-0 top-9 z-30 border-3 border-ink bg-card shadow-brutal min-w-36 folder-menu-container animate-pop-in">
       <button
         className="w-full text-left px-4 py-2 text-ink hover:bg-note-yellow text-sm font-semibold folder-menu-container transition-colors"
         onClick={() => {

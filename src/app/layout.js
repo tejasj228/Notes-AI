@@ -1,6 +1,7 @@
 import './globals.css';
 import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google';
 import { AuthProvider } from '@/context/AuthProvider';
+import { ThemeProvider } from '@/context/ThemeProvider';
 
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -36,11 +37,19 @@ export const viewport = {
   themeColor: '#EFE9DA',
 };
 
+// Runs before paint so the correct theme is applied with no flash.
+const noFlashTheme = `(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: noFlashTheme }} />
+      </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

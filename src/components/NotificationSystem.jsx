@@ -60,7 +60,7 @@ const NotificationItem = ({ notification, onRemove }) => {
         </div>
         <button
           onClick={handleRemove}
-          className="flex-shrink-0 text-ink hover:bg-ink hover:text-paper transition-colors p-0.5"
+          className="flex-shrink-0 text-ink hover:bg-ink-fixed hover:text-white transition-colors p-0.5"
           aria-label="Dismiss"
         >
           <X size={16} strokeWidth={3} />

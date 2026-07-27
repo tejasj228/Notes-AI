@@ -104,7 +104,7 @@ export const NewNoteModal = ({ show, noteDraft, setNoteDraft, onSave, onClose, i
           onChange={() => editorRef.current && setNoteDraft((p) => ({ ...p, content: editorRef.current.innerHTML }))}
         />
         <div className="flex justify-start">
-          <button className="brutal-btn bg-note-teal text-ink px-3 py-2 text-xs" onClick={handleInsertImage} disabled={isLoading}>
+          <button className="brutal-btn bg-note-teal text-ink-fixed px-3 py-2 text-xs" onClick={handleInsertImage} disabled={isLoading}>
             <ImagePlus size={16} strokeWidth={2.5} /> Add image
           </button>
         </div>
@@ -214,7 +214,7 @@ export const EditNoteModal = ({
           disabled={isUpdating}
         />
         <div className="flex justify-between items-center gap-2">
-          <button className="brutal-btn bg-note-teal text-ink px-3 py-2 text-xs" onClick={handleInsertImage} disabled={isUpdating}>
+          <button className="brutal-btn bg-note-teal text-ink-fixed px-3 py-2 text-xs" onClick={handleInsertImage} disabled={isUpdating}>
             <ImagePlus size={16} strokeWidth={2.5} /> Add image
           </button>
           <button
@@ -238,7 +238,7 @@ const ModalShell = ({ isMobile, onClose, children }) => {
   }
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-ink/50"
+      className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50"
       onClick={onClose}
       style={{ backdropFilter: 'blur(2px)' }}
     >
@@ -256,14 +256,14 @@ const ModalShell = ({ isMobile, onClose, children }) => {
 const ModalHeader = ({ isMobile, title, onClose, onSave, saving, saveLabel, onDelete, deleting }) => (
   <div className="flex items-center gap-3 p-4 md:px-6 md:py-4 border-b-3 border-ink">
     {isMobile && (
-      <button className="brutal-btn bg-white text-ink p-2" onClick={onClose} aria-label="Back">
+      <button className="brutal-btn bg-card text-ink p-2" onClick={onClose} aria-label="Back">
         <ChevronLeft size={18} strokeWidth={2.75} />
       </button>
     )}
     {title}
     <div className="flex items-center gap-2 flex-shrink-0">
       {onDelete && (
-        <button className="brutal-btn bg-note-red text-ink p-2" onClick={onDelete} disabled={deleting} title="Delete note">
+        <button className="brutal-btn bg-note-red text-ink-fixed p-2" onClick={onDelete} disabled={deleting} title="Delete note">
           {deleting ? (
             <div className="w-4 h-4 border-2 border-ink border-t-transparent rounded-full animate-spin" />
           ) : (
@@ -277,7 +277,7 @@ const ModalHeader = ({ isMobile, title, onClose, onSave, saving, saveLabel, onDe
         </button>
       )}
       {!isMobile && (
-        <button className="brutal-btn bg-white text-ink p-2" onClick={onClose} title="Close">
+        <button className="brutal-btn bg-card text-ink p-2" onClick={onClose} title="Close">
           <X size={16} strokeWidth={2.75} />
         </button>
       )}
@@ -292,7 +292,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
   useLockBodyScroll(show);
   if (!show) return null;
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[60] p-4 bg-ink/70" onClick={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center z-[60] p-4 bg-black/70" onClick={onClose}>
       <div
         className="bg-paper border-3 border-ink shadow-brutal-xl flex flex-col max-w-[95vw] max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
@@ -301,7 +301,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
           <a
             href={imageSrc}
             download={`note-image-${Date.now()}.jpg`}
-            className="brutal-btn bg-note-green text-ink p-2"
+            className="brutal-btn bg-note-green text-ink-fixed p-2"
             title="Download"
             onClick={(e) => e.stopPropagation()}
           >
@@ -309,7 +309,7 @@ export const ImagePopup = ({ show, imageSrc, onClose }) => {
               <path d="M12 5v14m0 0l-6-6m6 6l6-6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </a>
-          <button className="brutal-btn bg-white text-ink p-2" onClick={onClose} title="Close">
+          <button className="brutal-btn bg-card text-ink p-2" onClick={onClose} title="Close">
             <X size={16} strokeWidth={2.75} />
           </button>
         </div>

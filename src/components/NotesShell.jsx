@@ -283,7 +283,7 @@ const NotesShell = ({ page }) => {
       {/* Mobile search bar */}
       <div className={`md:hidden fixed top-3 left-1/2 -translate-x-1/2 z-30 w-[92%] ${sidebarOpen ? 'hidden' : 'block'}`}>
         <div className="flex items-center gap-2 bg-paper border-3 border-ink shadow-brutal px-2.5 py-2">
-          <button className="brutal-btn bg-white text-ink p-1.5" onClick={() => setSidebarOpen(true)}>
+          <button className="brutal-btn bg-card text-ink p-1.5" onClick={() => setSidebarOpen(true)}>
             <Menu size={16} strokeWidth={2.75} />
           </button>
           <div className="relative flex items-center flex-1">
@@ -333,7 +333,7 @@ const NotesShell = ({ page }) => {
               <div className="text-4xl mb-2">⚠️</div>
               <p className="font-display font-extrabold text-lg mb-1">Couldn’t load notes</p>
               <p className="text-xs text-ink/70 mb-4">{error}</p>
-              <button className="brutal-btn bg-white text-ink px-4 py-2 text-xs" onClick={() => window.location.reload()}>
+              <button className="brutal-btn bg-card text-ink px-4 py-2 text-xs" onClick={() => window.location.reload()}>
                 Try again
               </button>
             </div>

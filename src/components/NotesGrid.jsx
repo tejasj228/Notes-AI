@@ -66,7 +66,7 @@ const NotesGrid = ({
 
   const EmptyState = () => (
     <div className="col-span-full flex flex-col items-center justify-center min-h-[55vh] py-16">
-      <div className="border-3 border-ink bg-white shadow-brutal px-8 py-10 text-center max-w-md rotate-[-1deg]">
+      <div className="border-3 border-ink bg-card shadow-brutal px-8 py-10 text-center max-w-md rotate-[-1deg]">
         <div className="text-5xl mb-4">
           {currentPage === PAGES.TRASH ? '🗑️' : currentPage === PAGES.FOLDER ? '📁' : '✍️'}
         </div>
@@ -130,7 +130,7 @@ const NotesGrid = ({
                   ? '10px 12px 0 0 rgba(20,18,16,0.35)'
                   : isOver
                   ? '9px 9px 0 0 #7C5CFF'
-                  : '5px 5px 0 0 #141210',
+                  : '5px 5px 0 0 rgb(var(--ink-rgb))',
                 opacity: isDragged ? 0.85 : 1,
                 touchAction: currentPage !== PAGES.TRASH ? 'manipulation' : 'auto',
                 userSelect: 'none',
@@ -149,16 +149,16 @@ const NotesGrid = ({
               onTouchEnd={handleTouchEnd}
               onClick={() => (currentPage !== PAGES.TRASH ? onOpenNote(note) : null)}
               onMouseEnter={(e) => {
-                if (!isDragged && !isOver) e.currentTarget.style.boxShadow = '9px 9px 0 0 #141210';
+                if (!isDragged && !isOver) e.currentTarget.style.boxShadow = '9px 9px 0 0 rgb(var(--ink-rgb))';
               }}
               onMouseLeave={(e) => {
-                if (!isDragged && !isOver) e.currentTarget.style.boxShadow = '5px 5px 0 0 #141210';
+                if (!isDragged && !isOver) e.currentTarget.style.boxShadow = '5px 5px 0 0 rgb(var(--ink-rgb))';
               }}
             >
               {/* deletion / restore overlay */}
               {((loadingStates.deletingNote && isDragged) ||
                 (loadingStates.restoringNote && showTrashMenu === idOf(note))) && (
-                <div className="absolute inset-0 bg-ink/30 flex items-center justify-center z-50">
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-50">
                   <div className="w-8 h-8 border-3 border-ink border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
@@ -167,7 +167,7 @@ const NotesGrid = ({
               {currentPage === PAGES.TRASH && (
                 <div className="absolute top-2 right-2 z-10 menu-container">
                   <button
-                    className="border-2 border-ink bg-white w-7 h-7 flex items-center justify-center menu-container hover:bg-ink hover:text-white transition-colors"
+                    className="border-2 border-ink bg-card w-7 h-7 flex items-center justify-center menu-container hover:bg-ink-fixed hover:text-white transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowTrashMenu(showTrashMenu === idOf(note) ? null : idOf(note));
@@ -176,7 +176,7 @@ const NotesGrid = ({
                     <MoreVertical size={15} strokeWidth={2.75} />
                   </button>
                   {showTrashMenu === idOf(note) && (
-                    <div className="absolute top-9 right-0 border-3 border-ink bg-white shadow-brutal min-w-[150px] menu-container animate-pop-in">
+                    <div className="absolute top-9 right-0 border-3 border-ink bg-card shadow-brutal min-w-[150px] menu-container animate-pop-in">
                       <button
                         className="w-full px-3 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-note-green menu-container disabled:opacity-50"
                         onClick={(e) => {
@@ -216,7 +216,7 @@ const NotesGrid = ({
                 </h3>
                 {note.content && (
                   <div
-                    className="clamp text-xs md:text-sm text-ink/80 leading-snug flex-1"
+                    className="clamp text-xs md:text-sm text-ink-fixed/80 leading-snug flex-1"
                     style={{
                       WebkitLineClamp: isMobile
                         ? 4
@@ -238,7 +238,7 @@ const NotesGrid = ({
                     {images.map((src, idx) => (
                       <div
                         key={idx}
-                        className="border-2 border-ink overflow-hidden bg-white"
+                        className="border-2 border-ink overflow-hidden bg-card"
                         style={{ width: isMobile ? 56 : 64, height: isMobile ? 56 : 64 }}
                       >
                         <img src={src} alt="note" className="w-full h-full object-cover" />

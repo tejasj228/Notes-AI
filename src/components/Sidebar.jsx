@@ -14,9 +14,12 @@ import {
   LogOut,
   MoreVertical,
   Share2,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { PAGES } from '@/utils/constants';
 import { getFolderColor } from '@/utils/helpers';
+import { useTheme } from '@/context/ThemeProvider';
 import { FolderMenu } from './UI';
 
 const Sidebar = ({
@@ -36,6 +39,7 @@ const Sidebar = ({
   onDragNoteToTrash,
 }) => {
   const router = useRouter();
+  const { theme, toggle } = useTheme();
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [folderMenuOpen, setFolderMenuOpen] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -88,7 +92,7 @@ const Sidebar = ({
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-ink/40 z-30"
+          className="md:hidden fixed inset-0 bg-black/40 z-30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -109,7 +113,7 @@ const Sidebar = ({
             </div>
           )}
           <button
-            className="text-ink p-1.5 border-3 border-ink bg-white shadow-brutal-sm hover:bg-note-yellow transition-colors"
+            className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow transition-colors"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle sidebar"
           >
@@ -138,7 +142,7 @@ const Sidebar = ({
                     role="button"
                     tabIndex={canAddFolder ? 0 : -1}
                     className={`p-1 border-2 border-ink ${
-                      canAddFolder ? 'bg-white hover:bg-note-green cursor-pointer' : 'bg-paper-2 opacity-40 cursor-not-allowed'
+                      canAddFolder ? 'bg-card hover:bg-note-green cursor-pointer' : 'bg-paper-2 opacity-40 cursor-not-allowed'
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -180,7 +184,7 @@ const Sidebar = ({
                       <span
                         role="button"
                         tabIndex={0}
-                        className="ml-0.5 p-0.5 hover:bg-ink hover:text-paper folder-menu-container transition-colors"
+                        className="ml-0.5 p-0.5 hover:bg-ink-fixed hover:text-white folder-menu-container transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           const id = folder._id || folder.id;
@@ -211,7 +215,7 @@ const Sidebar = ({
           {/* Trash — drop target */}
           <button
             className={`${navItem(currentPage === PAGES.TRASH)} mt-1 ${
-              dragOverTrash ? 'bg-note-red text-ink border-ink' : ''
+              dragOverTrash ? 'bg-note-red text-ink-fixed border-ink' : ''
             }`}
             onClick={onSwitchToTrash}
             onDragOver={(e) => {
@@ -236,16 +240,22 @@ const Sidebar = ({
             <Share2 size={20} strokeWidth={2.5} />
             {sidebarOpen && 'Graph'}
           </button>
+
+          {/* Theme toggle */}
+          <button className={`${navItem(false)} mt-1`} onClick={toggle}>
+            {theme === 'dark' ? <Sun size={20} strokeWidth={2.5} /> : <Moon size={20} strokeWidth={2.5} />}
+            {sidebarOpen && (theme === 'dark' ? 'Light mode' : 'Dark mode')}
+          </button>
         </div>
 
         {/* User / logout */}
         {sidebarOpen && (
-          <div className="absolute bottom-4 left-3 right-3 border-3 border-ink bg-white shadow-brutal p-3">
+          <div className="absolute bottom-4 left-3 right-3 border-3 border-ink bg-card shadow-brutal p-3">
             <div className="brutal-eyebrow text-ink/60 mb-1">Signed in</div>
             <div className="text-xs font-semibold text-ink break-words mb-3 leading-tight">
               {user ? user.email : 'user@example.com'}
             </div>
-            <button className="brutal-btn w-full bg-note-red text-ink py-2 text-xs" onClick={onLogout}>
+            <button className="brutal-btn w-full bg-note-red text-ink-fixed py-2 text-xs" onClick={onLogout}>
               <LogOut size={15} strokeWidth={2.75} />
               Sign out
             </button>

@@ -31,6 +31,22 @@ const GraphView = () => {
   const [dims, setDims] = useState({ w: 800, h: 600 });
   const [error, setError] = useState(null);
 
+  // Track the current ink colour so canvas labels/links follow the theme.
+  const inkRef = useRef('#141210');
+  const inkRgbRef = useRef('20 18 16');
+  useEffect(() => {
+    const read = () => {
+      const s = getComputedStyle(document.documentElement);
+      inkRef.current = s.getPropertyValue('--ink').trim() || '#141210';
+      inkRgbRef.current = s.getPropertyValue('--ink-rgb').trim() || '20 18 16';
+    };
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => mo.disconnect();
+  }, []);
+  const inkAlpha = (a) => `rgba(${inkRgbRef.current.split(/\s+/).join(',')}, ${a})`;
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -107,7 +123,7 @@ const GraphView = () => {
     if (globalScale > 1.2 || (node.val || 1) > 2) {
       const fontSize = Math.max(3, 11 / globalScale);
       ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui`;
-      ctx.fillStyle = '#141210';
+      ctx.fillStyle = inkRef.current;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.fillText(node.name, node.x, node.y + r + 1);
@@ -132,7 +148,7 @@ const GraphView = () => {
           </button>
         </div>
 
-        <div ref={wrapRef} className="relative flex-1 min-h-[420px] border-3 border-ink bg-white shadow-brutal overflow-hidden">
+        <div ref={wrapRef} className="relative flex-1 min-h-[420px] border-3 border-ink bg-card shadow-brutal overflow-hidden">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
@@ -170,10 +186,10 @@ const GraphView = () => {
               nodeLabel={(n) => `${n.name} (${n.type})`}
               linkLabel={(l) => l.relation}
               linkColor={(l) => {
-                if (!selected) return 'rgba(20,18,16,0.35)';
+                if (!selected) return inkAlpha(0.35);
                 const s = typeof l.source === 'object' ? l.source.id : l.source;
                 const t = typeof l.target === 'object' ? l.target.id : l.target;
-                return s === selected.id || t === selected.id ? '#7C5CFF' : 'rgba(20,18,16,0.1)';
+                return s === selected.id || t === selected.id ? '#7C5CFF' : inkAlpha(0.1);
               }}
               linkWidth={(l) => {
                 if (!selected) return 1;
@@ -213,10 +229,10 @@ const GraphView = () => {
 
       {/* Detail panel */}
       {selected && (
-        <div className="md:w-80 flex-shrink-0 border-3 border-ink bg-white shadow-brutal p-4 overflow-y-auto max-h-[80vh]">
+        <div className="md:w-80 flex-shrink-0 border-3 border-ink bg-card shadow-brutal p-4 overflow-y-auto max-h-[80vh]">
           <div className="flex items-start justify-between gap-2 mb-1">
             <h2 className="font-display font-extrabold text-xl leading-tight break-words">{selected.name}</h2>
-            <button className="brutal-btn bg-white text-ink p-1.5" onClick={() => setSelected(null)}>
+            <button className="brutal-btn bg-card text-ink p-1.5" onClick={() => setSelected(null)}>
               <X size={14} strokeWidth={2.75} />
             </button>
           </div>

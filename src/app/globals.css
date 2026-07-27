@@ -10,7 +10,26 @@
   --paper: #efe9da;
   --paper-2: #e6dec9;
   --ink: #141210;
+  --card: #ffffff;
   --brand: #7c5cff;
+  /* RGB triplets — used by Tailwind colors (alpha support) + textures */
+  --paper-rgb: 239 233 218;
+  --paper2-rgb: 230 222 201;
+  --ink-rgb: 20 18 16;
+  --card-rgb: 255 255 255;
+  color-scheme: light;
+}
+
+:root.dark {
+  --paper: #17150f;
+  --paper-2: #201d16;
+  --ink: #f1e9d6;
+  --card: #24211b;
+  --paper-rgb: 23 21 15;
+  --paper2-rgb: 32 29 22;
+  --ink-rgb: 241 233 214;
+  --card-rgb: 36 33 27;
+  color-scheme: dark;
 }
 
 html,
@@ -30,7 +49,7 @@ body {
 /* Warm dotted-grid paper texture behind everything */
 body {
   background-color: var(--paper);
-  background-image: radial-gradient(rgba(20, 18, 16, 0.09) 1.4px, transparent 1.4px);
+  background-image: radial-gradient(rgb(var(--ink-rgb) / 0.09) 1.4px, transparent 1.4px);
   background-size: 22px 22px;
   min-height: 100vh;
   min-height: 100dvh;
@@ -62,7 +81,7 @@ body {
 /* ------------------- Brutalist primitives ------------------- */
 @layer components {
   .brutal {
-    @apply border-3 border-ink bg-white shadow-brutal;
+    @apply border-3 border-ink bg-card shadow-brutal;
   }
   .brutal-sm {
     @apply border-3 border-ink shadow-brutal-sm;
@@ -82,7 +101,7 @@ body {
   }
   .brutal-btn:disabled {
     transform: none;
-    box-shadow: 3px 3px 0 0 rgba(20, 18, 16, 0.35);
+    box-shadow: 3px 3px 0 0 rgb(var(--ink-rgb) / 0.35);
     opacity: 0.55;
     cursor: not-allowed;
   }
@@ -99,7 +118,7 @@ body {
     @apply inline-block font-mono text-xs font-bold uppercase tracking-[0.2em];
   }
   .brutal-input {
-    @apply border-3 border-ink bg-white font-sans text-ink placeholder:text-ink/45 outline-none;
+    @apply border-3 border-ink bg-card font-sans text-ink placeholder:text-ink/45 outline-none;
   }
   .brutal-input:focus {
     @apply shadow-brutal-sm border-brand;
@@ -164,12 +183,12 @@ body {
 }
 .md-body code {
   font-family: var(--font-mono), monospace;
-  background: rgba(20, 18, 16, 0.1);
+  background: rgb(var(--ink-rgb) / 0.12);
   padding: 1px 5px;
   border: 1px solid var(--ink);
 }
 .md-body pre {
-  background: var(--ink);
+  background: #141210;
   color: #f5f5f5;
   padding: 12px;
   overflow-x: auto;

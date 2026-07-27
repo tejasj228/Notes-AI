@@ -34,7 +34,7 @@ const ChatSidebar = ({
   return (
     <>
       {isMobile && sidebarOpen && (
-        <div className="fixed inset-0 bg-ink/40 z-[999]" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/40 z-[999]" onClick={() => setSidebarOpen(false)} />
       )}
 
       <div
@@ -57,7 +57,7 @@ const ChatSidebar = ({
             </button>
           )}
           <button
-            className="text-ink p-1.5 border-3 border-ink bg-white shadow-brutal-sm hover:bg-note-yellow transition-colors"
+            className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow transition-colors"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle sidebar"
           >
@@ -77,7 +77,7 @@ const ChatSidebar = ({
             )}
 
             <div className="px-3 mb-3">
-              <button onClick={onNewChat} className="brutal-btn w-full bg-note-green text-ink py-2.5 text-xs">
+              <button onClick={onNewChat} className="brutal-btn w-full bg-note-green text-ink-fixed py-2.5 text-xs">
                 <Plus size={16} strokeWidth={2.75} /> New chat
               </button>
             </div>
@@ -103,7 +103,7 @@ const ChatSidebar = ({
                     <div
                       key={chat.id}
                       className={`group relative border-3 border-ink p-2.5 cursor-pointer transition-all ${
-                        active ? 'bg-note-yellow shadow-brutal-sm' : 'bg-white hover:-translate-y-0.5'
+                        active ? 'bg-note-yellow shadow-brutal-sm' : 'bg-card hover:-translate-y-0.5'
                       }`}
                       onClick={() => onSelectChat?.(chat)}
                     >
@@ -117,7 +117,7 @@ const ChatSidebar = ({
                         </div>
                         {onDeleteChat && (
                           <button
-                            className="opacity-0 group-hover:opacity-100 p-1 border-2 border-ink bg-note-red hover:bg-ink hover:text-white transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 border-2 border-ink bg-note-red hover:bg-ink-fixed hover:text-white transition-all"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDeleteChat(chat.id);
@@ -134,12 +134,12 @@ const ChatSidebar = ({
               )}
             </div>
 
-            <div className="absolute bottom-3 left-3 right-3 border-3 border-ink bg-white shadow-brutal p-3">
+            <div className="absolute bottom-3 left-3 right-3 border-3 border-ink bg-card shadow-brutal p-3">
               <div className="brutal-eyebrow text-ink/60 mb-1">Signed in</div>
               <div className="text-xs font-semibold break-words mb-3 leading-tight">
                 {user ? user.email : 'user@example.com'}
               </div>
-              <button className="brutal-btn w-full bg-note-red text-ink py-2 text-xs" onClick={onLogout}>
+              <button className="brutal-btn w-full bg-note-red text-ink-fixed py-2 text-xs" onClick={onLogout}>
                 <LogOut size={15} strokeWidth={2.75} /> Sign out
               </button>
             </div>

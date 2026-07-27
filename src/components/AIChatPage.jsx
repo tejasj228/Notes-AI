@@ -494,7 +494,7 @@ const AIChatPage = ({
         {/* Mobile header */}
         {isMobile && (
           <div className="flex items-center justify-between p-3 border-b-3 border-ink bg-paper">
-            <button onClick={() => setSidebarOpen(true)} className="brutal-btn bg-white text-ink p-2">
+            <button onClick={() => setSidebarOpen(true)} className="brutal-btn bg-card text-ink p-2">
               <Menu size={18} strokeWidth={2.75} />
             </button>
             <span className="font-display font-extrabold">AI ASSISTANT</span>
@@ -521,7 +521,7 @@ const AIChatPage = ({
               <>
                 <div className="p-4 border-b-3 border-ink">
                   <div className="flex items-center gap-2 mb-2">
-                    <button onClick={onBackToNotes} className="brutal-btn bg-white text-ink p-1.5" title="Back to notes">
+                    <button onClick={onBackToNotes} className="brutal-btn bg-card text-ink p-1.5" title="Back to notes">
                       <ArrowLeft size={18} strokeWidth={2.75} />
                     </button>
                     <h1 className="font-display font-extrabold text-lg md:text-xl flex-1 truncate">
@@ -531,7 +531,7 @@ const AIChatPage = ({
                   {selectedNote?.keywords?.length > 0 && (
                     <div className="flex gap-1.5 flex-wrap">
                       {selectedNote.keywords.map((k, i) => (
-                        <span key={i} className="border-2 border-ink bg-white px-2 py-0.5 font-mono text-[10px] font-bold uppercase">
+                        <span key={i} className="border-2 border-ink bg-card px-2 py-0.5 font-mono text-[10px] font-bold uppercase">
                           {k}
                         </span>
                       ))}
@@ -549,7 +549,7 @@ const AIChatPage = ({
                     style={{ color: '#141210', minHeight: '160px' }}
                   />
                   <div className="flex justify-end pt-3">
-                    <button className="brutal-btn bg-note-teal text-ink px-3 py-2 text-xs" onClick={handleNoteImageUpload}>
+                    <button className="brutal-btn bg-note-teal text-ink-fixed px-3 py-2 text-xs" onClick={handleNoteImageUpload}>
                       <ImagePlus size={16} strokeWidth={2.5} /> Add image
                     </button>
                   </div>
@@ -605,7 +605,7 @@ const AIChatPage = ({
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full min-h-[240px]">
-                      <div className="text-center border-3 border-ink bg-white shadow-brutal px-6 py-8 rotate-[-1deg]">
+                      <div className="text-center border-3 border-ink bg-card shadow-brutal px-6 py-8 rotate-[-1deg]">
                         <div className="text-4xl mb-3">💬</div>
                         <p className="font-display font-extrabold text-lg">Start a conversation</p>
                         <p className="text-sm text-ink/70 mt-1">Ask me anything about your note.</p>
@@ -625,7 +625,7 @@ const AIChatPage = ({
                           )}
                           <div
                             className={`max-w-[78%] px-3 py-2 border-3 border-ink text-sm leading-relaxed ${
-                              message.type === 'user' ? 'bg-brand text-white shadow-brutal-sm' : 'bg-white text-ink shadow-brutal-sm'
+                              message.type === 'user' ? 'bg-brand text-white shadow-brutal-sm' : 'bg-card text-ink shadow-brutal-sm'
                             }`}
                           >
                             {isTyping && message.type === 'ai' && !message.content && message.id === latestAiId ? (
@@ -680,13 +680,13 @@ const AIChatPage = ({
                   )}
 
                   {selectedImages.length > 0 && (
-                    <div className="mb-2 p-2 border-3 border-ink bg-white flex flex-wrap gap-2">
+                    <div className="mb-2 p-2 border-3 border-ink bg-card flex flex-wrap gap-2">
                       {selectedImages.map((image, index) => (
                         <div key={index} className="relative">
                           <img src={image.dataUrl} alt={image.name} className="w-12 h-12 object-cover border-2 border-ink" />
                           <button
                             onClick={() => removeSelectedImage(index)}
-                            className="absolute -top-2 -right-2 w-5 h-5 border-2 border-ink bg-note-red text-ink text-xs font-bold flex items-center justify-center"
+                            className="absolute -top-2 -right-2 w-5 h-5 border-2 border-ink bg-note-red text-ink-fixed text-xs font-bold flex items-center justify-center"
                           >
                             ×
                           </button>
@@ -698,7 +698,7 @@ const AIChatPage = ({
                   <div className="relative flex items-center">
                     <button
                       onClick={handleImageUpload}
-                      className="absolute left-2 z-10 border-2 border-ink bg-note-teal p-1.5 hover:bg-ink hover:text-white transition-colors"
+                      className="absolute left-2 z-10 border-2 border-ink bg-note-teal p-1.5 hover:bg-ink-fixed hover:text-white transition-colors"
                       title="Upload image"
                     >
                       <ImagePlus size={16} strokeWidth={2.5} />
@@ -731,20 +731,20 @@ const AIChatPage = ({
 
       {/* Image popup */}
       {imagePopup.open && (
-        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4 bg-ink/70" onClick={() => setImagePopup({ open: false, src: '' })}>
+        <div className="fixed inset-0 flex items-center justify-center z-[60] p-4 bg-black/70" onClick={() => setImagePopup({ open: false, src: '' })}>
           <div className="bg-paper border-3 border-ink shadow-brutal-xl flex flex-col max-w-[95vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-end gap-2 p-3 border-b-3 border-ink">
               <a
                 href={imagePopup.src}
                 download={`note-image-${Date.now()}.jpg`}
-                className="brutal-btn bg-note-green text-ink p-2"
+                className="brutal-btn bg-note-green text-ink-fixed p-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M12 5v14m0 0l-6-6m6 6l6-6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </a>
-              <button className="brutal-btn bg-white text-ink p-2" onClick={() => setImagePopup({ open: false, src: '' })}>
+              <button className="brutal-btn bg-card text-ink p-2" onClick={() => setImagePopup({ open: false, src: '' })}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.75" viewBox="0 0 24 24">
                   <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

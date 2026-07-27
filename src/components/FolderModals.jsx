@@ -19,14 +19,14 @@ const useLockBodyScroll = (active) => {
 };
 
 const FolderModalShell = ({ title, onClose, children }) => (
-  <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-ink/50" onClick={onClose}>
+  <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50" onClick={onClose}>
     <div
       className="bg-paper border-3 border-ink shadow-brutal-xl w-full max-w-md p-6"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display font-extrabold text-2xl">{title}</h2>
-        <button className="brutal-btn bg-white text-ink p-2" onClick={onClose} title="Close">
+        <button className="brutal-btn bg-card text-ink p-2" onClick={onClose} title="Close">
           <X size={16} strokeWidth={2.75} />
         </button>
       </div>
@@ -89,7 +89,7 @@ export const NewFolderModal = ({
         />
       </div>
       <div className="flex gap-3 justify-end">
-        <button className="brutal-btn bg-white text-ink px-4 py-2 text-xs" onClick={onClose}>
+        <button className="brutal-btn bg-card text-ink px-4 py-2 text-xs" onClick={onClose}>
           Cancel
         </button>
         <button
@@ -125,7 +125,7 @@ export const RenameFolderModal = ({ show, folderDraft, setFolderDraft, onSave, o
         />
       </div>
       <div className="flex gap-3 justify-end">
-        <button className="brutal-btn bg-white text-ink px-4 py-2 text-xs" onClick={onClose}>
+        <button className="brutal-btn bg-card text-ink px-4 py-2 text-xs" onClick={onClose}>
           Cancel
         </button>
         <button
