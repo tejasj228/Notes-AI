@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import AIChatPage from './AIChatPage';
 import { useNotesData } from '@/hooks/useNotesData';
 import { useAuth } from '@/context/AuthProvider';
+import { graphAPI } from '@/api/graph';
 
 const AIChatShell = () => {
   const router = useRouter();
@@ -14,6 +15,12 @@ const AIChatShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { notes, trashedNotes, updateNote, loading } = useNotesData();
+
+  // Keep the knowledge graph fresh when the note is edited from the chat page.
+  const handleUpdate = async (id, field, value) => {
+    await updateNote(id, field, value);
+    if (field === 'content' || field === 'title') graphAPI.indexNote(id).catch(() => {});
+  };
 
   const allNotes = [...notes, ...trashedNotes];
   const selectedNote = allNotes.find((note) => {
@@ -41,7 +48,7 @@ const AIChatShell = () => {
       user={user}
       onLogout={logout}
       selectedNote={selectedNote}
-      onUpdateNote={updateNote}
+      onUpdateNote={handleUpdate}
       onBackToNotes={() => router.push('/notes')}
     />
   );

@@ -6,7 +6,7 @@ import { ColorPicker, KeywordsEditor, ContentEditor } from './UI';
 import { resizeImage, insertImageAtCaret } from '@/utils/helpers';
 
 const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 640 : false));
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 640);
     onResize();
@@ -135,9 +135,11 @@ export const EditNoteModal = ({
   const [colorValue, setColorValue] = useState('purple');
   const [contentValue, setContentValue] = useState('');
 
+  // Re-run on isMobile changes: the mobile/desktop layouts remount the editor, so
+  // the content must be re-applied after a layout switch (otherwise it shows empty).
   useEffect(() => {
     if (show && note && editorRef.current) editorRef.current.innerHTML = note.content || '';
-  }, [show, note]);
+  }, [show, note, isMobile]);
 
   useEffect(() => {
     if (!note) return;

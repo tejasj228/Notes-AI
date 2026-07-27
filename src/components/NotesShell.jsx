@@ -93,7 +93,8 @@ const NotesShell = ({ page }) => {
     router.push(`/folder/${folder.name.toLowerCase().replace(/\s+/g, '-')}`);
     setSearchTerm('');
   };
-  const handleOpenWithAI = (note) => router.push(`/ai-chat/${note.title.toLowerCase().replace(/\s+/g, '-')}`);
+  // Navigate by id (titles with & / punctuation don't survive as URL slugs).
+  const handleOpenWithAI = (note) => router.push(`/ai-chat/${note._id || note.id}`);
 
   // ---------- notes ----------
   const openNewNotePopup = () => {
