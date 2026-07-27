@@ -126,4 +126,21 @@ For the popup to work on your Vercel URL:
   or two). The connection is then cached across warm invocations.
 - The `backend/` folder is legacy (the original standalone Express server) and is
   not deployed. You can delete it once you're confident in the new API.
-```
+
+---
+
+## 🕸️ Knowledge graph tuning (optional)
+
+The knowledge graph works **out of the box** — no extra setup. On note save, triplets are
+extracted (Gemini JSON mode) into `entities` + `triplets` collections; the AI chat ranks them
+with an in-app cosine search over 768-d Gemini embeddings and expands 1 hop through shared
+entities. Two optional knobs:
+
+- **Embedding model** — defaults to `gemini-embedding-001` (768-d). Set `GEMINI_EMBED_MODEL`
+  if your key exposes a different one.
+- **Atlas Vector Search (only needed at scale)** — the in-app cosine scan reads up to ~2000
+  recent triplets per query, plenty for personal use. If the graph grows large, create a
+  **Vector Search index** named `triplet_vec` on the `triplets` collection (field `embedding`,
+  768 dims, cosine) via Atlas → cluster → **Atlas Search → Create Search Index → Vector Search**.
+
+To (re)build the graph for existing notes, open **/graph** and click **Rebuild graph**.

@@ -38,6 +38,12 @@
 - **Split-Screen Interface** - Edit notes while chatting with AI
 - **Powered by Google Gemini** for intelligent responses
 
+### 🕸️ **Knowledge Graph (GraphRAG)**
+- **Triplet extraction** - notes are auto-distilled into `(subject → relation → object)` facts on save
+- **Connected graph** - facts link across notes when they share entities (people, places, concepts…)
+- **Smarter AI answers** - questions retrieve the relevant subgraph (semantic embeddings + graph hops) so the AI can pull facts from *related* notes, not just the open one
+- **Visual graph view** - an interactive force-directed network at `/graph` to explore how your notes connect
+
 ### 🎨 **Beautiful Design**
 - **Neo-Brutalist theme** — warm paper canvas, thick ink borders, hard shadows
 - **Landing page** for signed-out visitors
@@ -64,12 +70,15 @@
 | 🧱 **Neo-Brutalism** | Design language | — |
 | 🍃 **MongoDB + Mongoose** | Database | Atlas |
 | 🔐 **JWT** | Auth tokens | — |
-| 🤖 **Google Gemini AI** | AI Assistant | Latest |
+| 🤖 **Google Gemini AI** | Chat + triplet extraction + embeddings | Latest |
+| 🕸️ **GraphRAG** | Knowledge-graph retrieval (in MongoDB) | — |
 | ⚡ **Vercel** | Single deployment (UI + API) | - |
 
 </div>
 
-> **Architecture:** The app was migrated from Create React App to **Next.js (App Router)** and redesigned in a **light neo-brutalist** theme (warm paper canvas, thick ink borders, hard offset shadows) while keeping the signature bento grid. The original Express backend was ported into **Next.js API routes** (`src/app/api/*`) with serverless-safe MongoDB — so the whole thing is **one Vercel deployment**. Routes: `/`, `/auth`, `/notes`, `/trash`, `/folder/[folderId]`, `/ai-chat/[noteId]`, plus `/api/*`. A landing page is served at `/` for signed-out visitors. (The standalone `backend/` folder is now legacy.)
+> **Architecture:** The app was migrated from Create React App to **Next.js (App Router)** and redesigned in a **light neo-brutalist** theme (warm paper canvas, thick ink borders, hard offset shadows) while keeping the signature bento grid. The original Express backend was ported into **Next.js API routes** (`src/app/api/*`) with serverless-safe MongoDB — so the whole thing is **one Vercel deployment**. Routes: `/`, `/auth`, `/notes`, `/trash`, `/folder/[folderId]`, `/ai-chat/[noteId]`, `/graph`, plus `/api/*`. A landing page is served at `/` for signed-out visitors.
+>
+> **Knowledge graph:** notes are distilled into `(subject, relation, object)` triplets (Gemini JSON mode) and stored as `entities` + `triplets` (with 768-d embeddings) in the same Atlas cluster. At question time the AI chat retrieves the relevant subgraph — semantic cosine search over triplet embeddings plus a 1-hop expansion through shared entities — and injects a compact “Known facts” block into the prompt, so answers can draw on *related* notes. Works out-of-the-box (in-app cosine); an Atlas Vector Search index can be added for scale (see [DEPLOYMENT.md](DEPLOYMENT.md)). (The standalone `backend/` folder is now legacy.)
 >
 > **▶ To deploy from scratch, see [DEPLOYMENT.md](DEPLOYMENT.md).**
 
