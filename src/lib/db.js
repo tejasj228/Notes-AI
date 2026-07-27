@@ -7,6 +7,8 @@ import './models/User';
 import './models/Folder';
 import './models/Note';
 import './models/ChatMessage';
+import './models/Entity';
+import './models/Triplet';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

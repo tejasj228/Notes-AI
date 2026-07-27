@@ -33,6 +33,9 @@ const noteSchema = new mongoose.Schema(
     isTrashed: { type: Boolean, default: false },
     trashedAt: { type: Date, default: null },
     lastEditedAt: { type: Date, default: Date.now },
+    // Hash of title+content at last knowledge-graph extraction — lets us skip
+    // re-extracting unchanged notes.
+    graphIndexedHash: { type: String, default: null },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

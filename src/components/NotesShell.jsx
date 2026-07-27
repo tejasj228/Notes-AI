@@ -13,6 +13,12 @@ import { useNotesData } from '@/hooks/useNotesData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { getRandomColor, getRandomSize } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthProvider';
+import { graphAPI } from '@/api/graph';
+
+// Fire-and-forget: (re)build a note's knowledge-graph slice after it changes.
+const reindexNote = (id) => {
+  if (id) graphAPI.indexNote(id).catch(() => {});
+};
 
 const NotesShell = ({ page }) => {
   const router = useRouter();
@@ -112,6 +118,7 @@ const NotesShell = ({ page }) => {
         color: newNoteDraft.color || 'purple',
       });
       setShowNewNotePopup(false);
+      reindexNote(newNote._id || newNote.id);
       notify('success', 'Note created', `“${newNote.title}” is live.`);
     } catch (e) {
       notify('error', 'Couldn’t create note', 'Please try again.', 4000);
@@ -125,6 +132,7 @@ const NotesShell = ({ page }) => {
     const noteToUpdate = notes.find((n) => (n._id || n.id) === noteId);
     try {
       await updateNote(noteId, field, value);
+      if (field === 'title' || field === 'content') reindexNote(noteId);
       notify('success', 'Note updated', noteToUpdate ? `“${noteToUpdate.title}” saved.` : 'Saved.', 2500);
     } catch (e) {
       notify('error', 'Update failed', 'Please try again.', 4000);

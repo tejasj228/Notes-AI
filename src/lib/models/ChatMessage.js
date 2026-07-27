@@ -21,6 +21,8 @@ const chatMessageSchema = new mongoose.Schema(
       model: { type: String, default: 'gemini-1.5-flash' },
       tokens: { input: Number, output: Number },
       responseTime: Number,
+      factsUsed: Number, // knowledge-graph facts injected into the prompt
+      retrievalMs: Number,
       images: [{ base64: String, mimeType: String, name: String }],
     },
   },

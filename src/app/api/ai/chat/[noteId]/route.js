@@ -2,21 +2,23 @@ import { connectDB } from '@/lib/db';
 import Note from '@/lib/models/Note';
 import ChatMessage from '@/lib/models/ChatMessage';
 import { getAuthUser } from '@/lib/auth';
+import { generateContent } from '@/lib/gemini';
+import { retrieveContext } from '@/lib/graph/retrieve';
+import { stripHtml } from '@/utils/helpers';
 import { ok, fail } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// New-style Gemini keys (AQ.*) require the X-goog-api-key header, so we call the
-// REST API directly instead of the SDK (which sends the key as a ?key= param).
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
-const createAIPrompt = (userMessage, ctx, hasImages) => {
+const createAIPrompt = (userMessage, ctx, hasImages, knownFacts) => {
+  const factsBlock = knownFacts ? `\n\n${knownFacts}` : '';
   const noteBlock = `Note Context (for reference):
 Title: ${ctx.title || 'Untitled'}
 Content: ${ctx.content || 'No content'}
-Keywords: ${ctx.keywords ? ctx.keywords.join(', ') : 'None'}`;
+Keywords: ${ctx.keywords ? ctx.keywords.join(', ') : 'None'}${factsBlock}`;
 
   if (hasImages) {
     return `You are an AI assistant that can analyze images and help with various tasks. The user has uploaded an image and may also have some note context.
@@ -33,38 +35,8 @@ ${noteBlock}
 
 User Question: ${userMessage}
 
-Please provide a helpful response. If the question is general knowledge, answer it directly. If it relates to the note, incorporate that context. Be concise and helpful.`;
+Please provide a helpful response. Prefer the "Known facts" when they are relevant (they may include facts from related notes). If the question is general knowledge, answer it directly. Be concise and helpful.`;
 };
-
-async function callGemini(parts) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-goog-api-key': process.env.GEMINI_API_KEY,
-    },
-    body: JSON.stringify({ contents: [{ parts }] }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const message = data?.error?.message || `Gemini HTTP ${res.status}`;
-    const err = new Error(message);
-    err.status = res.status;
-    throw err;
-  }
-
-  const blockReason = data?.promptFeedback?.blockReason;
-  if (blockReason) {
-    return `The request was blocked by the AI safety filter (${blockReason}).`;
-  }
-
-  const textParts = data?.candidates?.[0]?.content?.parts || [];
-  const text = textParts.map((p) => p.text).filter(Boolean).join('').trim();
-  return text || 'The AI returned an empty response. Try rephrasing.';
-}
 
 export async function POST(request, { params }) {
   const auth = await getAuthUser(request);
@@ -102,16 +74,33 @@ export async function POST(request, { params }) {
     userMessage.addContext(note);
     await userMessage.save();
 
-    // Build Gemini request parts (text prompt + any images)
+    // Retrieve the relevant knowledge-graph subgraph (best-effort).
+    let retrieval = { block: '', count: 0, ms: 0 };
+    try {
+      retrieval = await retrieveContext({ userId: auth.user._id, note, question: message });
+    } catch (e) {
+      console.error('graph retrieval failed (continuing without it):', e.message);
+    }
+
+    // Build Gemini request parts (text prompt + any images). Strip HTML so inline
+    // images/markup don't bloat the prompt.
     const hasImages = images && images.length > 0;
     const parts = [];
     const promptText = message && message.trim() ? message : 'Analyze the uploaded image(s).';
-    parts.push({ text: createAIPrompt(promptText, { title: note.title, content: note.content, keywords: note.keywords }, hasImages) });
+    parts.push({
+      text: createAIPrompt(
+        promptText,
+        { title: note.title, content: stripHtml(note.content || ''), keywords: note.keywords },
+        hasImages,
+        retrieval.block
+      ),
+    });
     if (hasImages) {
       images.forEach((image) => parts.push({ inlineData: { data: image.base64, mimeType: image.mimeType } }));
     }
 
-    const aiResponseText = await callGemini(parts);
+    let aiResponseText = await generateContent(parts);
+    if (!aiResponseText) aiResponseText = 'The AI returned an empty response. Try rephrasing.';
     const responseTime = Date.now() - startTime;
 
     const aiMessage = await ChatMessage.create({
@@ -120,7 +109,7 @@ export async function POST(request, { params }) {
       sessionId,
       type: 'ai',
       content: aiResponseText,
-      metadata: { model: MODEL, responseTime },
+      metadata: { model: MODEL, responseTime, factsUsed: retrieval.count, retrievalMs: retrieval.ms },
     });
     aiMessage.addContext(note);
     await aiMessage.save();

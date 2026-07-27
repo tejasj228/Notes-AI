@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Menu,
   StickyNote,
@@ -12,6 +13,7 @@ import {
   Trash2,
   LogOut,
   MoreVertical,
+  Share2,
 } from 'lucide-react';
 import { PAGES } from '@/utils/constants';
 import { getFolderColor } from '@/utils/helpers';
@@ -33,6 +35,7 @@ const Sidebar = ({
   onLogout,
   onDragNoteToTrash,
 }) => {
+  const router = useRouter();
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [folderMenuOpen, setFolderMenuOpen] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -226,6 +229,12 @@ const Sidebar = ({
                 {dragOverTrash && <span className="ml-auto text-[10px] animate-blink">DROP!</span>}
               </>
             )}
+          </button>
+
+          {/* Knowledge graph */}
+          <button className={`${navItem(false)} mt-1`} onClick={() => router.push('/graph')}>
+            <Share2 size={20} strokeWidth={2.5} />
+            {sidebarOpen && 'Graph'}
           </button>
         </div>
 
