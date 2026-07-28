@@ -3,6 +3,7 @@
 import React from 'react';
 import { Search, Plus, ArrowLeft } from 'lucide-react';
 import { PAGES } from '@/utils/constants';
+import ThemeToggle from './ThemeToggle';
 
 const TopNavigation = ({
   currentPage,
@@ -47,6 +48,8 @@ const TopNavigation = ({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
+
+        <ThemeToggle />
 
         {canAdd && (
           <button

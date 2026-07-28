@@ -21,14 +21,15 @@
 }
 
 :root.dark {
-  --paper: #17150f;
-  --paper-2: #201d16;
-  --ink: #f1e9d6;
-  --card: #24211b;
-  --paper-rgb: 23 21 15;
-  --paper2-rgb: 32 29 22;
-  --ink-rgb: 241 233 214;
-  --card-rgb: 36 33 27;
+  /* Warm dark charcoal, not black — softer contrast against the cream ink */
+  --paper: #241f1a;
+  --paper-2: #2d2820;
+  --ink: #e4d8be;
+  --card: #362f26;
+  --paper-rgb: 36 31 26;
+  --paper2-rgb: 45 40 32;
+  --ink-rgb: 228 216 190;
+  --card-rgb: 54 47 38;
   color-scheme: dark;
 }
 

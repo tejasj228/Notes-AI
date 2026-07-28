@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Menu, MessageSquare, LogOut, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 const ChatSidebar = ({
   sidebarOpen,
@@ -56,13 +57,16 @@ const ChatSidebar = ({
               <ArrowLeft size={18} strokeWidth={2.75} /> NOTES·AI
             </button>
           )}
-          <button
-            className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow transition-colors"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle sidebar"
-          >
-            <Menu size={18} strokeWidth={2.75} />
-          </button>
+          <div className="flex items-center gap-2">
+            {sidebarOpen && <ThemeToggle iconSize={16} />}
+            <button
+              className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow transition-colors"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle sidebar"
+            >
+              <Menu size={18} strokeWidth={2.75} />
+            </button>
+          </div>
         </div>
 
         {sidebarOpen && (

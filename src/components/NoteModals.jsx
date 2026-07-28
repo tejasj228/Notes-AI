@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { X, Trash2, ImagePlus, ChevronLeft, Sparkles, Save } from 'lucide-react';
 import { ColorPicker, KeywordsEditor, ContentEditor } from './UI';
-import { resizeImage, insertImageAtCaret } from '@/utils/helpers';
+import { resizeImage, insertImageAtCaret, computeNoteSize } from '@/utils/helpers';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 640 : false));
@@ -92,7 +92,7 @@ export const NewNoteModal = ({ show, noteDraft, setNoteDraft, onSave, onClose, i
         saveLabel={isLoading ? 'Saving…' : 'Save'}
       />
 
-      <div className="px-4 md:px-6 pb-4 flex-1 flex flex-col min-h-0 gap-3 overflow-y-auto md:overflow-visible">
+      <div className="px-4 md:px-6 pt-4 md:pt-5 pb-4 flex-1 flex flex-col min-h-0 gap-4 overflow-y-auto md:overflow-visible">
         <ColorPicker
           selectedColor={noteDraft.color}
           onColorChange={(color) => setNoteDraft((p) => ({ ...p, color }))}
@@ -170,6 +170,12 @@ export const EditNoteModal = ({
     if (JSON.stringify(keywords) !== JSON.stringify(originalKeywords)) updates.push(onUpdate(note._id, 'keywords', keywords));
     if (colorValue !== (note.color || 'purple')) updates.push(onUpdate(note._id, 'color', colorValue));
     if (contentValue !== (note.content || '')) updates.push(onUpdate(note._id, 'content', contentValue));
+
+    // Grow/shrink the card to fit its (possibly just-edited) content, so the
+    // bento grid stays proportional instead of clipping/overlapping.
+    const newSize = computeNoteSize(titleValue, contentValue, keywords.length);
+    if (newSize !== (note.size || 'medium')) updates.push(onUpdate(note._id, 'size', newSize));
+
     if (updates.length > 0) await Promise.all(updates);
     onClose();
   };
@@ -198,7 +204,7 @@ export const EditNoteModal = ({
         deleting={isDeleting}
       />
 
-      <div className="px-4 md:px-6 pb-4 flex-1 flex flex-col min-h-0 gap-3 overflow-y-auto md:overflow-visible">
+      <div className="px-4 md:px-6 pt-4 md:pt-5 pb-4 flex-1 flex flex-col min-h-0 gap-4 overflow-y-auto md:overflow-visible">
         <ColorPicker selectedColor={colorValue} onColorChange={setColorValue} disabled={isUpdating} />
         <KeywordsEditor
           keywords={keywordsValue}

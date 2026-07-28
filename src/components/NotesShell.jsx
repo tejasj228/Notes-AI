@@ -9,9 +9,10 @@ import NotesGrid from './NotesGrid';
 import NotificationSystem from './NotificationSystem';
 import { NewNoteModal, EditNoteModal, ImagePopup } from './NoteModals';
 import { NewFolderModal, RenameFolderModal } from './FolderModals';
+import ThemeToggle from './ThemeToggle';
 import { useNotesData } from '@/hooks/useNotesData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import { getRandomColor, getRandomSize } from '@/utils/helpers';
+import { getRandomColor, getRandomSize, computeNoteSize } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthProvider';
 import { graphAPI } from '@/api/graph';
 
@@ -112,11 +113,14 @@ const NotesShell = ({ page }) => {
     }
     setLoading('creatingNote', true);
     try {
+      const title = newNoteDraft.title || 'Untitled Note';
+      const content = newNoteDraft.content || '';
       const newNote = await createNote({
-        title: newNoteDraft.title || 'Untitled Note',
-        content: newNoteDraft.content || '',
+        title,
+        content,
         keywords: keywordsArray,
         color: newNoteDraft.color || 'purple',
+        size: computeNoteSize(title, content, keywordsArray.length),
       });
       setShowNewNotePopup(false);
       reindexNote(newNote._id || newNote.id);
@@ -296,6 +300,7 @@ const NotesShell = ({ page }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <ThemeToggle iconSize={16} className="p-1.5" />
         </div>
       </div>
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, LayoutGrid, FolderOpen, MousePointerClick, RotateCcw, ImagePlus, ArrowRight } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 // Mock note stickers for the hero collage
 const HERO_NOTES = [
@@ -56,6 +57,7 @@ const Landing = () => {
             <span className="font-display font-extrabold text-lg">NOTES·AI</span>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button className="brutal-btn bg-card text-ink px-3 md:px-4 py-2 text-xs" onClick={start}>
               Sign in
             </button>

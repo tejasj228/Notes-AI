@@ -4,7 +4,7 @@ import ChatMessage from '@/lib/models/ChatMessage';
 import { getAuthUser } from '@/lib/auth';
 import { generateContent } from '@/lib/gemini';
 import { retrieveContext } from '@/lib/graph/retrieve';
-import { stripHtml } from '@/utils/helpers';
+import { stripHtml, extractImageSrcs } from '@/utils/helpers';
 import { ok, fail } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
@@ -21,13 +21,13 @@ Content: ${ctx.content || 'No content'}
 Keywords: ${ctx.keywords ? ctx.keywords.join(', ') : 'None'}${factsBlock}`;
 
   if (hasImages) {
-    return `You are an AI assistant that can analyze images and help with various tasks. The user has uploaded an image and may also have some note context.
+    return `You are an AI assistant that can analyze images and help with various tasks. Some images are attached — these may be ones the user just uploaded, and/or images embedded in the note itself (attached so you can see and discuss them).
 
 ${noteBlock}
 
 User Question: ${userMessage}
 
-Please analyze the uploaded image(s) and respond to the user's question.`;
+Please analyze the attached image(s) and respond to the user's question.`;
   }
   return `You are an AI assistant that can help with various questions and tasks. The user may ask general questions or questions related to their note content.
 
@@ -82,9 +82,22 @@ export async function POST(request, { params }) {
       console.error('graph retrieval failed (continuing without it):', e.message);
     }
 
+    // Images embedded in the note itself (inserted via "Add image") are stored as
+    // base64 data URLs inside note.content. Gemini has no memory across requests,
+    // so without this the AI could never see them — decode up to 3 and attach them
+    // as inline image parts alongside any images the user just uploaded in chat.
+    const noteImageParts = extractImageSrcs(note.content, 3)
+      .map((src) => {
+        const match = /^data:([^;]+);base64,(.+)$/.exec(src);
+        return match ? { inlineData: { mimeType: match[1], data: match[2] } } : null;
+      })
+      .filter(Boolean);
+
     // Build Gemini request parts (text prompt + any images). Strip HTML so inline
-    // images/markup don't bloat the prompt.
-    const hasImages = images && images.length > 0;
+    // image tags/markup don't bloat the text prompt (the images themselves are
+    // still attached above as inline data).
+    const uploadedImages = images && images.length > 0 ? images : [];
+    const hasImages = uploadedImages.length > 0 || noteImageParts.length > 0;
     const parts = [];
     const promptText = message && message.trim() ? message : 'Analyze the uploaded image(s).';
     parts.push({
@@ -95,9 +108,8 @@ export async function POST(request, { params }) {
         retrieval.block
       ),
     });
-    if (hasImages) {
-      images.forEach((image) => parts.push({ inlineData: { data: image.base64, mimeType: image.mimeType } }));
-    }
+    uploadedImages.forEach((image) => parts.push({ inlineData: { data: image.base64, mimeType: image.mimeType } }));
+    parts.push(...noteImageParts);
 
     let aiResponseText = await generateContent(parts);
     if (!aiResponseText) aiResponseText = 'The AI returned an empty response. Try rephrasing.';

@@ -58,13 +58,27 @@ export const getSizeStyles = (size, isMobile = false) => {
     return { gridRowEnd: 'span 2' }; // Medium size for all notes on mobile
   }
   
-  // On desktop, use custom sizes - extremely compact heights
+  // On desktop, use custom sizes - one grid track per span (gridAutoRows sets the
+  // actual height; minHeight is just a floor in case that ever changes)
   const sizeMap = {
-    small: { gridRowEnd: 'span 1', minHeight: '120px' },
-    medium: { gridRowEnd: 'span 2', minHeight: '100px' }, 
-    large: { gridRowEnd: 'span 3', minHeight: '120px' }
+    small: { gridRowEnd: 'span 1', minHeight: '150px' },
+    medium: { gridRowEnd: 'span 2', minHeight: '150px' },
+    large: { gridRowEnd: 'span 3', minHeight: '150px' }
   };
   return sizeMap[size] || sizeMap.medium;
+};
+
+// Decide a note's card size from how much it actually contains, so the bento
+// grid grows to fit the content (title + text + images + keywords) instead of
+// using a size assigned once at random that content can later overflow/clip.
+export const computeNoteSize = (title, content, keywordsCount = 0) => {
+  const text = stripHtml(content || '');
+  const len = (title || '').length + text.length;
+  const images = extractImageSrcs(content, 4).length;
+  const score = len + images * 260 + Math.max(0, keywordsCount - 1) * 20;
+  if (score > 420 || images >= 2) return 'large';
+  if (score > 130 || images >= 1) return 'medium';
+  return 'small';
 };
 
 // Note size classes (kept for compatibility)

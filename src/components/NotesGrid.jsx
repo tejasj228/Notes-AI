@@ -95,10 +95,10 @@ const NotesGrid = ({
 
   return (
     <div
-      className="grid gap-4 md:gap-5 max-w-7xl mx-auto py-4 w-full"
+      className="grid gap-5 md:gap-6 max-w-7xl mx-auto py-4 w-full"
       style={{
         gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)',
-        gridAutoRows: isMobile ? '128px' : '176px',
+        gridAutoRows: isMobile ? '150px' : '190px',
       }}
       onDragOver={handleGridDragOver}
       onDrop={handleGridDrop}
@@ -218,13 +218,15 @@ const NotesGrid = ({
                   <div
                     className="clamp text-xs md:text-sm text-ink-fixed/80 leading-snug flex-1"
                     style={{
+                      // Fewer lines when an image thumbnail is also shown, so the two
+                      // never fight for the same vertical space.
                       WebkitLineClamp: isMobile
-                        ? 4
+                        ? images.length ? 2 : 4
                         : note.size === 'small'
-                        ? 3
+                        ? images.length ? 1 : 3
                         : note.size === 'large'
-                        ? 11
-                        : 6,
+                        ? images.length ? 8 : 11
+                        : images.length ? 3 : 6,
                     }}
                     dangerouslySetInnerHTML={{ __html: (note.content || '').replace(/<img[^>]*>/gi, '') }}
                   />
@@ -232,14 +234,14 @@ const NotesGrid = ({
               </div>
 
               {/* Footer: images + keywords */}
-              <div className="mt-2 space-y-2">
+              <div className="mt-3 space-y-2 flex-shrink-0">
                 {images.length > 0 && (
                   <div className="flex gap-2">
                     {images.map((src, idx) => (
                       <div
                         key={idx}
-                        className="border-2 border-ink overflow-hidden bg-card"
-                        style={{ width: isMobile ? 56 : 64, height: isMobile ? 56 : 64 }}
+                        className="border-2 border-ink overflow-hidden bg-card flex-shrink-0"
+                        style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56 }}
                       >
                         <img src={src} alt="note" className="w-full h-full object-cover" />
                       </div>
@@ -248,7 +250,7 @@ const NotesGrid = ({
                 )}
                 {Array.isArray(note.keywords) && note.keywords.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {note.keywords.slice(0, isMobile ? 3 : note.size === 'small' ? 2 : 4).map((keyword, i) => (
+                    {note.keywords.slice(0, 3).map((keyword, i) => (
                       <span
                         key={i}
                         className="inline-block border-2 border-ink bg-white/70 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide truncate max-w-[100px]"
