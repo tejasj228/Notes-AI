@@ -72,7 +72,7 @@ const Landing = () => {
       <section className="max-w-6xl mx-auto px-4 md:px-6 pt-12 md:pt-20 pb-10">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <span className="brutal-eyebrow inline-block border-3 border-ink bg-note-yellow px-3 py-1 shadow-brutal-sm mb-6">
+            <span className="brutal-eyebrow inline-block border-3 border-ink bg-note-yellow text-ink-fixed px-3 py-1 shadow-brutal-sm mb-6">
               notes + AI, in colour
             </span>
             <h1 className="font-display font-extrabold leading-[0.95] text-5xl md:text-7xl tracking-tight">

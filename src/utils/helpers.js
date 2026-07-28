@@ -63,17 +63,19 @@ export const getSizeStyles = (size, isMobile = false) => {
   return sizeMap[size] || sizeMap.medium;
 };
 
-// Decide a note's card size from how much it actually contains, so the bento
-// grid grows to fit the content (title + text + images + keywords) instead of
-// using a size assigned once at random that content can later overflow/clip.
-export const computeNoteSize = (title, content, keywordsCount = 0) => {
-  const text = stripHtml(content || '');
-  const len = (title || '').length + text.length;
-  const images = extractImageSrcs(content, 4).length;
-  const score = len + images * 260 + Math.max(0, keywordsCount - 1) * 20;
-  if (score > 420 || images >= 2) return 'large';
-  if (score > 130 || images >= 1) return 'medium';
-  return 'small';
+// How many lines of body-text preview are safe to show for a given card size,
+// with or without an image thumbnail in the footer — chosen so the footer
+// (image + keywords) NEVER collides with the clamped text no matter how much
+// content the note has. Size itself is random (bento variety); this is what
+// keeps every size/content combination safe, including the worst case (a
+// "small" card with a long note and an image).
+export const getPreviewClampLines = (size, hasImage) => {
+  const table = {
+    small: hasImage ? 0 : 3,
+    medium: hasImage ? 3 : 6,
+    large: hasImage ? 8 : 12,
+  };
+  return table[size] ?? table.medium;
 };
 
 // Note size classes (kept for compatibility)

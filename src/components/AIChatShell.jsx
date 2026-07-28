@@ -6,7 +6,6 @@ import AIChatPage from './AIChatPage';
 import { useNotesData } from '@/hooks/useNotesData';
 import { useAuth } from '@/context/AuthProvider';
 import { graphAPI } from '@/api/graph';
-import { computeNoteSize } from '@/utils/helpers';
 
 const AIChatShell = () => {
   const router = useRouter();
@@ -25,15 +24,10 @@ const AIChatShell = () => {
     return (idStr && idStr.toString() === noteId) || (slug && slug === noteId);
   });
 
-  // Keep the knowledge graph fresh, and let the card grow/shrink to fit its
-  // content, when the note is edited from the chat page's editor.
+  // Keep the knowledge graph fresh when the note is edited from the chat page.
   const handleUpdate = async (id, field, value) => {
     await updateNote(id, field, value);
     if (field === 'content' || field === 'title') graphAPI.indexNote(id).catch(() => {});
-    if (field === 'content' && selectedNote) {
-      const newSize = computeNoteSize(selectedNote.title, value, (selectedNote.keywords || []).length);
-      if (newSize !== (selectedNote.size || 'medium')) updateNote(id, 'size', newSize).catch(() => {});
-    }
   };
 
   if (loading) {

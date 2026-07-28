@@ -652,7 +652,7 @@ const AIChatPage = ({
                             )}
                           </div>
                           {message.type === 'user' && (
-                            <div className="w-7 h-7 border-3 border-ink bg-note-yellow flex items-center justify-center flex-shrink-0 mt-1">
+                            <div className="w-7 h-7 border-3 border-ink bg-note-yellow text-ink-fixed flex items-center justify-center flex-shrink-0 mt-1">
                               <User size={13} strokeWidth={2.5} />
                             </div>
                           )}
@@ -698,7 +698,7 @@ const AIChatPage = ({
                   <div className="relative flex items-center">
                     <button
                       onClick={handleImageUpload}
-                      className="absolute left-2 z-10 border-2 border-ink bg-note-teal p-1.5 hover:bg-ink-fixed hover:text-white transition-colors"
+                      className="absolute left-2 z-10 border-2 border-ink bg-note-teal text-ink-fixed p-1.5 hover:bg-ink-fixed hover:text-white transition-colors"
                       title="Upload image"
                     >
                       <ImagePlus size={16} strokeWidth={2.5} />

@@ -122,7 +122,7 @@ export const FolderMenu = ({ folderId, onRename, onDelete, onClose }) => {
   return (
     <div className="absolute right-0 top-9 z-30 border-3 border-ink bg-card shadow-brutal min-w-36 folder-menu-container animate-pop-in">
       <button
-        className="w-full text-left px-4 py-2 text-ink hover:bg-note-yellow text-sm font-semibold folder-menu-container transition-colors"
+        className="w-full text-left px-4 py-2 text-ink hover:bg-note-yellow hover:text-ink-fixed text-sm font-semibold folder-menu-container transition-colors"
         onClick={() => {
           onRename();
           onClose();
@@ -132,7 +132,7 @@ export const FolderMenu = ({ folderId, onRename, onDelete, onClose }) => {
       </button>
       <div className="h-[3px] bg-ink" />
       <button
-        className="w-full text-left px-4 py-2 text-ink hover:bg-note-red text-sm font-semibold folder-menu-container transition-colors"
+        className="w-full text-left px-4 py-2 text-ink hover:bg-note-red hover:text-ink-fixed text-sm font-semibold folder-menu-container transition-colors"
         onClick={() => {
           onDelete(folderId);
           onClose();

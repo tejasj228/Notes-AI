@@ -170,7 +170,7 @@ const AuthPage = ({ onAuthSuccess, onBackHome }) => {
             {!isLogin && <p className="brutal-eyebrow text-ink/55">Min 6 characters</p>}
 
             {error && (
-              <div className="border-3 border-ink bg-note-red p-3 text-sm font-semibold text-ink">{error}</div>
+              <div className="border-3 border-ink bg-note-red p-3 text-sm font-semibold text-ink-fixed">{error}</div>
             )}
 
             <button type="submit" disabled={loading} className="brutal-btn w-full bg-brand text-white py-3 text-sm">

@@ -248,7 +248,7 @@ const GraphView = () => {
               <button
                 key={l.id}
                 onClick={() => router.push(`/ai-chat/${l.noteId}`)}
-                className="block w-full text-left border-2 border-ink bg-paper hover:bg-note-yellow transition-colors p-2 text-sm"
+                className="block w-full text-left border-2 border-ink bg-paper hover:bg-note-yellow hover:text-ink-fixed transition-colors p-2 text-sm"
                 title="Open the source note with AI"
               >
                 {l.fact}

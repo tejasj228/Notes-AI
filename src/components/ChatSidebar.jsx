@@ -60,7 +60,7 @@ const ChatSidebar = ({
           <div className="flex items-center gap-2">
             {sidebarOpen && <ThemeToggle iconSize={16} />}
             <button
-              className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow transition-colors"
+              className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow hover:text-ink-fixed transition-colors"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle sidebar"
             >
@@ -107,21 +107,25 @@ const ChatSidebar = ({
                     <div
                       key={chat.id}
                       className={`group relative border-3 border-ink p-2.5 cursor-pointer transition-all ${
-                        active ? 'bg-note-yellow shadow-brutal-sm' : 'bg-card hover:-translate-y-0.5'
+                        // The active chip sits on a bright yellow block, which keeps
+                        // its colour in dark mode — so its text must stay dark too.
+                        active ? 'bg-note-yellow text-ink-fixed shadow-brutal-sm' : 'bg-card text-ink hover:-translate-y-0.5'
                       }`}
                       onClick={() => onSelectChat?.(chat)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-bold mb-0.5 truncate">{chat.title}</h4>
-                          <p className="text-[11px] text-ink/70 clamp" style={{ WebkitLineClamp: 2 }}>
+                          <p className={`text-[11px] clamp ${active ? 'text-ink-fixed/75' : 'text-ink/70'}`} style={{ WebkitLineClamp: 2 }}>
                             {chat.preview}
                           </p>
-                          <span className="brutal-eyebrow text-ink/50 mt-1 block">{chat.timestamp}</span>
+                          <span className={`brutal-eyebrow mt-1 block ${active ? 'text-ink-fixed/60' : 'text-ink/50'}`}>
+                            {chat.timestamp}
+                          </span>
                         </div>
                         {onDeleteChat && (
                           <button
-                            className="opacity-0 group-hover:opacity-100 p-1 border-2 border-ink bg-note-red hover:bg-ink-fixed hover:text-white transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 border-2 border-ink bg-note-red text-ink-fixed hover:bg-ink-fixed hover:text-white transition-all"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDeleteChat(chat.id);

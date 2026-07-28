@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { X, Trash2, ImagePlus, ChevronLeft, Sparkles, Save } from 'lucide-react';
 import { ColorPicker, KeywordsEditor, ContentEditor } from './UI';
-import { resizeImage, insertImageAtCaret, computeNoteSize } from '@/utils/helpers';
+import { resizeImage, insertImageAtCaret } from '@/utils/helpers';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 640 : false));
@@ -170,12 +170,9 @@ export const EditNoteModal = ({
     if (JSON.stringify(keywords) !== JSON.stringify(originalKeywords)) updates.push(onUpdate(note._id, 'keywords', keywords));
     if (colorValue !== (note.color || 'purple')) updates.push(onUpdate(note._id, 'color', colorValue));
     if (contentValue !== (note.content || '')) updates.push(onUpdate(note._id, 'content', contentValue));
-
-    // Grow/shrink the card to fit its (possibly just-edited) content, so the
-    // bento grid stays proportional instead of clipping/overlapping.
-    const newSize = computeNoteSize(titleValue, contentValue, keywords.length);
-    if (newSize !== (note.size || 'medium')) updates.push(onUpdate(note._id, 'size', newSize));
-
+    // Size stays whatever it was randomly assigned at creation — not tied to
+    // content — so the bento grid keeps visual variety instead of every note
+    // with similar content rendering at the same size.
     if (updates.length > 0) await Promise.all(updates);
     onClose();
   };

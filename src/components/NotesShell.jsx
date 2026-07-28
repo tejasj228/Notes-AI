@@ -12,7 +12,7 @@ import { NewFolderModal, RenameFolderModal } from './FolderModals';
 import ThemeToggle from './ThemeToggle';
 import { useNotesData } from '@/hooks/useNotesData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import { getRandomColor, getRandomSize, computeNoteSize } from '@/utils/helpers';
+import { getRandomColor, getRandomSize } from '@/utils/helpers';
 import { useAuth } from '@/context/AuthProvider';
 import { graphAPI } from '@/api/graph';
 
@@ -113,14 +113,15 @@ const NotesShell = ({ page }) => {
     }
     setLoading('creatingNote', true);
     try {
-      const title = newNoteDraft.title || 'Untitled Note';
-      const content = newNoteDraft.content || '';
       const newNote = await createNote({
-        title,
-        content,
+        title: newNoteDraft.title || 'Untitled Note',
+        content: newNoteDraft.content || '',
         keywords: keywordsArray,
         color: newNoteDraft.color || 'purple',
-        size: computeNoteSize(title, content, keywordsArray.length),
+        // Size is randomized (for bento variety), picked once when the modal
+        // opened — not derived from content, which made every note with
+        // similar content render at the exact same size.
+        size: newNoteDraft.size || getRandomSize(),
       });
       setShowNewNotePopup(false);
       reindexNote(newNote._id || newNote.id);
@@ -334,10 +335,10 @@ const NotesShell = ({ page }) => {
           </div>
         ) : error ? (
           <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="border-3 border-ink bg-note-red shadow-brutal p-6 text-center max-w-sm">
+            <div className="border-3 border-ink bg-note-red text-ink-fixed shadow-brutal p-6 text-center max-w-sm">
               <div className="text-4xl mb-2">⚠️</div>
               <p className="font-display font-extrabold text-lg mb-1">Couldn’t load notes</p>
-              <p className="text-xs text-ink/70 mb-4">{error}</p>
+              <p className="text-xs text-ink-fixed/70 mb-4">{error}</p>
               <button className="brutal-btn bg-card text-ink px-4 py-2 text-xs" onClick={() => window.location.reload()}>
                 Try again
               </button>

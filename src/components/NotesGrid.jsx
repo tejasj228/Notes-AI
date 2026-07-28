@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
 import { PAGES } from '@/utils/constants';
-import { getNoteColor, getSizeStyles, extractImageSrcs, filterNotes, computeNoteSize } from '@/utils/helpers';
+import { getNoteColor, getSizeStyles, extractImageSrcs, filterNotes, getPreviewClampLines } from '@/utils/helpers';
 
 const NotesGrid = ({
   currentPage,
@@ -111,10 +111,14 @@ const NotesGrid = ({
           const isOver = dragOverIndex === index;
           const color = getNoteColor(note.color);
           const images = extractImageSrcs(note.content, 2);
-          // Compute the size live from content rather than trusting the stored
-          // field, so a note always renders sized-to-content even if it was
-          // never re-saved after editing (and mobile now respects it too).
-          const effectiveSize = computeNoteSize(note.title, note.content, (note.keywords || []).length);
+          // Size is random (assigned at creation) for bento variety — it does
+          // NOT track content length, so two notes with the same content can
+          // land at different sizes. The preview clamp table below is chosen
+          // to stay safe (no image/text overlap) for every size × content
+          // combination, including the worst case: a small card with a lot
+          // of text and an image.
+          const size = note.size || 'medium';
+          const previewLines = getPreviewClampLines(size, images.length > 0);
 
           return (
             <div
@@ -138,7 +142,7 @@ const NotesGrid = ({
                 opacity: isDragged ? 0.85 : 1,
                 touchAction: currentPage !== PAGES.TRASH ? 'manipulation' : 'auto',
                 userSelect: 'none',
-                ...getSizeStyles(effectiveSize, isMobile),
+                ...getSizeStyles(size, isMobile),
               }}
               draggable={currentPage !== PAGES.TRASH}
               data-note-id={idOf(note)}
@@ -182,7 +186,7 @@ const NotesGrid = ({
                   {showTrashMenu === idOf(note) && (
                     <div className="absolute top-9 right-0 border-3 border-ink bg-card shadow-brutal min-w-[150px] menu-container animate-pop-in">
                       <button
-                        className="w-full px-3 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-note-green menu-container disabled:opacity-50"
+                        className="w-full px-3 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-note-green hover:text-ink-fixed menu-container disabled:opacity-50"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!loadingStates.restoringNote) {
@@ -196,7 +200,7 @@ const NotesGrid = ({
                       </button>
                       <div className="h-[3px] bg-ink" />
                       <button
-                        className="w-full px-3 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-note-red menu-container disabled:opacity-50"
+                        className="w-full px-3 py-2 text-sm font-semibold flex items-center gap-2 hover:bg-note-red hover:text-ink-fixed menu-container disabled:opacity-50"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!loadingStates.permanentDeletingNote) {
@@ -215,22 +219,16 @@ const NotesGrid = ({
 
               {/* Body */}
               <div className="flex-1 flex flex-col min-h-0">
-                <h3 className="font-display font-extrabold text-base md:text-lg leading-tight mb-2 pr-6 break-words">
+                <h3
+                  className="clamp font-display font-extrabold text-base md:text-lg leading-tight mb-2 pr-6 break-words"
+                  style={{ WebkitLineClamp: 2 }}
+                >
                   {note.title}
                 </h3>
-                {note.content && (
+                {note.content && previewLines > 0 && (
                   <div
                     className="clamp text-xs md:text-sm text-ink-fixed/80 leading-snug flex-1"
-                    style={{
-                      // Fewer lines when an image thumbnail is also shown, so the two
-                      // never fight for the same vertical space.
-                      WebkitLineClamp:
-                        effectiveSize === 'small'
-                          ? images.length ? 1 : 3
-                          : effectiveSize === 'large'
-                          ? images.length ? 8 : 11
-                          : images.length ? 3 : 6,
-                    }}
+                    style={{ WebkitLineClamp: previewLines }}
                     dangerouslySetInnerHTML={{ __html: (note.content || '').replace(/<img[^>]*>/gi, '') }}
                   />
                 )}

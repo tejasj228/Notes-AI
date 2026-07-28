@@ -113,7 +113,7 @@ const Sidebar = ({
             </div>
           )}
           <button
-            className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow transition-colors"
+            className="text-ink p-1.5 border-3 border-ink bg-card shadow-brutal-sm hover:bg-note-yellow hover:text-ink-fixed transition-colors"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle sidebar"
           >
@@ -142,7 +142,7 @@ const Sidebar = ({
                     role="button"
                     tabIndex={canAddFolder ? 0 : -1}
                     className={`p-1 border-2 border-ink ${
-                      canAddFolder ? 'bg-card hover:bg-note-green cursor-pointer' : 'bg-paper-2 opacity-40 cursor-not-allowed'
+                      canAddFolder ? 'bg-card hover:bg-note-green hover:text-ink-fixed cursor-pointer' : 'bg-paper-2 opacity-40 cursor-not-allowed'
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -163,7 +163,7 @@ const Sidebar = ({
                     <button
                       className={`flex items-center gap-2 py-2 px-2 w-full text-left text-sm font-semibold transition-colors border-2 ${
                         isFolderActive(folder)
-                          ? 'border-ink shadow-brutal-sm'
+                          ? 'border-ink shadow-brutal-sm text-ink-fixed'
                           : 'border-transparent hover:border-ink'
                       }`}
                       style={isFolderActive(folder) ? { background: getFolderColor(folder.color) } : {}}

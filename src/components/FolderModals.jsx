@@ -76,7 +76,7 @@ export const NewFolderModal = ({
   return (
     <FolderModalShell title="New folder" onClose={onClose}>
       {!canCreate && (
-        <div className="mb-4 border-3 border-ink bg-note-red p-3 text-sm font-semibold text-ink">
+        <div className="mb-4 border-3 border-ink bg-note-red p-3 text-sm font-semibold text-ink-fixed">
           You’ve hit the max of {MAX_FOLDERS} folders. Delete one to make room.
         </div>
       )}
