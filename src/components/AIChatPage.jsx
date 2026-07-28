@@ -541,12 +541,12 @@ const AIChatPage = ({
                 <div className="flex-1 flex flex-col min-h-0 p-4">
                   <div
                     ref={noteEditorRef}
-                    className="note-content-editable flex-1 border-3 border-ink bg-white p-3 text-sm leading-relaxed overflow-y-auto outline-none"
+                    className="note-content-editable flex-1 border-3 border-ink bg-card text-ink p-3 text-sm leading-relaxed overflow-y-auto outline-none"
                     contentEditable
                     suppressContentEditableWarning
                     onInput={(e) => handleNoteContentChange(e.currentTarget.innerHTML)}
                     onDragStart={handleDragStart}
-                    style={{ color: '#141210', minHeight: '160px' }}
+                    style={{ minHeight: '160px' }}
                   />
                   <div className="flex justify-end pt-3">
                     <button className="brutal-btn bg-note-teal text-ink-fixed px-3 py-2 text-xs" onClick={handleNoteImageUpload}>

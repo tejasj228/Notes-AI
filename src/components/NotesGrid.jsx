@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
 import { PAGES } from '@/utils/constants';
-import { getNoteColor, getSizeStyles, extractImageSrcs, filterNotes } from '@/utils/helpers';
+import { getNoteColor, getSizeStyles, extractImageSrcs, filterNotes, computeNoteSize } from '@/utils/helpers';
 
 const NotesGrid = ({
   currentPage,
@@ -111,6 +111,10 @@ const NotesGrid = ({
           const isOver = dragOverIndex === index;
           const color = getNoteColor(note.color);
           const images = extractImageSrcs(note.content, 2);
+          // Compute the size live from content rather than trusting the stored
+          // field, so a note always renders sized-to-content even if it was
+          // never re-saved after editing (and mobile now respects it too).
+          const effectiveSize = computeNoteSize(note.title, note.content, (note.keywords || []).length);
 
           return (
             <div
@@ -134,7 +138,7 @@ const NotesGrid = ({
                 opacity: isDragged ? 0.85 : 1,
                 touchAction: currentPage !== PAGES.TRASH ? 'manipulation' : 'auto',
                 userSelect: 'none',
-                ...getSizeStyles(note.size, isMobile),
+                ...getSizeStyles(effectiveSize, isMobile),
               }}
               draggable={currentPage !== PAGES.TRASH}
               data-note-id={idOf(note)}
@@ -220,13 +224,12 @@ const NotesGrid = ({
                     style={{
                       // Fewer lines when an image thumbnail is also shown, so the two
                       // never fight for the same vertical space.
-                      WebkitLineClamp: isMobile
-                        ? images.length ? 2 : 4
-                        : note.size === 'small'
-                        ? images.length ? 1 : 3
-                        : note.size === 'large'
-                        ? images.length ? 8 : 11
-                        : images.length ? 3 : 6,
+                      WebkitLineClamp:
+                        effectiveSize === 'small'
+                          ? images.length ? 1 : 3
+                          : effectiveSize === 'large'
+                          ? images.length ? 8 : 11
+                          : images.length ? 3 : 6,
                     }}
                     dangerouslySetInnerHTML={{ __html: (note.content || '').replace(/<img[^>]*>/gi, '') }}
                   />

@@ -101,7 +101,7 @@ export const ContentEditor = ({
     <div className="flex-1 flex flex-col min-h-0">
       <div
         ref={editorRef}
-        className={`note-content-editable w-full border-3 border-ink bg-white p-4 text-sm leading-relaxed overflow-y-auto outline-none relative flex-1 ${className} ${
+        className={`note-content-editable w-full border-3 border-ink bg-card text-ink p-4 text-sm leading-relaxed overflow-y-auto outline-none relative flex-1 ${className} ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         contentEditable={!disabled}
@@ -109,7 +109,7 @@ export const ContentEditor = ({
         onInput={disabled ? undefined : onChange}
         onPaste={disabled ? undefined : handlePaste}
         data-placeholder={disabled ? 'Saving…' : placeholder}
-        style={{ minHeight: '200px', maxHeight: '400px', color: '#141210' }}
+        style={{ minHeight: '200px', maxHeight: '400px' }}
       />
     </div>
   );

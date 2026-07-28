@@ -53,6 +53,19 @@ export async function connectDB() {
     cached.conn = await cached.promise;
   } catch (err) {
     cached.promise = null;
+    // querySrv/ECONNREFUSED/ENOTFOUND here almost always means THIS network
+    // can't resolve or reach MongoDB's DNS SRV record — common on campus/office
+    // WiFi and some routers that block SRV-type DNS queries. It is not a bug in
+    // the app (the deployed site is unaffected, since Vercel's network isn't
+    // restricted this way) — surface a message that says so instead of a raw
+    // driver error.
+    if (/querySrv|ECONNREFUSED|ENOTFOUND|ETIMEOUT/i.test(err.message || '')) {
+      const friendly = new Error(
+        `Can't reach the database from this network (${err.message}). This is almost always local network/DNS blocking MongoDB Atlas's SRV lookup — common on campus or office WiFi. Try: switching your DNS to 8.8.8.8 / 1.1.1.1, a mobile hotspot, or a VPN. The deployed site is unaffected by this.`
+      );
+      friendly.status = 503;
+      throw friendly;
+    }
     throw err;
   }
 

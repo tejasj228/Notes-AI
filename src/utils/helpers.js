@@ -51,15 +51,10 @@ export const getNoteHoverBackground = (color) => getNoteColor(color);
 export const getColorPickerBackground = (color) => getNoteColor(color);
 export const getFolderColor = (color) => getNoteColor(color);
 
-// Note size styles for CSS Grid
+// Note size styles for CSS Grid — mobile also respects size (it used to force
+// every note to the same span regardless of content, which is exactly what
+// caused image/text overlap on phones for content-heavy notes).
 export const getSizeStyles = (size, isMobile = false) => {
-  // On mobile, all notes should be the same size
-  if (isMobile) {
-    return { gridRowEnd: 'span 2' }; // Medium size for all notes on mobile
-  }
-  
-  // On desktop, use custom sizes - one grid track per span (gridAutoRows sets the
-  // actual height; minHeight is just a floor in case that ever changes)
   const sizeMap = {
     small: { gridRowEnd: 'span 1', minHeight: '150px' },
     medium: { gridRowEnd: 'span 2', minHeight: '150px' },
@@ -143,7 +138,7 @@ export const insertImageAtCaret = (editorRef, imageUrl) => {
   img.style.maxHeight = '220px';
   img.style.display = 'block';
   img.style.margin = '16px 0';
-  img.style.border = '3px solid #141210';
+  img.style.border = '3px solid var(--ink)';
   
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
