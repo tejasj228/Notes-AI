@@ -211,3 +211,576 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ============================================================= */
+/*  STAMPED CARD — design tokens                                  */
+/*                                                                */
+/*  A neo-brutalist "card stock on printed paper" system.         */
+/*  Deliberately theme-independent: it reads as PRINTED, so it     */
+/*  does not flip with .dark. Currently used by the auth screen;   */
+/*  any other surface can adopt it by using the .sc-* classes.    */
+/* ============================================================= */
+
+:root {
+  /* Structure */
+  --sc-ink: #14110f; /* warm ink — borders, shadows, body text */
+  --sc-paper: #fffcf2; /* card / input surfaces */
+  --sc-ground: #f1ece2; /* the field behind the card (warm bone) */
+
+  /* Accents. periwinkle is the app's existing brand hue. */
+  --sc-periwinkle: #7c5cff;
+  --sc-lime: #c9f73d; /* primary action, success */
+  --sc-pink: #ff5c9e; /* active / selected */
+  --sc-cyan: #4fe3e3; /* focus + hover */
+  --sc-tangerine: #ff8a3d; /* stamps, accents */
+  /* Deepened from #ff4438: paper-on-danger measured 3.33:1 there, under the
+     4.5 floor, and danger-as-text on paper failed identically. At #d42418
+     both pairings clear AA (5.03:1) and it still reads as an alarm red. */
+  --sc-danger: #d42418; /* errors */
+
+  /* RGB triplets for the few places that need alpha */
+  --sc-ink-rgb: 20 17 15;
+  --sc-peri-rgb: 124 92 255;
+
+  /* Hard shadow scale — offset solid ink, zero blur, zero spread */
+  --sc-lift-0: 3px 3px 0 var(--sc-ink);
+  --sc-lift-1: 6px 6px 0 var(--sc-ink);
+  --sc-lift-2: 9px 9px 0 var(--sc-ink);
+  --sc-lift-panel: 12px 12px 0 var(--sc-ink);
+
+  /* One easing curve for the whole system — snappy overshoot */
+  --sc-ease: cubic-bezier(0.2, 1.4, 0.4, 1);
+  --sc-t-control: 120ms;
+}
+
+/* ---------------- The field (page behind the card) ------------- */
+/* Own scroll container so the document never gains a scrollbar and
+   switching tabs can't shift everything underneath. */
+.sc-field {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  background-color: var(--sc-ground);
+  /* Printed dot grid — accent hue, offset half a cell */
+  background-image: radial-gradient(rgb(var(--sc-peri-rgb) / 0.42) 2px, transparent 2px);
+  background-size: 22px 22px;
+  background-position: 11px 11px;
+  color: var(--sc-ink);
+  font-family: var(--font-stamp-body), system-ui, sans-serif;
+  font-size: 15px;
+}
+
+/* The press physics are not a focus indicator — this is. */
+.sc-field :focus-visible {
+  outline: 3px solid var(--sc-cyan);
+  outline-offset: 3px;
+}
+
+/* ---------------- Card ---------------- */
+.sc-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--sc-paper);
+  border: 3px solid var(--sc-ink);
+  border-radius: 0;
+  padding: 20px 22px;
+  /* Shadow is a STATIC style, never animated: if the entrance stalls
+     (throttled tab) the card must still render correctly. */
+  box-shadow: var(--sc-lift-panel);
+  animation: sc-card-in 550ms var(--sc-ease) backwards;
+}
+@keyframes sc-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(38px) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+/* ---------------- Typography ---------------- */
+.sc-display {
+  font-family: var(--font-stamp-display), system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.sc-title {
+  font-family: var(--font-stamp-display), system-ui, sans-serif;
+  text-transform: uppercase;
+  font-size: 30px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+.sc-mono {
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.sc-label {
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  display: block;
+  margin-bottom: 6px;
+}
+.sc-note {
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgb(var(--sc-ink-rgb) / 0.62);
+}
+.sc-field-error {
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--sc-danger);
+  margin-bottom: 4px;
+}
+
+/* Wordmark: marker-stripe highlight painted behind the second half.
+   Spread shadow so the block runs a few px past the glyphs. */
+.sc-wordmark {
+  font-family: var(--font-stamp-display), system-ui, sans-serif;
+  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.sc-wordmark-hi {
+  background: var(--sc-lime);
+  box-shadow: 0 0 0 5px var(--sc-lime);
+  position: relative;
+}
+
+/* ---------------- Segmented tabs ---------------- */
+.sc-tab {
+  flex: 1 1 0;
+  padding: 10px 8px;
+  background: var(--sc-paper);
+  color: var(--sc-ink);
+  border: 3px solid var(--sc-ink);
+  border-radius: 0;
+  box-shadow: var(--sc-lift-0);
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: transform var(--sc-t-control) var(--sc-ease),
+    box-shadow var(--sc-t-control) var(--sc-ease),
+    background-color var(--sc-t-control) var(--sc-ease);
+}
+.sc-tab:hover[aria-selected='false'] {
+  background: var(--sc-cyan);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--sc-lift-1);
+}
+/* Selected reads as literally pressed into the card */
+.sc-tab[aria-selected='true'] {
+  background: var(--sc-pink);
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 0 var(--sc-ink);
+  cursor: default;
+}
+
+/* ---------------- Inputs ---------------- */
+.sc-input {
+  width: 100%;
+  background: var(--sc-paper);
+  color: var(--sc-ink);
+  border: 3px solid var(--sc-ink);
+  border-radius: 0;
+  box-shadow: var(--sc-lift-0);
+  font-family: var(--font-stamp-body), system-ui, sans-serif;
+  font-size: 14px;
+  padding: 11px 12px 11px 40px;
+  outline: none;
+  transition: transform var(--sc-t-control) var(--sc-ease),
+    box-shadow var(--sc-t-control) var(--sc-ease),
+    background-color var(--sc-t-control) var(--sc-ease);
+}
+.sc-input::placeholder {
+  color: rgb(var(--sc-ink-rgb) / 0.38);
+  font-weight: 400;
+}
+.sc-input:hover {
+  background: #fff;
+}
+/* Focus lifts, and the shadow turns cyan with a thin ink keyline */
+.sc-input:focus {
+  background: #fff;
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 0 var(--sc-cyan), 5px 5px 0 2px var(--sc-ink);
+}
+.sc-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgb(var(--sc-ink-rgb) / 0.75);
+  pointer-events: none;
+}
+.sc-reveal {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sc-ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 0;
+}
+
+/* ---------------- Buttons ---------------- */
+.sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 3px solid var(--sc-ink);
+  border-radius: 0;
+  box-shadow: var(--sc-lift-1);
+  font-family: var(--font-stamp-display), system-ui, sans-serif;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: transform var(--sc-t-control) var(--sc-ease),
+    box-shadow var(--sc-t-control) var(--sc-ease),
+    background-color var(--sc-t-control) var(--sc-ease);
+}
+.sc-btn:hover:not(:disabled) {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--sc-lift-2);
+}
+/* The full press: driven past its origin, shadow gone */
+.sc-btn:active:not(:disabled) {
+  transform: translate(6px, 6px);
+  box-shadow: 0 0 0 0 var(--sc-ink);
+}
+.sc-btn:disabled {
+  opacity: 0.55;
+  box-shadow: var(--sc-lift-0);
+  transform: none;
+  cursor: not-allowed;
+}
+.sc-btn-primary {
+  background: var(--sc-lime);
+  color: var(--sc-ink);
+}
+.sc-btn-secondary {
+  background: var(--sc-paper);
+  color: var(--sc-ink);
+}
+.sc-btn-secondary:hover:not(:disabled) {
+  background: var(--sc-cyan);
+}
+.sc-btn-danger {
+  background: var(--sc-danger);
+  color: var(--sc-paper);
+}
+/* Small stamped chip button (back link) */
+.sc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sc-paper);
+  color: var(--sc-ink);
+  border: 2px solid var(--sc-ink);
+  border-radius: 0;
+  box-shadow: var(--sc-lift-0);
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 7px 11px;
+  cursor: pointer;
+  transition: transform var(--sc-t-control) var(--sc-ease),
+    box-shadow var(--sc-t-control) var(--sc-ease),
+    background-color var(--sc-t-control) var(--sc-ease);
+}
+.sc-chip:hover {
+  background: var(--sc-cyan);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--sc-lift-1);
+}
+.sc-chip:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 0 var(--sc-ink);
+}
+
+/* ---------------- Alerts ---------------- */
+.sc-alert {
+  border: 3px solid var(--sc-ink);
+  border-radius: 0;
+  box-shadow: var(--sc-lift-0);
+  padding: 10px 12px;
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  animation: sc-shake 400ms var(--sc-ease);
+}
+.sc-alert-heading {
+  font-family: var(--font-stamp-display), system-ui, sans-serif;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  display: block;
+  margin-bottom: 3px;
+}
+.sc-alert-error {
+  background: var(--sc-danger);
+  color: var(--sc-paper); /* never ink on danger red */
+}
+.sc-alert-warn {
+  background: var(--sc-tangerine);
+  color: var(--sc-ink);
+}
+.sc-alert-success {
+  background: var(--sc-lime);
+  color: var(--sc-ink);
+}
+@keyframes sc-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+/* ---------------- Form swap ---------------- */
+.sc-form-in {
+  animation: sc-form-in 350ms var(--sc-ease);
+}
+@keyframes sc-form-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ---------------- Loader: three bouncing squares ---------------- */
+.sc-loader {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 5px;
+}
+.sc-loader i {
+  display: block;
+  border: 2px solid var(--sc-ink);
+  border-radius: 0;
+  animation: sc-hop 620ms var(--sc-ease) infinite;
+}
+.sc-loader i:nth-child(1) {
+  background: var(--sc-paper);
+}
+.sc-loader i:nth-child(2) {
+  background: var(--sc-lime);
+  animation-delay: 130ms;
+}
+.sc-loader i:nth-child(3) {
+  background: var(--sc-pink);
+  animation-delay: 260ms;
+}
+@keyframes sc-hop {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-13px);
+  }
+}
+/* Inline (in-button) scale: ink squares, shorter hop */
+.sc-loader-sm i {
+  width: 7px;
+  height: 7px;
+  border-width: 2px;
+  animation-name: sc-hop-sm;
+}
+@keyframes sc-hop-sm {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+.sc-loader-lg i {
+  width: 18px;
+  height: 18px;
+  border-width: 3px;
+}
+/* Sitting on a coloured button, the squares read as solid ink */
+.sc-loader-ink i,
+.sc-loader-ink i:nth-child(1),
+.sc-loader-ink i:nth-child(2),
+.sc-loader-ink i:nth-child(3) {
+  background: var(--sc-ink);
+}
+
+/* ---------------- Divider ---------------- */
+.sc-rule {
+  height: 3px;
+  background: var(--sc-ink);
+  flex: 1;
+}
+
+/* ---------------- Background shapes ---------------- */
+.sc-shape-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.sc-shape {
+  position: fixed;
+  left: 0;
+  top: 0;
+  touch-action: none; /* don't let touch-drag scroll the field */
+  cursor: grab;
+  will-change: transform;
+}
+.sc-shape[data-dragging='true'] {
+  cursor: grabbing;
+}
+.sc-shape-body {
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--sc-ink);
+  border-radius: 0;
+  box-shadow: var(--sc-lift-1);
+  transition: box-shadow var(--sc-t-control) var(--sc-ease);
+}
+.sc-shape-body.is-circle {
+  border-radius: 50%;
+}
+.sc-shape[data-dragging='true'] .sc-shape-body {
+  box-shadow: var(--sc-lift-2);
+}
+
+/* Impact burst sticker */
+.sc-burst {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  animation: sc-burst 620ms var(--sc-ease) forwards;
+}
+.sc-burst-word {
+  background: var(--sc-lime);
+  color: var(--sc-ink);
+  border: 3px solid var(--sc-ink);
+  box-shadow: var(--sc-lift-0);
+  font-family: var(--font-stamp-display), system-ui, sans-serif;
+  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.sc-burst-line {
+  width: 14px;
+  height: 3px;
+  background: var(--sc-ink);
+}
+@keyframes sc-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--sc-rot)) scale(0.3);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -58%) rotate(var(--sc-rot)) scale(1.12);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -62%) rotate(var(--sc-rot)) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -95%) rotate(var(--sc-rot)) scale(1);
+  }
+}
+
+/* Drag hint */
+.sc-hint {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--sc-paper);
+  color: var(--sc-ink);
+  border: 2px solid var(--sc-ink);
+  box-shadow: var(--sc-lift-0);
+  font-family: var(--font-stamp-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  padding: 6px 9px;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 420px) {
+  .sc-card {
+    /* 12px of offset is enormous on a phone */
+    box-shadow: 7px 7px 0 var(--sc-ink);
+    padding: 18px 16px;
+  }
+  .sc-title {
+    font-size: 28px;
+  }
+  .sc-stack-sm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Shapes carry no information and shouldn't drift for reduced motion —
+   the JS loop also stops; this covers the CSS side. */
+@media (prefers-reduced-motion: reduce) {
+  .sc-shape,
+  .sc-burst {
+    animation: none !important;
+  }
+}

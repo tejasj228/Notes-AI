@@ -29,11 +29,28 @@ module.exports = {
           brown: "#D9A874",
           indigo: "#9B9CFF",
         },
+        // "Stamped card" system (see globals.css). Deliberately theme-independent
+        // — it reads as printed paper, so it does not flip with .dark.
+        stamp: {
+          ink: "var(--sc-ink)",
+          paper: "var(--sc-paper)",
+          ground: "var(--sc-ground)",
+          periwinkle: "var(--sc-periwinkle)",
+          lime: "var(--sc-lime)",
+          pink: "var(--sc-pink)",
+          cyan: "var(--sc-cyan)",
+          tangerine: "var(--sc-tangerine)",
+          danger: "var(--sc-danger)",
+        },
       },
       fontFamily: {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
         sans: ["var(--font-body)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        // Stamped-card families
+        "stamp-display": ["var(--font-stamp-display)", "system-ui", "sans-serif"],
+        "stamp-body": ["var(--font-stamp-body)", "system-ui", "sans-serif"],
+        "stamp-mono": ["var(--font-stamp-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
         brutal: "5px 5px 0 0 rgb(var(--ink-rgb))",
@@ -41,6 +58,14 @@ module.exports = {
         "brutal-lg": "8px 8px 0 0 rgb(var(--ink-rgb))",
         "brutal-xl": "12px 12px 0 0 rgb(var(--ink-rgb))",
         "brutal-brand": "5px 5px 0 0 #7C5CFF",
+        // Stamped-card lift scale — hard, zero blur, zero spread
+        "lift-0": "var(--sc-lift-0)",
+        "lift-1": "var(--sc-lift-1)",
+        "lift-2": "var(--sc-lift-2)",
+        "lift-panel": "var(--sc-lift-panel)",
+      },
+      transitionTimingFunction: {
+        stamp: "var(--sc-ease)",
       },
       borderWidth: {
         3: "3px",

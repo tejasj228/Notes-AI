@@ -1,5 +1,12 @@
 import './globals.css';
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google';
+import {
+  Bricolage_Grotesque,
+  Inter,
+  JetBrains_Mono,
+  Archivo_Black,
+  Space_Grotesk,
+  Space_Mono,
+} from 'next/font/google';
 import { AuthProvider } from '@/context/AuthProvider';
 import { ThemeProvider } from '@/context/ThemeProvider';
 
@@ -24,6 +31,28 @@ const mono = JetBrains_Mono({
   display: 'swap',
 });
 
+// ---- Stamped-card families (headings / body / labels) ----
+const stampDisplay = Archivo_Black({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-stamp-display',
+  display: 'swap',
+});
+
+const stampBody = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-stamp-body',
+  display: 'swap',
+});
+
+const stampMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-stamp-mono',
+  display: 'swap',
+});
+
 export const metadata = {
   title: 'Notes AI — think loud, in colour',
   description:
@@ -42,7 +71,11 @@ const noFlashTheme = `(function(){try{var t=localStorage.getItem('theme');if(!t)
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable} ${stampDisplay.variable} ${stampBody.variable} ${stampMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashTheme }} />
       </head>

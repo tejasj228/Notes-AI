@@ -39,26 +39,31 @@ class GoogleAuthService {
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
       
-      // Handle specific error cases
+      // Handle specific error cases. `code` is returned alongside the message so
+      // callers can branch on a stable identifier instead of the wording.
       if (error.code === 'auth/popup-closed-by-user') {
         return {
           success: false,
+          code: error.code,
           error: 'Sign-in was cancelled. Please try again.'
         };
       } else if (error.code === 'auth/popup-blocked') {
         return {
           success: false,
+          code: error.code,
           error: 'Popup was blocked by your browser. Please allow popups for this site.'
         };
       } else if (error.code === 'auth/operation-not-allowed') {
         return {
           success: false,
+          code: error.code,
           error: 'Google sign-in is not configured properly. Please contact support.'
         };
       }
-      
+
       return {
         success: false,
+        code: error.code,
         error: error.message || 'Google sign-in failed. Please try again.'
       };
     }
