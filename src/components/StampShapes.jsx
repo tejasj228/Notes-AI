@@ -1,15 +1,27 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  REST,
+  FRICTION,
+  AMBIENT,
+  MAX_THROW,
+  BURST_FLOOR,
+  BURST_COOLDOWN,
+  clampWalls,
+  resolveRect,
+  collidePairs,
+  dragTo,
+} from '@/lib/shapePhysics';
 
 /* ---------------------------------------------------------------
    Floating outlined shapes behind the auth card.
 
-   One rAF loop owns every position — drift, throwing and collision
-   are a single system. CSS keyframes are deliberately NOT used:
-   a keyframe knows nothing about the card, so shapes would sail
-   straight through it, and its animated transform would sit between
-   the layout box and where the shape actually appears, which makes
+   One rAF loop owns every position — drift, dragging, throwing and
+   collision are a single system. CSS keyframes are deliberately NOT
+   used: a keyframe knows nothing about the card, so shapes would
+   sail straight through it, and its animated transform would sit
+   between the layout box and where the shape appears, which makes
    the collision maths wrong.
 
    Positions live in refs, not state: they update ~60x/sec and
@@ -25,13 +37,7 @@ const SHAPES = [
   { kind: 'circle', size: 78, color: 'var(--sc-periwinkle)', fx: 0.52, fy: 0.9 },
 ];
 
-const REST = 0.78; // restitution — energy kept per bounce
-const FRICTION = 0.988; // only applied above ambient speed
-const AMBIENT = 0.085; // px/frame — the resting drift
-const MAX_THROW = 42; // px/frame cap, so a flick can't launch it across the screen
 const HISTORY_MS = 90; // pointer history window used for throw velocity
-const BURST_FLOOR = 7; // speed floor: only real throws make a noise
-const BURST_COOLDOWN = 220; // per-shape, so one shape can't chatter
 const HINT_KEY = 'sc-shapes-hint-dismissed';
 
 const WORDS = ['BONK!', 'THUD!', 'OOF!', 'WHAM!', 'CLUNK!', 'DOINK!'];
@@ -70,7 +76,6 @@ const StampShapes = ({ cardRef }) => {
     setTimeout(() => setBursts((b) => b.filter((n) => n.id !== id)), 640);
   }, []);
 
-  // ---- init positions + the animation loop -----------------------
   useEffect(() => {
     reducedRef.current =
       typeof window !== 'undefined' &&
@@ -81,11 +86,17 @@ const StampShapes = ({ cardRef }) => {
 
     stateRef.current = SHAPES.map((s, i) => {
       const angle = Math.random() * Math.PI * 2;
+      const x = Math.min(Math.max(s.fx * W() - s.size / 2, 0), Math.max(W() - s.size, 0));
+      const y = Math.min(Math.max(s.fy * H() - s.size / 2, 0), Math.max(H() - s.size, 0));
       return {
         i,
         size: s.size,
-        x: Math.min(Math.max(s.fx * W() - s.size / 2, 0), Math.max(W() - s.size, 0)),
-        y: Math.min(Math.max(s.fy * H() - s.size / 2, 0), Math.max(H() - s.size, 0)),
+        x,
+        y,
+        prevX: x,
+        prevY: y,
+        targetX: x,
+        targetY: y,
         vx: Math.cos(angle) * AMBIENT,
         vy: Math.sin(angle) * AMBIENT,
         dragging: false,
@@ -112,7 +123,6 @@ const StampShapes = ({ cardRef }) => {
     const rectTimer = setInterval(refreshCardRect, 400);
     const onResize = () => {
       refreshCardRect();
-      // keep shapes inside the new viewport
       stateRef.current.forEach((s) => {
         s.x = Math.min(s.x, Math.max(window.innerWidth - s.size, 0));
         s.y = Math.min(s.y, Math.max(window.innerHeight - s.size, 0));
@@ -120,82 +130,10 @@ const StampShapes = ({ cardRef }) => {
     };
     window.addEventListener('resize', onResize);
 
-    // Reduced motion: no drift, no loop. Dragging still works (it's
-    // user-initiated) and writes its own transform.
-    if (reducedRef.current) {
-      return () => {
-        clearInterval(rectTimer);
-        window.removeEventListener('resize', onResize);
-      };
-    }
-
-    const collideCard = (s, rect, now) => {
-      const r = s.size / 2;
-      const cx = s.x + r;
-      const cy = s.y + r;
-      const px = Math.max(rect.left, Math.min(cx, rect.right));
-      const py = Math.max(rect.top, Math.min(cy, rect.bottom));
-      const dx = cx - px;
-      const dy = cy - py;
-      const d2 = dx * dx + dy * dy;
-      if (d2 > r * r) return;
-
-      let d = Math.sqrt(d2);
-      let nx;
-      let ny;
-      if (d > 0.0001) {
-        nx = dx / d;
-        ny = dy / d;
-      } else {
-        // centre is inside the card — eject along the shallowest axis
-        const toL = cx - rect.left;
-        const toR = rect.right - cx;
-        const toT = cy - rect.top;
-        const toB = rect.bottom - cy;
-        const m = Math.min(toL, toR, toT, toB);
-        if (m === toL) [nx, ny] = [-1, 0];
-        else if (m === toR) [nx, ny] = [1, 0];
-        else if (m === toT) [nx, ny] = [0, -1];
-        else [nx, ny] = [0, 1];
-        d = 0;
-      }
-
-      const impact = Math.hypot(s.vx, s.vy);
-      s.x += nx * (r - d);
-      s.y += ny * (r - d);
-
-      const dot = s.vx * nx + s.vy * ny;
-      if (dot < 0) {
-        s.vx = (s.vx - 2 * dot * nx) * REST;
-        s.vy = (s.vy - 2 * dot * ny) * REST;
-      }
-
-      if (impact > BURST_FLOOR && now - s.lastBurst > BURST_COOLDOWN) {
-        s.lastBurst = now;
-        spawnBurst(px, py);
-      }
-    };
-
-    const collideWalls = (s, w, h) => {
-      if (s.x < 0) {
-        s.x = 0;
-        s.vx = Math.abs(s.vx) * REST;
-      } else if (s.x + s.size > w) {
-        s.x = w - s.size;
-        s.vx = -Math.abs(s.vx) * REST;
-      }
-      if (s.y < 0) {
-        s.y = 0;
-        s.vy = Math.abs(s.vy) * REST;
-      } else if (s.y + s.size > h) {
-        s.y = h - s.size;
-        s.vy = -Math.abs(s.vy) * REST;
-      }
-    };
-
     // A stale loop (StrictMode double-mount, Fast Refresh) would keep
     // integrating the same objects and multiply every shape's speed.
     let alive = true;
+    const reduced = reducedRef.current;
 
     const step = () => {
       if (!alive) return;
@@ -203,14 +141,29 @@ const StampShapes = ({ cardRef }) => {
       const w = W();
       const h = H();
       const rect = cardRectRef.current;
+      const list = stateRef.current;
 
-      for (const s of stateRef.current) {
+      for (const s of list) {
         const el = elsRef.current[s.i];
         if (!el) continue;
 
         if (s.dragging) {
-          el.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
+          // Follow the pointer, but the card and the walls still hold: you
+          // can't drag a shape in behind the card, it slides along the edge.
+          dragTo(s, s.targetX, s.targetY, w, h, rect);
+          // Real velocity from how fast the shape is actually travelling, so
+          // shoving it into a neighbour still registers as an impact.
+          s.vx = s.x - s.prevX;
+          s.vy = s.y - s.prevY;
+          s.prevX = s.x;
+          s.prevY = s.y;
           continue;
+        }
+
+        if (reduced) {
+          s.prevX = s.x;
+          s.prevY = s.y;
+          continue; // no drift under reduced motion
         }
 
         const speed = Math.hypot(s.vx, s.vy);
@@ -230,14 +183,37 @@ const StampShapes = ({ cardRef }) => {
         for (let k = 0; k < subs; k++) {
           s.x += s.vx / subs;
           s.y += s.vy / subs;
-          collideWalls(s, w, h);
-          if (rect) collideCard(s, rect, now);
+          clampWalls(s, w, h, true);
+          if (rect) {
+            const hit = resolveRect(s, rect, true);
+            if (
+              hit &&
+              !reduced &&
+              hit.impact > BURST_FLOOR &&
+              now - s.lastBurst > BURST_COOLDOWN
+            ) {
+              s.lastBurst = now;
+              spawnBurst(hit.x, hit.y);
+            }
+          }
           // Card ejection can shove a wedged shape back past a wall, so the
           // walls get the final say.
-          collideWalls(s, w, h);
+          clampWalls(s, w, h, true);
         }
 
-        el.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
+        s.prevX = s.x;
+        s.prevY = s.y;
+      }
+
+      collidePairs(list, now, reduced ? null : spawnBurst);
+
+      // Separation can push a shape into the card or a wall — settle it.
+      for (const s of list) {
+        clampWalls(s, w, h, false);
+        if (rect) resolveRect(s, rect, false);
+        clampWalls(s, w, h, false);
+        const el = elsRef.current[s.i];
+        if (el) el.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
       }
 
       rafRef.current = requestAnimationFrame(step);
@@ -261,6 +237,10 @@ const StampShapes = ({ cardRef }) => {
     s.dragging = true;
     s.grabDX = e.clientX - s.x;
     s.grabDY = e.clientY - s.y;
+    s.targetX = s.x;
+    s.targetY = s.y;
+    s.prevX = s.x;
+    s.prevY = s.y;
     s.history = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
     s.vx = 0;
     s.vy = 0;
@@ -272,14 +252,12 @@ const StampShapes = ({ cardRef }) => {
   const onPointerMove = (e, i) => {
     const s = stateRef.current[i];
     if (!s || !s.dragging) return;
-    s.x = e.clientX - s.grabDX;
-    s.y = e.clientY - s.grabDY;
+    // The loop resolves this against the card/walls before painting.
+    s.targetX = e.clientX - s.grabDX;
+    s.targetY = e.clientY - s.grabDY;
     const now = performance.now();
     s.history.push({ t: now, x: e.clientX, y: e.clientY });
     while (s.history.length > 2 && now - s.history[0].t > HISTORY_MS) s.history.shift();
-    if (reducedRef.current) {
-      e.currentTarget.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
-    }
   };
 
   const onPointerUp = (e, i) => {
@@ -290,7 +268,11 @@ const StampShapes = ({ cardRef }) => {
     e.currentTarget.style.zIndex = '';
     e.currentTarget.releasePointerCapture?.(e.pointerId);
 
-    if (reducedRef.current) return;
+    if (reducedRef.current) {
+      s.vx = 0;
+      s.vy = 0;
+      return;
+    }
 
     // Throw velocity from recent pointer history, capped.
     const h = s.history;
@@ -368,7 +350,7 @@ const StampShapes = ({ cardRef }) => {
         ))}
       </div>
 
-      {/* Impact stickers */}
+      {/* Impact stickers — above the card, so an edge hit isn't half-hidden */}
       {bursts.map((b) => (
         <div
           key={b.id}

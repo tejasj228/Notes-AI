@@ -695,10 +695,12 @@ body {
   box-shadow: var(--sc-lift-2);
 }
 
-/* Impact burst sticker */
+/* Impact burst sticker. Sits ABOVE the card (the shapes stay behind it) so a
+   hit against the card edge isn't half-hidden underneath. It's pointer-events
+   none, so it still can't steal a click from the form. */
 .sc-burst {
   position: fixed;
-  z-index: 1;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 4px;

@@ -148,7 +148,9 @@ const GraphView = () => {
           </button>
         </div>
 
-        <div ref={wrapRef} className="relative flex-1 min-h-[420px] border-3 border-ink bg-card shadow-brutal overflow-hidden">
+        {/* min-h stays low so flex-1 can actually fill the column — a tall
+            floor here is what left dead space under the canvas. */}
+        <div ref={wrapRef} className="relative flex-1 min-h-[280px] border-3 border-ink bg-card shadow-brutal overflow-hidden">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
