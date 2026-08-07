@@ -206,6 +206,7 @@ const AuthPage = ({ onAuthSuccess, onBackHome }) => {
                     label="Full name"
                     type="text"
                     name="name"
+                    autoComplete="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Ada Lovelace"
@@ -219,6 +220,7 @@ const AuthPage = ({ onAuthSuccess, onBackHome }) => {
                   label="Email address"
                   type="email"
                   name="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="you@example.com"
@@ -232,6 +234,7 @@ const AuthPage = ({ onAuthSuccess, onBackHome }) => {
                   error={passwordError}
                   type={showPassword ? 'text' : 'password'}
                   name="password"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="••••••••"

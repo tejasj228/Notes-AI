@@ -423,11 +423,31 @@ body {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0 0 var(--sc-cyan), 5px 5px 0 2px var(--sc-ink);
 }
+/* Chrome (and other WebKit/Blink browsers) paints its own autofill
+   background straight onto the input, ignoring `background`/`background-color`
+   entirely — the huge inset box-shadow is the standard trick to override it
+   with the theme's paper colour instead of Chrome's default pale blue tint.
+   The absurd transition delay stops Chrome's own colour transition from
+   flashing the blue tint back in for a frame when the field is (re)focused. */
+.sc-input:-webkit-autofill,
+.sc-input:-webkit-autofill:hover,
+.sc-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--sc-ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--sc-paper) inset;
+  box-shadow: 0 0 0 1000px var(--sc-paper) inset;
+  caret-color: var(--sc-ink);
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+}
+.sc-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset;
+  box-shadow: 0 0 0 1000px #fff inset;
+}
 .sc-input-icon {
   position: absolute;
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 1;
   color: rgb(var(--sc-ink-rgb) / 0.75);
   pointer-events: none;
 }

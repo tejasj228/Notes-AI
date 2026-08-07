@@ -40,6 +40,16 @@ const SHAPES = [
 const HISTORY_MS = 90; // pointer history window used for throw velocity
 const HINT_KEY = 'sc-shapes-hint-dismissed';
 
+// Shape sizes above were tuned for desktop — on a phone-width viewport the
+// biggest one (190px) is close to the screen itself, so scale everything
+// down with the viewport instead of shipping one fixed size for all widths.
+const sizeScale = (w) => {
+  if (w < 420) return 0.4;
+  if (w < 640) return 0.52;
+  if (w < 900) return 0.72;
+  return 1;
+};
+
 const WORDS = ['BONK!', 'THUD!', 'OOF!', 'WHAM!', 'CLUNK!', 'DOINK!'];
 
 const StampShapes = ({ cardRef }) => {
@@ -84,13 +94,15 @@ const StampShapes = ({ cardRef }) => {
     const W = () => window.innerWidth;
     const H = () => window.innerHeight;
 
+    const scale0 = sizeScale(W());
     stateRef.current = SHAPES.map((s, i) => {
+      const size = s.size * scale0;
       const angle = Math.random() * Math.PI * 2;
-      const x = Math.min(Math.max(s.fx * W() - s.size / 2, 0), Math.max(W() - s.size, 0));
-      const y = Math.min(Math.max(s.fy * H() - s.size / 2, 0), Math.max(H() - s.size, 0));
+      const x = Math.min(Math.max(s.fx * W() - size / 2, 0), Math.max(W() - size, 0));
+      const y = Math.min(Math.max(s.fy * H() - size / 2, 0), Math.max(H() - size, 0));
       return {
         i,
-        size: s.size,
+        size,
         x,
         y,
         prevX: x,
@@ -107,10 +119,15 @@ const StampShapes = ({ cardRef }) => {
       };
     });
 
-    // Paint initial positions immediately so nothing flashes at 0,0
+    // Paint initial size + position immediately so nothing flashes at the
+    // desktop size before the first resize handler would otherwise fire.
     stateRef.current.forEach((s) => {
       const el = elsRef.current[s.i];
-      if (el) el.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
+      if (el) {
+        el.style.width = `${s.size}px`;
+        el.style.height = `${s.size}px`;
+        el.style.transform = `translate3d(${s.x}px, ${s.y}px, 0)`;
+      }
     });
 
     const refreshCardRect = () => {
@@ -123,7 +140,21 @@ const StampShapes = ({ cardRef }) => {
     const rectTimer = setInterval(refreshCardRect, 400);
     const onResize = () => {
       refreshCardRect();
+      const scale = sizeScale(window.innerWidth);
       stateRef.current.forEach((s) => {
+        const size = SHAPES[s.i].size * scale;
+        if (size !== s.size) {
+          // Re-centre on the shape's current middle so it doesn't jump when
+          // its radius changes size mid-drift.
+          s.x += (s.size - size) / 2;
+          s.y += (s.size - size) / 2;
+          s.size = size;
+          const el = elsRef.current[s.i];
+          if (el) {
+            el.style.width = `${size}px`;
+            el.style.height = `${size}px`;
+          }
+        }
         s.x = Math.min(s.x, Math.max(window.innerWidth - s.size, 0));
         s.y = Math.min(s.y, Math.max(window.innerHeight - s.size, 0));
       });
@@ -307,7 +338,8 @@ const StampShapes = ({ cardRef }) => {
             }}
             className="sc-shape"
             data-dragging="false"
-            style={{ width: s.size, height: s.size }}
+            /* Actual width/height are set imperatively in the rAF effect —
+               they depend on viewport size, computed after mount. */
             onPointerDown={(e) => onPointerDown(e, i)}
             onPointerMove={(e) => onPointerMove(e, i)}
             onPointerUp={(e) => onPointerUp(e, i)}
@@ -331,10 +363,10 @@ const StampShapes = ({ cardRef }) => {
                 <div
                   style={{
                     position: 'absolute',
-                    top: 8,
-                    left: 3,
-                    right: 3,
-                    bottom: 3,
+                    top: '7%',
+                    left: '2.5%',
+                    right: '2.5%',
+                    bottom: '2.5%',
                     background: s.color,
                     clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
                   }}
